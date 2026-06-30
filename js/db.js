@@ -125,14 +125,33 @@ export async function loadUserSession(passedSession = null) {
     return null;
   }
 
-  console.log('loadUserSession -> Initiating profiles table fetch for user ID:', user.id);
-  // Fetch the profile. Use maybeSingle() to avoid throwing a 406/404 if no row is returned
-  const { data: profile, error: pError } = await sb
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .maybeSingle();
-
+  console.log('loadUserSession -> Initiating raw fetch to profiles endpoint for user ID:', user.id);
+  const config = await getSupabaseConfig();
+  const url = `${config.url}/rest/v1/profiles?id=eq.${user.id}&select=*`;
+  
+  let profile = null;
+  let pError = null;
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'apikey': config.key,
+        'Authorization': `Bearer ${session.access_token}`,
+        'Accept': 'application/vnd.pgrst.object+json' // behaves like maybeSingle()
+      }
+    });
+    console.log('loadUserSession -> Raw fetch response status:', res.status);
+    if (res.status === 200) {
+      profile = await res.json();
+    } else if (res.status === 406 || res.status === 404) {
+      profile = null;
+    } else {
+      pError = { message: `HTTP error ${res.status}: ${await res.text()}` };
+    }
+  } catch (err) {
+    console.error('loadUserSession -> Raw fetch catch block error:', err);
+    pError = err;
+  }
+  
   console.log('loadUserSession -> Fetched profile:', profile, 'Error:', pError);
 
   if (pError) {
