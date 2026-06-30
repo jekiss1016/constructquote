@@ -75,6 +75,7 @@ async function setupAuthListener() {
       
       if (session) {
         const profile = await loadUserSession();
+        console.log('setupAuthListener -> Loaded profile:', profile);
         if (profile) {
           hideAuthModal();
           if (!isAppInitialized) {

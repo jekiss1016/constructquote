@@ -125,6 +125,8 @@ export async function loadUserSession() {
     .eq('id', user.id)
     .maybeSingle();
 
+  console.log('loadUserSession -> Fetched profile:', profile, 'Error:', pError);
+
   if (pError) {
     console.error('Error fetching user profile:', pError);
   }
