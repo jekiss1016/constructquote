@@ -22,5 +22,4 @@ $RECYCLE.BIN/
 # Ignore environment secrets
 .env
 .env.local
-config.json
 
