@@ -852,11 +852,15 @@ async function loadTeamManagementUI() {
     `).join('');
   }
 
-  tbody.innerHTML = rowsHtml || `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No team members added.</td></tr>`;
+  // Retrieve a fresh reference to tbody to avoid async DOM race conditions
+  const freshTbody = document.getElementById('settings-team-tbody');
+  if (!freshTbody || !freshTbody.parentNode) return;
+
+  freshTbody.innerHTML = rowsHtml || `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">No team members added.</td></tr>`;
 
   // Bind member/invite actions
-  const newTbody = tbody.cloneNode(true);
-  tbody.parentNode.replaceChild(newTbody, tbody);
+  const newTbody = freshTbody.cloneNode(true);
+  freshTbody.parentNode.replaceChild(newTbody, freshTbody);
 
   newTbody.addEventListener('click', async (e) => {
     const removeBtn = e.target.closest('.remove-team-member-btn');
@@ -892,9 +896,10 @@ async function loadTeamManagementUI() {
     }
   });
 
-  if (inviteForm) {
-    const newForm = inviteForm.cloneNode(true);
-    inviteForm.parentNode.replaceChild(newForm, inviteForm);
+  const freshInviteForm = document.getElementById('team-invite-form');
+  if (freshInviteForm && freshInviteForm.parentNode) {
+    const newForm = freshInviteForm.cloneNode(true);
+    freshInviteForm.parentNode.replaceChild(newForm, freshInviteForm);
 
     newForm.addEventListener('submit', async (e) => {
       e.preventDefault();
