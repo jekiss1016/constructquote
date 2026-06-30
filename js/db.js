@@ -21,7 +21,26 @@ const DEFAULT_SETTINGS = {
 let supabase = null;
 let currentUserProfile = null; // Stores { id, company_id, role, email }
 
-export function getSupabaseConfig() {
+let cachedConfig = null;
+
+export async function loadRuntimeConfig() {
+  if (cachedConfig) return cachedConfig;
+  try {
+    const response = await fetch('config.json');
+    if (response.ok) {
+      const config = await response.json();
+      if (config.supabaseUrl && config.supabaseKey) {
+        cachedConfig = { url: config.supabaseUrl, key: config.supabaseKey };
+        return cachedConfig;
+      }
+    }
+  } catch (e) {
+    // Ignore error if file doesn't exist
+  }
+  return null;
+}
+
+export function getSavedConfig() {
   try {
     const saved = localStorage.getItem(KEYS.SUPABASE_CONFIG);
     return saved ? JSON.parse(saved) : null;
@@ -30,13 +49,21 @@ export function getSupabaseConfig() {
   }
 }
 
-export function setSupabaseConfig(url, key) {
-  localStorage.setItem(KEYS.SUPABASE_CONFIG, JSON.stringify({ url, key }));
-  initSupabaseClient();
+export async function getSupabaseConfig() {
+  const runtimeConfig = await loadRuntimeConfig();
+  if (runtimeConfig) {
+    return runtimeConfig;
+  }
+  return getSavedConfig();
 }
 
-export function initSupabaseClient() {
-  const config = getSupabaseConfig();
+export async function setSupabaseConfig(url, key) {
+  localStorage.setItem(KEYS.SUPABASE_CONFIG, JSON.stringify({ url, key }));
+  await initSupabaseClient();
+}
+
+export async function initSupabaseClient() {
+  const config = await getSupabaseConfig();
   if (config && config.url && config.key) {
     supabase = createClient(config.url, config.key);
     return true;
@@ -46,14 +73,11 @@ export function initSupabaseClient() {
 }
 
 export function getSupabase() {
-  if (!supabase) {
-    initSupabaseClient();
-  }
   return supabase;
 }
 
 export function isSupabaseConnected() {
-  return getSupabase() !== null;
+  return supabase !== null;
 }
 
 export function getCurrentUserProfile() {
