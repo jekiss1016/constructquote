@@ -1,0 +1,147 @@
+/* Construction Quoting Application - Print Layout */
+@media print {
+  /* Hide all application elements */
+  body, .app-container, .main-content {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    min-height: auto !important;
+    width: 100% !important;
+    display: block !important;
+  }
+
+  .sidebar,
+  .page-header,
+  .nav-menu,
+  .theme-toggle-btn,
+  .sidebar-footer,
+  .detail-sidebar,
+  .list-controls,
+  .stats-grid,
+  .dashboard-grid,
+  .toast-container,
+  .btn,
+  .modal-overlay,
+  .alert,
+  .add-item-controls,
+  .builder-summary-panel,
+  .view-section:not(.active),
+  header,
+  footer {
+    display: none !important;
+  }
+
+  /* Reset main content position */
+  .main-content {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Force the active view containing the paper quote to show and expand */
+  .view-section.active {
+    display: block !important;
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+
+  .detail-view-container {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  /* Format the quote paper sheet for physical printing */
+  .quote-paper-view {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    width: 100% !important;
+    min-height: auto !important;
+  }
+
+  /* Page breaks */
+  .paper-table {
+    page-break-inside: auto;
+  }
+  
+  .paper-table tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  .paper-totals-layout {
+    page-break-inside: avoid;
+  }
+
+  .paper-signature-block {
+    page-break-inside: avoid;
+    margin-top: 4rem !important;
+  }
+
+  /* Ensure text colors are readable in print (pure black and white) */
+  h1, h2, h3, h4, th, td, span, div, p {
+    color: #000000 !important;
+  }
+
+  .paper-table th {
+    background-color: #f1f5f9 !important;
+    border-bottom: 2px solid #94a3b8 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .paper-table td {
+    border-bottom: 1px solid #e2e8f0 !important;
+  }
+
+  .paper-item-desc {
+    color: #475569 !important;
+  }
+
+  .signature-line {
+    border-top: 1px solid #000000 !important;
+    color: #000000 !important;
+  }
+
+  /* Prevent page breaks inside the header and company info */
+  .paper-header {
+    page-break-inside: avoid;
+  }
+
+  /* Customize page margin settings */
+  @page {
+    size: letter;
+    margin: 15mm 15mm 15mm 15mm;
+  }
+
+  /* Printable photo grids */
+  .paper-photos-section {
+    display: block !important;
+  }
+
+  .paper-photo-item {
+    border: 1px solid #000000 !important;
+    page-break-inside: avoid;
+  }
+
+  .paper-photo-img {
+    height: 150px !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .hide-in-print {
+    display: none !important;
+  }
+
+  .show-in-print-only {
+    display: block !important;
+  }
+}
+
+

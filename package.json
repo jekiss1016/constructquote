@@ -1,0 +1,17 @@
+{
+  "name": "construction-quoting-app",
+  "version": "1.0.0",
+  "description": "Custom construction quoting application with pricing version control, templates, Job ID uniqueness, and print-to-PDF styles.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "construction",
+    "quoting",
+    "estimator",
+    "pdf"
+  ],
+  "author": "Antigravity",
+  "license": "ISC"
+}

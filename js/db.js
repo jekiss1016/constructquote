@@ -1,0 +1,770 @@
+// Database management using Supabase Cloud & LocalStorage fallbacks
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const KEYS = {
+  SUPABASE_CONFIG: 'cq_supabase_config'
+};
+
+// Default setup values
+const DEFAULT_CATEGORIES = ['Labor', 'Underlay', 'Framing', 'Finishing', 'Drywall', 'Flooring'];
+
+const DEFAULT_SETTINGS = {
+  companyName: 'ConstructQuote Pro Ltd.',
+  companyAddress: '100 Contractor Plaza, Suite A, Seattle, WA 98101',
+  companyPhone: '(206) 555-0199',
+  companyEmail: 'billing@constructquotepro.com',
+  defaultTaxRate: 8.8,
+  defaultMarkupPercent: 15,
+  companyLogo: ''
+};
+
+let supabase = null;
+let currentUserProfile = null; // Stores { id, company_id, role, email }
+
+export function getSupabaseConfig() {
+  try {
+    const saved = localStorage.getItem(KEYS.SUPABASE_CONFIG);
+    return saved ? JSON.parse(saved) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+export function setSupabaseConfig(url, key) {
+  localStorage.setItem(KEYS.SUPABASE_CONFIG, JSON.stringify({ url, key }));
+  initSupabaseClient();
+}
+
+export function initSupabaseClient() {
+  const config = getSupabaseConfig();
+  if (config && config.url && config.key) {
+    supabase = createClient(config.url, config.key);
+    return true;
+  }
+  supabase = null;
+  return false;
+}
+
+export function getSupabase() {
+  if (!supabase) {
+    initSupabaseClient();
+  }
+  return supabase;
+}
+
+export function isSupabaseConnected() {
+  return getSupabase() !== null;
+}
+
+export function getCurrentUserProfile() {
+  return currentUserProfile;
+}
+
+export function setCurrentUserProfile(profile) {
+  currentUserProfile = profile;
+}
+
+// Loads session and corresponding company profile
+export async function loadUserSession() {
+  const sb = getSupabase();
+  if (!sb) return null;
+  
+  const { data: { user }, error } = await sb.auth.getUser();
+  if (error || !user) {
+    currentUserProfile = null;
+    return null;
+  }
+  
+  const { data: profile, error: pError } = await sb
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+    
+  if (pError || !profile) {
+    currentUserProfile = null;
+    return null;
+  }
+  
+  currentUserProfile = profile;
+  return profile;
+}
+
+/* ==================== CATEGORIES CRUD ==================== */
+export async function getCategories() {
+  const sb = getSupabase();
+  if (!sb || !currentUserProfile) return DEFAULT_CATEGORIES;
+  
+  const { data, error } = await sb
+    .from('categories')
+    .select('name')
+    .eq('company_id', currentUserProfile.company_id)
+    .order('name');
+    
+  if (error) return DEFAULT_CATEGORIES;
+  
+  const custom = data.map(c => c.name);
+  const merged = [...DEFAULT_CATEGORIES];
+  custom.forEach(c => {
+    if (!merged.some(m => m.toLowerCase() === c.toLowerCase())) {
+      merged.push(c);
+    }
+  });
+  return merged;
+}
+
+export async function saveCategory(categoryName) {
+  const sb = getSupabase();
+  if (!sb || !currentUserProfile) return { success: false, error: 'Not authenticated' };
+  const trimmed = categoryName.trim();
+  if (!trimmed) return { success: false, error: 'Category name cannot be empty.' };
+  
+  const { error } = await sb
+    .from('categories')
+    .insert({
+      company_id: currentUserProfile.company_id,
+      name: trimmed
+    });
+    
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+export async function deleteCategory(categoryName) {
+  const sb = getSupabase();
+  if (!sb || !currentUserProfile) return { success: false, error: 'Not authenticated' };
+  if (categoryName.toLowerCase() === 'labor') {
+    return { success: false, error: 'Cannot delete the core "Labor" category.' };
+  }
+  
+  const { error } = await sb
+    .from('categories')
+    .delete()
+    .eq('company_id', currentUserProfile.company_id)
+    .eq('name', categoryName);
+    
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+/* ==================== CUSTOMERS CRUD ==================== */
+export async function getCustomers() {
+  const sb = getSupabase();
+  if (!sb || !currentUserProfile) return [];
+  
+  const { data, error } = await sb
+    .from('customers')
+    .select('*')
+    .eq('company_id', currentUserProfile.company_id)
+    .order('name');
+    
+  if (error) return [];
+  return data.map(c => ({
+    id: c.id,
+    name: c.name,
+    email: c.email,
+    phone: c.phone,
+    address: c.address,
+    status: c.status || 'Active',
+    contacts: c.contacts || [],
+    documents: c.documents || []
+  }));
+}
+
+export async function getCustomerById(id) {
+  const customers = await getCustomers();
+  return customers.find(c => c.id === id);
+}
+
+export async function saveCustomer(customer) {
+  const sb = getSupabase();
+  if (!sb || !currentUserProfile) return { success: false, error: 'Not authenticated' };
+  
+  const mapped = {
+    company_id: currentUserProfile.company_id,
+    name: customer.name,
+    email: customer.email,
+    phone: customer.phone,
+    address: customer.address,
+    status: customer.status || 'Active',
+    contacts: customer.contacts || [],
+    documents: customer.documents || []
+  };
+  
+  if (customer.id) {
+    const { error } = await sb
+      .from('customers')
+      .update(mapped)
+      .eq('id', customer.id)
+      .eq('company_id', currentUserProfile.company_id);
+    if (error) return { success: false, error: error.message };
+    return { success: true, customer };
+  } else {
+    const { data, error } = await sb
+      .from('customers')
+      .insert(mapped)
+      .select()
+      .single();
+    if (error) return { success: false, error: error.message };
+    return { success: true, customer: data };
+  }
+}
+
+export async function isCustomerLinked(customerId) {
+  const sb = getSupabase();
+  if (!sb) return false;
+  const { data, error } = await sb
+    .from('quotes')
+    .select('id')
+    .eq('customer_id', customerId)
+    .limit(1);
+  return data && data.length > 0;
+}
+
+export async function deleteCustomer(id) {
+  const sb = getSupabase();
+  if (!sb || !currentUserProfile) return { success: false, error: 'Not authenticated' };
+  
+  if (await isCustomerLinked(id)) {
+    return { success: false, error: 'This customer has historical quotes linked and cannot be deleted. Please set their status to Inactive instead.' };
+  }
+  
+  const { error } = await sb
+    .from('customers')
+    .delete()
+    .eq('id', id)
+    .eq('company_id', currentUserProfile.company_id);
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+/* ==================== PRODUCTS CRUD ==================== */
+export async function getProducts() {
+  const sb = getSupabase();
+  if (!sb || !currentUserProfile) return [];
+  
+  const { data, error } = await sb
+    .from('products')
+    .select('*')
+    .eq('company_id', currentUserProfile.company_id)
+    .order('name');
+    
+  if (error) return [];
+  return data.map(p => ({
+    id: p.id,
+    name: p.name,
+    category: p.category,
+    uom: p.uom,
+    price: parseFloat(p.price) || 0,
+    laborRate: parseFloat(p.labor_rate) || 0,
+    status: p.status || 'Active',
+    description: p.description
+  }));
+}
+
+export async function getProductById(id) {
+  const products = await getProducts();
+  return products.find(p => p.id === id);
+}
+
+export async function saveProduct(product) {
+  const sb = getSupabase();
+  if (!sb || !currentUserProfile) return { success: false, error: 'Not authenticated' };
+  
+  const mapped = {
+    company_id: currentUserProfile.company_id,
+    name: product.name,
+    category: product.category,
+    uom: product.uom,
+    price: product.price,
+    labor_rate: product.laborRate || 0,
+    status: product.status || 'Active',
+    description: product.description
+  };
+  
+  if (product.id) {
+    const { error } = await sb
+      .from('products')
+      .update(mapped)
+      .eq('id', product.id)
+      .eq('company_id', currentUserProfile.company_id);
+    if (error) return { success: false, error: error.message };
+    return { success: true, product };
+  } else {
+    const { data, error } = await sb
+      .from('products')
+      .insert(mapped)
+      .select()
+      .single();
+    if (error) return { success: false, error: error.message };
+    return { success: true, product: data };
+  }
+}
+
+export async function isProductUsed(productId) {
+  const sb = getSupabase();
+  if (!sb || !currentUserProfile) return false;
+  const { data, error } = await sb
+    .from('quotes')
+    .select('id')
+    .eq('company_id', currentUserProfile.company_id)
+    .filter('sections', 'cs', `[{"items": [{"productId": "${productId}"}]}]`)
+    .limit(1);
+  return data && data.length > 0;
+}
+
+export async function deleteProduct(id) {
+  const sb = getSupabase();
+  if (!sb || !currentUserProfile) return { success: false, error: 'Not authenticated' };
+  
+  if (await isProductUsed(id)) {
+    const product = await getProductById(id);
+    if (product) {
+      product.status = 'Inactive';
+      await saveProduct(product);
+      return { success: false, error: 'This catalog product is used on historical quotes and cannot be physically deleted. It has been automatically set to Inactive to prevent future use.' };
+    }
+  }
+  
+  const { error } = await sb
+    .from('products')
+    .delete()
+    .eq('id', id)
+    .eq('company_id', currentUserProfile.company_id);
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+/* ==================== QUOTES CRUD ==================== */
+export async function getQuotes() {
+  const sb = getSupabase();
+  if (!sb || !currentUserProfile) return [];
+  
+  const { data, error } = await sb
+    .from('quotes')
+    .select('*')
+    .eq('company_id', currentUserProfile.company_id)
+    .order('date', { ascending: false });
+    
+  if (error) return [];
+  return data.map(q => ({
+    id: q.id,
+    jobId: q.job_id,
+    quoteNumber: String(q.quote_number),
+    customerId: q.customer_id,
+    customerName: q.customer_name,
+    projectAddress: q.project_address,
+    customerPhone: q.customer_phone,
+    customerEmail: q.customer_email,
+    date: q.date,
+    expirationDate: q.expiration_date,
+    markupPercent: parseFloat(q.markup_percent) || 0,
+    taxRate: parseFloat(q.tax_rate) || 0,
+    notes: q.notes,
+    status: q.status || 'Pending',
+    version: q.version || 1,
+    parentQuoteId: q.parent_quote_id,
+    isLegacy: q.is_legacy === true,
+    createdDateTime: q.created_date_time,
+    dateWonLost: q.date_won_lost,
+    dateCompleted: q.date_completed,
+    sections: q.sections || [],
+    photos: q.photos || [],
+    documents: q.documents || [],
+    receipts: q.receipts || []
+  }));
+}
+
+export async function getQuoteById(id) {
+  const sb = getSupabase();
+  if (!sb || !currentUserProfile) return null;
+  const { data, error } = await sb
+    .from('quotes')
+    .select('*')
+    .eq('id', id)
+    .eq('company_id', currentUserProfile.company_id)
+    .single();
+  if (error || !data) return null;
+  return {
+    id: data.id,
+    jobId: data.job_id,
+    quoteNumber: String(data.quote_number),
+    customerId: data.customer_id,
+    customerName: data.customer_name,
+    projectAddress: data.project_address,
+    customerPhone: data.customer_phone,
+    customerEmail: data.customer_email,
+    date: data.date,
+    expirationDate: data.expiration_date,
+    markupPercent: parseFloat(data.markup_percent) || 0,
+    taxRate: parseFloat(data.tax_rate) || 0,
+    notes: data.notes,
+    status: data.status || 'Pending',
+    version: data.version || 1,
+    parentQuoteId: data.parent_quote_id,
+    isLegacy: data.is_legacy === true,
+    createdDateTime: data.created_date_time,
+    dateWonLost: data.date_won_lost,
+    dateCompleted: data.date_completed,
+    sections: data.sections || [],
+    photos: data.photos || [],
+    documents: data.documents || [],
+    receipts: data.receipts || []
+  };
+}
+
+export async function checkJobIdUnique(jobId, ignoreQuoteId = null) {
+  const sb = getSupabase();
+  if (!sb || !currentUserProfile) return true;
+  let query = sb
+    .from('quotes')
+    .select('id')
+    .eq('company_id', currentUserProfile.company_id)
+    .ilike('job_id', jobId.trim())
+    .eq('is_legacy', false);
+  if (ignoreQuoteId) {
+    query = query.neq('id', ignoreQuoteId);
+  }
+  const { data } = await query;
+  return !data || data.length === 0;
+}
+
+export async function saveQuote(quote) {
+  const sb = getSupabase();
+  if (!sb || !currentUserProfile) return { success: false, error: 'Not authenticated' };
+  
+  if (!(await checkJobIdUnique(quote.jobId, quote.id))) {
+    return { success: false, error: `Job ID "${quote.jobId}" is already assigned to another active quote. Job IDs must be unique.` };
+  }
+  
+  if (quote.status === 'Won' || quote.status === 'Lost' || quote.status === 'Inactive') {
+    if (!quote.dateWonLost) quote.dateWonLost = new Date().toISOString();
+  } else if (quote.status === 'Completed') {
+    if (!quote.dateCompleted) quote.dateCompleted = new Date().toISOString();
+    if (!quote.dateWonLost) quote.dateWonLost = new Date().toISOString();
+  } else if (quote.status === 'Pending') {
+    quote.dateWonLost = null;
+    quote.dateCompleted = null;
+  }
+  
+  const mapped = {
+    company_id: currentUserProfile.company_id,
+    job_id: quote.jobId,
+    customer_id: quote.customerId,
+    customer_name: quote.customerName,
+    project_address: quote.projectAddress,
+    customer_phone: quote.customerPhone,
+    customer_email: quote.customerEmail,
+    date: quote.date,
+    expiration_date: quote.expirationDate,
+    markup_percent: quote.markupPercent,
+    tax_rate: quote.taxRate,
+    notes: quote.notes,
+    status: quote.status || 'Pending',
+    version: quote.version || 1,
+    parent_quote_id: quote.parentQuoteId,
+    is_legacy: quote.isLegacy === true,
+    date_won_lost: quote.dateWonLost,
+    date_completed: quote.dateCompleted,
+    sections: quote.sections || [],
+    photos: quote.photos || [],
+    documents: quote.documents || [],
+    receipts: quote.receipts || []
+  };
+  
+  if (quote.id) {
+    const existing = await getQuoteById(quote.id);
+    if (existing) {
+      const contentChanged = 
+        JSON.stringify(existing.notes) !== JSON.stringify(quote.notes) ||
+        JSON.stringify(existing.sections) !== JSON.stringify(quote.sections) ||
+        existing.customerName !== quote.customerName ||
+        existing.projectAddress !== quote.projectAddress ||
+        existing.customerPhone !== quote.customerPhone ||
+        existing.customerEmail !== quote.customerEmail ||
+        existing.markupPercent !== quote.markupPercent ||
+        existing.taxRate !== quote.taxRate ||
+        existing.expirationDate !== quote.expirationDate;
+        
+      if (contentChanged && !existing.isLegacy) {
+        const legacyCopy = { ...existing };
+        legacyCopy.isLegacy = true;
+        legacyCopy.status = 'Legacy';
+        legacyCopy.parentQuoteId = existing.parentQuoteId || existing.id;
+        
+        const { error: legError } = await sb.from('quotes').insert({
+          company_id: currentUserProfile.company_id,
+          job_id: legacyCopy.jobId,
+          customer_id: legacyCopy.customerId,
+          customer_name: legacyCopy.customerName,
+          project_address: legacyCopy.projectAddress,
+          customer_phone: legacyCopy.customerPhone,
+          customer_email: legacyCopy.customerEmail,
+          date: legacyCopy.date,
+          expiration_date: legacyCopy.expirationDate,
+          markup_percent: legacyCopy.markupPercent,
+          tax_rate: legacyCopy.taxRate,
+          notes: legacyCopy.notes,
+          status: 'Legacy',
+          version: legacyCopy.version,
+          parent_quote_id: legacyCopy.parentQuoteId,
+          is_legacy: true,
+          date_won_lost: legacyCopy.dateWonLost,
+          date_completed: legacyCopy.dateCompleted,
+          sections: legacyCopy.sections,
+          photos: legacyCopy.photos,
+          documents: legacyCopy.documents,
+          receipts: legacyCopy.receipts
+        });
+        if (legError) return { success: false, error: 'Legacy archive failed: ' + legError.message };
+        
+        mapped.version = (existing.version || 1) + 1;
+        mapped.parent_quote_id = existing.parentQuoteId || existing.id;
+      }
+    }
+    
+    const { error } = await sb
+      .from('quotes')
+      .update(mapped)
+      .eq('id', quote.id)
+      .eq('company_id', currentUserProfile.company_id);
+    if (error) return { success: false, error: error.message };
+    return { success: true, quote };
+  } else {
+    const { data: maxQ } = await sb
+      .from('quotes')
+      .select('quote_number')
+      .eq('company_id', currentUserProfile.company_id)
+      .order('quote_number', { ascending: false })
+      .limit(1);
+      
+    const nextNum = maxQ && maxQ.length > 0 ? (parseInt(maxQ[0].quote_number) || 1000) + 1 : 1001;
+    mapped.quote_number = nextNum;
+    
+    const { data, error } = await sb
+      .from('quotes')
+      .insert(mapped)
+      .select()
+      .single();
+    if (error) return { success: false, error: error.message };
+    return { success: true, quote: data };
+  }
+}
+
+export async function saveQuotesRaw(quotesList) {
+  const sb = getSupabase();
+  if (!sb || !currentUserProfile) return;
+  const mappedList = quotesList.map(q => ({
+    id: q.id,
+    company_id: currentUserProfile.company_id,
+    job_id: q.jobId,
+    customer_id: q.customerId,
+    customer_name: q.customerName,
+    project_address: q.projectAddress,
+    customer_phone: q.customerPhone,
+    customer_email: q.customerEmail,
+    date: q.date,
+    expiration_date: q.expirationDate,
+    markup_percent: q.markupPercent,
+    tax_rate: q.taxRate,
+    notes: q.notes,
+    status: q.status,
+    version: q.version,
+    parent_quote_id: q.parentQuoteId,
+    is_legacy: q.isLegacy === true,
+    date_won_lost: q.dateWonLost,
+    date_completed: q.dateCompleted,
+    sections: q.sections,
+    photos: q.photos,
+    documents: q.documents,
+    receipts: q.receipts
+  }));
+  await sb.from('quotes').upsert(mappedList);
+}
+
+export async function deleteQuote(id) {
+  return { success: false, error: 'Quotes cannot be deleted. You can mark them as Lost or Inactive to archive them instead.' };
+}
+
+/* ==================== SETTINGS CRUD ==================== */
+export async function getSettings() {
+  const sb = getSupabase();
+  if (!sb || !currentUserProfile) return DEFAULT_SETTINGS;
+  
+  const { data, error } = await sb
+    .from('settings')
+    .select('*')
+    .eq('company_id', currentUserProfile.company_id)
+    .single();
+    
+  if (error || !data) {
+    return {
+      ...DEFAULT_SETTINGS,
+      companyName: currentUserProfile.company_name || 'My Company'
+    };
+  }
+  
+  return {
+    companyName: data.company_name,
+    companyAddress: data.company_address,
+    companyPhone: data.company_phone,
+    companyEmail: data.company_email,
+    defaultTaxRate: parseFloat(data.default_tax_rate) || 0,
+    defaultMarkupPercent: parseFloat(data.default_markup_percent) || 0,
+    companyLogo: data.company_logo,
+    theme: data.theme || 'light'
+  };
+}
+
+export async function saveSettings(settingsObj) {
+  const sb = getSupabase();
+  if (!sb || !currentUserProfile) return { success: false, error: 'Not authenticated' };
+  
+  const mapped = {};
+  if (settingsObj.companyName !== undefined) mapped.company_name = settingsObj.companyName;
+  if (settingsObj.companyAddress !== undefined) mapped.company_address = settingsObj.companyAddress;
+  if (settingsObj.companyPhone !== undefined) mapped.company_phone = settingsObj.companyPhone;
+  if (settingsObj.companyEmail !== undefined) mapped.company_email = settingsObj.companyEmail;
+  if (settingsObj.defaultTaxRate !== undefined) mapped.default_tax_rate = settingsObj.defaultTaxRate;
+  if (settingsObj.defaultMarkupPercent !== undefined) mapped.default_markup_percent = settingsObj.defaultMarkupPercent;
+  if (settingsObj.companyLogo !== undefined) mapped.company_logo = settingsObj.companyLogo;
+  if (settingsObj.theme !== undefined) mapped.theme = settingsObj.theme;
+  
+  mapped.company_id = currentUserProfile.company_id;
+  
+  const { error } = await sb
+    .from('settings')
+    .upsert(mapped);
+    
+  if (error) {
+    return { success: false, error: error.message };
+  }
+  return { success: true };
+}
+
+/* ==================== DATABASE BACKUP & RESTORE ==================== */
+export async function exportDB() {
+  const db = {
+    categories: await getCategories(),
+    products: await getProducts(),
+    customers: await getCustomers(),
+    quotes: await getQuotes(),
+    settings: await getSettings()
+  };
+  return JSON.stringify(db, null, 2);
+}
+
+export async function importDB(jsonStr) {
+  const sb = getSupabase();
+  if (!sb || !currentUserProfile) return { success: false, error: 'Not authenticated' };
+  try {
+    const db = JSON.parse(jsonStr);
+    if (!db.categories || !db.products || !db.quotes || !db.settings) {
+      return { success: false, error: 'Invalid backup file structure.' };
+    }
+    
+    // Import categories
+    for (const cat of db.categories) {
+      await saveCategory(cat);
+    }
+    // Import products
+    for (const prod of db.products) {
+      await saveProduct(prod);
+    }
+    // Import customers
+    if (db.customers) {
+      for (const cust of db.customers) {
+        await saveCustomer(cust);
+      }
+    }
+    // Import quotes
+    for (const q of db.quotes) {
+      await saveQuote(q);
+    }
+    // Import settings
+    await saveSettings(db.settings);
+    
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: 'Failed to parse JSON backup file.' };
+  }
+}
+
+/* ==================== LOCALSTORAGE DATA MIGRATOR ==================== */
+export async function migrateLocalStorageToSupabase() {
+  const sb = getSupabase();
+  if (!sb || !currentUserProfile) return { success: false, error: 'Not authenticated to Supabase.' };
+  
+  try {
+    const localCats = JSON.parse(localStorage.getItem('cq_categories')) || [];
+    const localCusts = JSON.parse(localStorage.getItem('cq_customers')) || [];
+    const localProds = JSON.parse(localStorage.getItem('cq_products')) || [];
+    const localQuotes = JSON.parse(localStorage.getItem('cq_quotes')) || [];
+    
+    // Migrate Categories
+    for (const cat of localCats) {
+      await sb.from('categories').upsert({
+        company_id: currentUserProfile.company_id,
+        name: cat
+      }, { onConflict: 'company_id,name' });
+    }
+    
+    // Migrate Products
+    for (const p of localProds) {
+      await sb.from('products').insert({
+        company_id: currentUserProfile.company_id,
+        name: p.name,
+        category: p.category,
+        uom: p.uom,
+        price: p.price,
+        labor_rate: p.laborRate || 0,
+        status: p.status || 'Active',
+        description: p.description
+      });
+    }
+    
+    // Migrate Customers
+    for (const c of localCusts) {
+      await sb.from('customers').insert({
+        company_id: currentUserProfile.company_id,
+        name: c.name,
+        email: c.email,
+        phone: c.phone,
+        address: c.address,
+        status: c.status || 'Active',
+        contacts: c.contacts || [],
+        documents: c.documents || []
+      });
+    }
+    
+    // Migrate Quotes
+    for (const q of localQuotes) {
+      await sb.from('quotes').insert({
+        company_id: currentUserProfile.company_id,
+        job_id: q.jobId,
+        customer_id: q.customerId,
+        customer_name: q.customerName,
+        project_address: q.projectAddress,
+        customer_phone: q.customerPhone,
+        customer_email: q.customerEmail,
+        date: q.date,
+        expiration_date: q.expirationDate,
+        markup_percent: q.markupPercent,
+        tax_rate: q.taxRate,
+        notes: q.notes,
+        status: q.status || 'Pending',
+        version: q.version || 1,
+        parent_quote_id: q.parentQuoteId,
+        is_legacy: q.isLegacy === true,
+        date_won_lost: q.dateWonLost,
+        date_completed: q.dateCompleted,
+        sections: q.sections || [],
+        photos: q.photos || []
+      });
+    }
+    
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}

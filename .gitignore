@@ -1,0 +1,24 @@
+# OS Metadata
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# IDE / Editor folders
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+.DS_Store
+
+# Temporary logs
+*.log
+.gemini/
+.antigravity/
+*~
+# Ignore environment secrets
+.env
+.env.local
