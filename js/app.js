@@ -24,6 +24,8 @@ import { initCustomersView, renderCustomersTable } from './customers.js';
 let activeChallengeId = null;
 let activeFactorId = null;
 
+let isAppInitialized = false;
+
 document.addEventListener('DOMContentLoaded', async () => {
   // 1. Check for Supabase configuration keys
   await initSupabaseClient();
@@ -32,7 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  await checkUserAuthentication();
+  await setupAuthListener();
 });
 
 // Displays Setup dialog overlay if keys are missing
@@ -51,30 +53,43 @@ function showSupabaseSetupModal() {
         await setSupabaseConfig(url, key);
         modal.classList.remove('active');
         showToast('Supabase connection details saved.');
-        await checkUserAuthentication();
+        await setupAuthListener();
       }
     });
   }
 }
 
-// Check if user is authenticated and load profile
-async function checkUserAuthentication() {
+// Setup Auth State listener to handle login, logout, and OAuth redirects
+async function setupAuthListener() {
   const sb = getSupabase();
   if (!sb) {
     showSupabaseSetupModal();
     return;
   }
 
-  showToast('Connecting to secure session...');
-  const profile = await loadUserSession();
-
-  if (!profile) {
-    showAuthModal();
-  } else {
-    // Session is valid, hide modals and boot app views
-    hideAuthModal();
-    await initAppViews();
-  }
+  sb.auth.onAuthStateChange(async (event, session) => {
+    console.log('Auth State Event:', event, session);
+    
+    if (session) {
+      const profile = await loadUserSession();
+      if (profile) {
+        hideAuthModal();
+        if (!isAppInitialized) {
+          isAppInitialized = true;
+          await initAppViews();
+        } else {
+          // Refresh settings/branding on state update
+          await loadDefaultSettingsToUI();
+          updateBrandHeader();
+        }
+      } else {
+        showToast('Failed to load user profile.', 'danger');
+        showAuthModal();
+      }
+    } else {
+      showAuthModal();
+    }
+  });
 }
 
 // Display Login/Signup card overlay
