@@ -193,17 +193,20 @@ export async function loadUserSession(passedSession = null) {
 
 /* ==================== CATEGORIES CRUD ==================== */
 export async function getCategories() {
+  console.log('getCategories -> Starting...');
   // Ensure Supabase is ready – this guard also works if the user is not logged in
   if (!supabase) await initSupabaseClient();
   const sb = getSupabase();
   if (!sb || !currentUserProfile || !currentUserProfile.company_id) return DEFAULT_CATEGORIES;
 
+  console.log('getCategories -> Querying categories table...');
   const { data, error } = await sb
     .from('categories')
     .select('name')
     .eq('company_id', currentUserProfile.company_id)
     .order('name');
 
+  console.log('getCategories -> Categories fetched. Error:', error);
   if (error) return DEFAULT_CATEGORIES;
 
   const custom = data.map(c => c.name);
@@ -252,15 +255,18 @@ export async function deleteCategory(categoryName) {
 
 /* ==================== CUSTOMERS CRUD ==================== */
 export async function getCustomers() {
+  console.log('getCustomers -> Starting...');
   const sb = getSupabase();
   if (!sb || !currentUserProfile || !currentUserProfile.company_id) return [];
   
+  console.log('getCustomers -> Querying customers table...');
   const { data, error } = await sb
     .from('customers')
     .select('*')
     .eq('company_id', currentUserProfile.company_id)
     .order('name');
     
+  console.log('getCustomers -> Customers fetched. Error:', error);
   if (error) return [];
   return data.map(c => ({
     id: c.id,
@@ -343,15 +349,18 @@ export async function deleteCustomer(id) {
 
 /* ==================== PRODUCTS CRUD ==================== */
 export async function getProducts() {
+  console.log('getProducts -> Starting...');
   const sb = getSupabase();
   if (!sb || !currentUserProfile || !currentUserProfile.company_id) return [];
   
+  console.log('getProducts -> Querying products table...');
   const { data, error } = await sb
     .from('products')
     .select('*')
     .eq('company_id', currentUserProfile.company_id)
     .order('name');
     
+  console.log('getProducts -> Products fetched. Error:', error);
   if (error) return [];
   return data.map(p => ({
     id: p.id,
@@ -440,15 +449,18 @@ export async function deleteProduct(id) {
 
 /* ==================== QUOTES CRUD ==================== */
 export async function getQuotes() {
+  console.log('getQuotes -> Starting...');
   const sb = getSupabase();
   if (!sb || !currentUserProfile || !currentUserProfile.company_id) return [];
   
+  console.log('getQuotes -> Querying quotes table...');
   const { data, error } = await sb
     .from('quotes')
     .select('*')
     .eq('company_id', currentUserProfile.company_id)
     .order('date', { ascending: false });
     
+  console.log('getQuotes -> Quotes fetched. Error:', error);
   if (error) return [];
   return data.map(q => ({
     id: q.id,
@@ -691,18 +703,22 @@ export async function deleteQuote(id) {
 
 /* ==================== SETTINGS CRUD ==================== */
 export async function getSettings() {
+  console.log('getSettings -> Starting...');
   const sb = getSupabase();
   if (!sb || !currentUserProfile || !currentUserProfile.company_id) return DEFAULT_SETTINGS;
   
+  console.log('getSettings -> Querying settings table for company ID:', currentUserProfile.company_id);
   const { data, error } = await sb
     .from('settings')
     .select('*')
     .eq('company_id', currentUserProfile.company_id)
     .single();
-      if (error || !data) {
-      // Return default settings without attempting to use profile fields.
-      return DEFAULT_SETTINGS;
-    }
+    
+  console.log('getSettings -> Settings fetched. Error:', error);
+  if (error || !data) {
+    // Return default settings without attempting to use profile fields.
+    return DEFAULT_SETTINGS;
+  }
   
   return {
     companyName: data.company_name,

@@ -281,12 +281,18 @@ function hideAuthModal() {
 
 // Boots application views and listeners
 async function initAppViews() {
+  console.log('initAppViews -> Starting components initialization...');
   // Initialize View Components
   try {
+    console.log('initAppViews -> Initializing Quotes list view...');
     await initQuotesListView();
+    console.log('initAppViews -> Initializing Catalog view...');
     await initCatalogView();
+    console.log('initAppViews -> Initializing Quote Builder view...');
     initQuoteBuilderView();
+    console.log('initAppViews -> Initializing Customers view...');
     await initCustomersView();
+    console.log('initAppViews -> All views initialized.');
   } catch (e) {
     console.error('Failed to initialize views:', e);
   }
