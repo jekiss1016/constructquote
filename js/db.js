@@ -903,16 +903,10 @@ export async function migrateLocalStorageToSupabase() {
 
 /* ==================== SYSADMIN MULTI-TENANT HELPERS ==================== */
 export async function getAllCompanies() {
-  const sb = getSupabase();
-  if (!sb) return [];
-  const { data, error } = await sb
-    .from('settings')
-    .select('company_id, company_name')
-    .order('company_name');
-  if (error) {
-    console.error('Error fetching company settings:', error);
-    return [];
-  }
+  console.log('getAllCompanies -> Starting raw fetch...');
+  const data = await rawDbQuery('settings', 'select=company_id,company_name&order=company_name.asc');
+  console.log('getAllCompanies -> Companies fetched. Data length:', data ? data.length : 0);
+  if (!data) return [];
   return data.map(s => ({
     id: s.company_id,
     name: s.company_name || 'Unnamed Company'
@@ -920,21 +914,32 @@ export async function getAllCompanies() {
 }
 
 export async function switchUserCompany(companyId) {
-  const sb = getSupabase();
-  if (!sb || !currentUserProfile) return false;
+  const config = await getSupabaseConfig();
+  if (!config || !currentUserProfile) return false;
+  const token = await getAccessToken();
+  if (!token) return false;
   
-  console.log('switchUserCompany -> Triggering update for profiles table. Company ID:', companyId, 'User ID:', currentUserProfile.id);
-  const { error } = await sb
-    .from('profiles')
-    .update({ company_id: companyId })
-    .eq('id', currentUserProfile.id);
+  console.log('switchUserCompany -> Triggering raw PATCH update for profiles table. Company ID:', companyId, 'User ID:', currentUserProfile.id);
+  const url = `${config.url}/rest/v1/profiles?id=eq.${currentUserProfile.id}`;
+  try {
+    const res = await fetch(url, {
+      method: 'PATCH',
+      headers: {
+        'apikey': config.key,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify({ company_id: companyId })
+    });
     
-  console.log('switchUserCompany -> profiles table update finished. Error:', error);
-  if (error) {
-    console.error('Error switching company:', error);
-    return false;
+    console.log('switchUserCompany -> profiles table update finished. Status:', res.status);
+    if (res.status === 200 || res.status === 204) {
+      currentUserProfile.company_id = companyId;
+      return true;
+    }
+  } catch (err) {
+    console.error('Error switching company (raw):', err);
   }
-  
-  currentUserProfile.company_id = companyId;
-  return true;
+  return false;
 }
