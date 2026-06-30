@@ -125,6 +125,7 @@ export async function loadUserSession(passedSession = null) {
     return null;
   }
 
+  console.log('loadUserSession -> Initiating profiles table fetch for user ID:', user.id);
   // Fetch the profile. Use maybeSingle() to avoid throwing a 406/404 if no row is returned
   const { data: profile, error: pError } = await sb
     .from('profiles')
@@ -871,11 +872,13 @@ export async function switchUserCompany(companyId) {
   const sb = getSupabase();
   if (!sb || !currentUserProfile) return false;
   
+  console.log('switchUserCompany -> Triggering update for profiles table. Company ID:', companyId, 'User ID:', currentUserProfile.id);
   const { error } = await sb
     .from('profiles')
     .update({ company_id: companyId })
     .eq('id', currentUserProfile.id);
     
+  console.log('switchUserCompany -> profiles table update finished. Error:', error);
   if (error) {
     console.error('Error switching company:', error);
     return false;
