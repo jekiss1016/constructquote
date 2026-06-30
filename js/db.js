@@ -839,3 +839,36 @@ export async function migrateLocalStorageToSupabase() {
     return { success: false, error: err.message };
   }
 }
+
+/* ==================== SYSADMIN MULTI-TENANT HELPERS ==================== */
+export async function getAllCompanies() {
+  const sb = getSupabase();
+  if (!sb) return [];
+  const { data, error } = await sb
+    .from('companies')
+    .select('id, name')
+    .order('name');
+  if (error) {
+    console.error('Error fetching companies:', error);
+    return [];
+  }
+  return data;
+}
+
+export async function switchUserCompany(companyId) {
+  const sb = getSupabase();
+  if (!sb || !currentUserProfile) return false;
+  
+  const { error } = await sb
+    .from('profiles')
+    .update({ company_id: companyId })
+    .eq('id', currentUserProfile.id);
+    
+  if (error) {
+    console.error('Error switching company:', error);
+    return false;
+  }
+  
+  currentUserProfile.company_id = companyId;
+  return true;
+}

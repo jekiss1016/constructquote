@@ -13,7 +13,9 @@ import {
   importDB, 
   getQuoteById, 
   migrateLocalStorageToSupabase,
-  getSupabase
+  getSupabase,
+  getAllCompanies,
+  switchUserCompany
 } from './db.js';
 import { showToast, fileToBase64 } from './utils.js';
 import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js';
@@ -411,9 +413,54 @@ export async function updateBrandHeader() {
   const settings = await getSettings();
   const nameEl = document.getElementById('brand-company-name');
   const logoContainer = document.getElementById('brand-logo-container');
+  const profile = getCurrentUserProfile();
+
   if (nameEl) {
-    nameEl.textContent = settings.companyName || 'ConstructQuote';
+    if (profile && profile.role === 'sysadmin') {
+      const companies = await getAllCompanies();
+      let selectHtml = `<select id="brand-company-select" style="
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        padding: 0.35rem 0.5rem;
+        font-size: 0.9rem;
+        font-weight: 700;
+        max-width: 100%;
+        width: 180px;
+        cursor: pointer;
+        outline: none;
+        box-sizing: border-box;
+        margin-top: 0.25rem;
+      ">`;
+      companies.forEach(company => {
+        const isSelected = company.id === profile.company_id ? 'selected' : '';
+        selectHtml += `<option value="${company.id}" ${isSelected}>${company.name}</option>`;
+      });
+      selectHtml += `</select>`;
+      nameEl.innerHTML = selectHtml;
+
+      const selectEl = document.getElementById('brand-company-select');
+      if (selectEl) {
+        selectEl.addEventListener('change', async (e) => {
+          const newCompanyId = e.target.value;
+          const companyName = e.target.options[e.target.selectedIndex].text;
+          showToast(`Switching to ${companyName}...`);
+          const success = await switchUserCompany(newCompanyId);
+          if (success) {
+            showToast(`Switched to ${companyName}!`, 'success');
+            // Hard reload to refresh all in-memory data tables, categories, quotes, and settings cleanly
+            window.location.reload();
+          } else {
+            showToast('Failed to switch company.', 'danger');
+          }
+        });
+      }
+    } else {
+      nameEl.textContent = settings.companyName || 'ConstructQuote';
+    }
   }
+
   if (logoContainer) {
     if (settings.companyLogo) {
       logoContainer.innerHTML = `<img src="${settings.companyLogo}" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">`;
