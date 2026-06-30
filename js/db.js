@@ -845,14 +845,17 @@ export async function getAllCompanies() {
   const sb = getSupabase();
   if (!sb) return [];
   const { data, error } = await sb
-    .from('companies')
-    .select('id, name')
-    .order('name');
+    .from('settings')
+    .select('company_id, company_name')
+    .order('company_name');
   if (error) {
-    console.error('Error fetching companies:', error);
+    console.error('Error fetching company settings:', error);
     return [];
   }
-  return data;
+  return data.map(s => ({
+    id: s.company_id,
+    name: s.company_name || 'Unnamed Company'
+  }));
 }
 
 export async function switchUserCompany(companyId) {
