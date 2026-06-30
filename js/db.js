@@ -90,7 +90,7 @@ export function setCurrentUserProfile(profile) {
 }
 
 // Loads session and corresponding company profile
-export async function loadUserSession() {
+export async function loadUserSession(passedSession = null) {
   // Ensure the Supabase client is ready before any request
   if (!supabase) {
     const ok = await initSupabaseClient();
@@ -102,8 +102,15 @@ export async function loadUserSession() {
   const sb = getSupabase();
   if (!sb) return null;
 
-  // Retrieve the current session
-  const { data: { session }, error: sessErr } = await sb.auth.getSession();
+  // Retrieve the current session (use passedSession if provided, to bypass any getSession stalls)
+  let session = passedSession;
+  if (!session) {
+    const { data: { session: currentSession }, error: sessErr } = await sb.auth.getSession();
+    if (!sessErr && currentSession) {
+      session = currentSession;
+    }
+  }
+
   let user = session ? session.user : null;
   if (!user) {
     // Fallback to getUser (older SDK versions)
