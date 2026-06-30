@@ -68,25 +68,30 @@ async function setupAuthListener() {
   }
 
   sb.auth.onAuthStateChange(async (event, session) => {
-    console.log('Auth State Event:', event, session);
-    
-    if (session) {
-      const profile = await loadUserSession();
-      if (profile) {
-        hideAuthModal();
-        if (!isAppInitialized) {
-          isAppInitialized = true;
-          await initAppViews();
+    try {
+      console.log('Auth State Event:', event, session);
+      
+      if (session) {
+        const profile = await loadUserSession();
+        if (profile) {
+          hideAuthModal();
+          if (!isAppInitialized) {
+            isAppInitialized = true;
+            await initAppViews();
+          } else {
+            // Refresh settings/branding on state update
+            await loadDefaultSettingsToUI();
+            updateBrandHeader();
+          }
         } else {
-          // Refresh settings/branding on state update
-          await loadDefaultSettingsToUI();
-          updateBrandHeader();
+          showToast('Failed to load user profile.', 'danger');
+          showAuthModal();
         }
       } else {
-        showToast('Failed to load user profile.', 'danger');
         showAuthModal();
       }
-    } else {
+    } catch (e) {
+      console.error('Error in auth state listener:', e);
       showAuthModal();
     }
   });
@@ -274,37 +279,62 @@ function hideAuthModal() {
 // Boots application views and listeners
 async function initAppViews() {
   // Initialize View Components
-  await initQuotesListView();
-  await initCatalogView();
-  initQuoteBuilderView();
-  await initCustomersView();
+  try {
+    await initQuotesListView();
+    await initCatalogView();
+    initQuoteBuilderView();
+    await initCustomersView();
+  } catch (e) {
+    console.error('Failed to initialize views:', e);
+  }
 
-  // Core App Navigation
-  setupAppNavigation();
-  setupThemeToggler();
-  setupSettingsHandlers();
-  setupDatabaseUtilityHandlers();
+  // Core App Navigation & Setup
+  try {
+    setupAppNavigation();
+    setupThemeToggler();
+    setupSettingsHandlers();
+    setupDatabaseUtilityHandlers();
+  } catch (e) {
+    console.error('Failed to setup navigation and handlers:', e);
+  }
 
   // Initial UI draw
-  await loadDefaultSettingsToUI();
-  updateBrandHeader();
+  try {
+    await loadDefaultSettingsToUI();
+    updateBrandHeader();
+  } catch (e) {
+    console.error('Failed to draw initial settings UI:', e);
+  }
   
   // Wire logout buttons
-  const logoutBtns = document.querySelectorAll('#auth-logout-btn, .settings-logout-btn');
-  logoutBtns.forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const sb = getSupabase();
-      if (sb) {
-        await sb.auth.signOut();
-        showToast('Logged out of cloud session.');
-        window.location.reload();
-      }
+  try {
+    const logoutBtns = document.querySelectorAll('#auth-logout-btn, .settings-logout-btn');
+    logoutBtns.forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const sb = getSupabase();
+        if (sb) {
+          await sb.auth.signOut();
+          showToast('Logged out of cloud session.');
+          window.location.reload();
+        }
+      });
     });
-  });
+  } catch (e) {
+    console.error('Failed to bind logout buttons:', e);
+  }
 
   // Load team users and MFA status panels in settings
-  await loadTeamManagementUI();
-  await loadMfaSettingsUI();
+  try {
+    await loadTeamManagementUI();
+  } catch (e) {
+    console.error('Failed to load team management:', e);
+  }
+
+  try {
+    await loadMfaSettingsUI();
+  } catch (e) {
+    console.error('Failed to load MFA settings:', e);
+  }
 }
 
 /* ==================== VIEW ROUTER ==================== */
@@ -856,12 +886,12 @@ async function loadMfaSettingsUI() {
 
   const sb = getSupabase();
   const { data: factors, error } = await sb.auth.mfa.listFactors();
-  if (error) {
+  if (error || !factors) {
     console.error('Factors list error:', error);
     return;
   }
 
-  const totpVerified = factors.totp.find(f => f.status === 'verified');
+  const totpVerified = factors.totp ? factors.totp.find(f => f.status === 'verified') : null;
   
   if (totpVerified) {
     statusSpan.textContent = 'Enabled';
