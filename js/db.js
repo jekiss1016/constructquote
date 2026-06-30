@@ -81,6 +81,47 @@ export function isSupabaseConnected() {
   return supabase !== null;
 }
 
+export async function getAccessToken() {
+  const config = await getSupabaseConfig();
+  if (!config || !config.url) return null;
+  try {
+    const projectRef = config.url.split('//')[1].split('.')[0];
+    const key = `sb-${projectRef}-auth-token`;
+    const data = localStorage.getItem(key);
+    if (data) {
+      const parsed = JSON.parse(data);
+      return parsed.access_token;
+    }
+  } catch (e) {
+    console.error('Error reading access token:', e);
+  }
+  return null;
+}
+
+export async function rawDbQuery(table, params = '') {
+  const config = await getSupabaseConfig();
+  if (!config) return null;
+  const token = await getAccessToken();
+  if (!token) return null;
+  
+  const url = `${config.url}/rest/v1/${table}?${params}`;
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'apikey': config.key,
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
+      }
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.error(`rawDbQuery error for table ${table}:`, err);
+  }
+  return null;
+}
+
 export function getCurrentUserProfile() {
   return currentUserProfile;
 }
@@ -199,15 +240,10 @@ export async function getCategories() {
   const sb = getSupabase();
   if (!sb || !currentUserProfile || !currentUserProfile.company_id) return DEFAULT_CATEGORIES;
 
-  console.log('getCategories -> Querying categories table...');
-  const { data, error } = await sb
-    .from('categories')
-    .select('name')
-    .eq('company_id', currentUserProfile.company_id)
-    .order('name');
-
-  console.log('getCategories -> Categories fetched. Error:', error);
-  if (error) return DEFAULT_CATEGORIES;
+  console.log('getCategories -> Querying categories table via rawDbQuery...');
+  const data = await rawDbQuery('categories', `company_id=eq.${currentUserProfile.company_id}&order=name.asc`);
+  console.log('getCategories -> Categories fetched. Data length:', data ? data.length : 0);
+  if (!data) return DEFAULT_CATEGORIES;
 
   const custom = data.map(c => c.name);
   const merged = [...DEFAULT_CATEGORIES];
@@ -259,15 +295,10 @@ export async function getCustomers() {
   const sb = getSupabase();
   if (!sb || !currentUserProfile || !currentUserProfile.company_id) return [];
   
-  console.log('getCustomers -> Querying customers table...');
-  const { data, error } = await sb
-    .from('customers')
-    .select('*')
-    .eq('company_id', currentUserProfile.company_id)
-    .order('name');
-    
-  console.log('getCustomers -> Customers fetched. Error:', error);
-  if (error) return [];
+  console.log('getCustomers -> Querying customers table via rawDbQuery...');
+  const data = await rawDbQuery('customers', `company_id=eq.${currentUserProfile.company_id}&order=name.asc`);
+  console.log('getCustomers -> Customers fetched. Data length:', data ? data.length : 0);
+  if (!data) return [];
   return data.map(c => ({
     id: c.id,
     name: c.name,
@@ -353,15 +384,10 @@ export async function getProducts() {
   const sb = getSupabase();
   if (!sb || !currentUserProfile || !currentUserProfile.company_id) return [];
   
-  console.log('getProducts -> Querying products table...');
-  const { data, error } = await sb
-    .from('products')
-    .select('*')
-    .eq('company_id', currentUserProfile.company_id)
-    .order('name');
-    
-  console.log('getProducts -> Products fetched. Error:', error);
-  if (error) return [];
+  console.log('getProducts -> Querying products table via rawDbQuery...');
+  const data = await rawDbQuery('products', `company_id=eq.${currentUserProfile.company_id}&order=name.asc`);
+  console.log('getProducts -> Products fetched. Data length:', data ? data.length : 0);
+  if (!data) return [];
   return data.map(p => ({
     id: p.id,
     name: p.name,
@@ -453,15 +479,10 @@ export async function getQuotes() {
   const sb = getSupabase();
   if (!sb || !currentUserProfile || !currentUserProfile.company_id) return [];
   
-  console.log('getQuotes -> Querying quotes table...');
-  const { data, error } = await sb
-    .from('quotes')
-    .select('*')
-    .eq('company_id', currentUserProfile.company_id)
-    .order('date', { ascending: false });
-    
-  console.log('getQuotes -> Quotes fetched. Error:', error);
-  if (error) return [];
+  console.log('getQuotes -> Querying quotes table via rawDbQuery...');
+  const data = await rawDbQuery('quotes', `company_id=eq.${currentUserProfile.company_id}&order=date.desc`);
+  console.log('getQuotes -> Quotes fetched. Data length:', data ? data.length : 0);
+  if (!data) return [];
   return data.map(q => ({
     id: q.id,
     jobId: q.job_id,
@@ -707,28 +728,23 @@ export async function getSettings() {
   const sb = getSupabase();
   if (!sb || !currentUserProfile || !currentUserProfile.company_id) return DEFAULT_SETTINGS;
   
-  console.log('getSettings -> Querying settings table for company ID:', currentUserProfile.company_id);
-  const { data, error } = await sb
-    .from('settings')
-    .select('*')
-    .eq('company_id', currentUserProfile.company_id)
-    .single();
-    
-  console.log('getSettings -> Settings fetched. Error:', error);
-  if (error || !data) {
-    // Return default settings without attempting to use profile fields.
+  console.log('getSettings -> Querying settings table via rawDbQuery...');
+  const data = await rawDbQuery('settings', `company_id=eq.${currentUserProfile.company_id}`);
+  console.log('getSettings -> Settings fetched. Data length:', data ? data.length : 0);
+  if (!data || data.length === 0) {
     return DEFAULT_SETTINGS;
   }
+  const row = data[0];
   
   return {
-    companyName: data.company_name,
-    companyAddress: data.company_address,
-    companyPhone: data.company_phone,
-    companyEmail: data.company_email,
-    defaultTaxRate: parseFloat(data.default_tax_rate) || 0,
-    defaultMarkupPercent: parseFloat(data.default_markup_percent) || 0,
-    companyLogo: data.company_logo,
-    theme: data.theme || 'light'
+    companyName: row.company_name,
+    companyAddress: row.company_address,
+    companyPhone: row.company_phone,
+    companyEmail: row.company_email,
+    defaultTaxRate: parseFloat(row.default_tax_rate) || 0,
+    defaultMarkupPercent: parseFloat(row.default_markup_percent) || 0,
+    companyLogo: row.company_logo,
+    theme: row.theme || 'light'
   };
 }
 
