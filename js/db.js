@@ -1,5 +1,6 @@
 // Database management using Supabase Cloud & LocalStorage fallbacks
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+import { showToast } from './utils.js';
 
 const KEYS = {
   SUPABASE_CONFIG: 'cq_supabase_config'
@@ -106,6 +107,10 @@ export async function loadUserSession() {
     .single();
     
   if (pError || !profile) {
+    if (pError) {
+      console.error('Profile fetch error:', pError);
+      showToast('Database Error: ' + pError.message + '. (Make sure you ran supabase_setup.sql in your Supabase SQL editor!)', 'danger');
+    }
     currentUserProfile = null;
     return null;
   }

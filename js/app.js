@@ -178,6 +178,20 @@ function showAuthModal() {
       if (error) showToast(error.message, 'danger');
     });
   }
+
+  // Backup session reset handler
+  const resetBtn = document.getElementById('auth-reset-btn');
+  if (resetBtn) {
+    resetBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const sb = getSupabase();
+      if (sb) {
+        showToast('Resetting session...');
+        await sb.auth.signOut();
+        window.location.reload();
+      }
+    });
+  }
 }
 
 // Processes successful auth logic, checking for TOTP challenge overrides
