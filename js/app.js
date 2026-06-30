@@ -289,10 +289,10 @@ async function initAppViews() {
   await loadDefaultSettingsToUI();
   updateBrandHeader();
   
-  // Wire logout button
-  const logoutBtn = document.getElementById('auth-logout-btn');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', async () => {
+  // Wire logout buttons
+  const logoutBtns = document.querySelectorAll('#auth-logout-btn, .settings-logout-btn');
+  logoutBtns.forEach(btn => {
+    btn.addEventListener('click', async () => {
       const sb = getSupabase();
       if (sb) {
         await sb.auth.signOut();
@@ -300,7 +300,7 @@ async function initAppViews() {
         window.location.reload();
       }
     });
-  }
+  });
 
   // Load team users and MFA status panels in settings
   await loadTeamManagementUI();
