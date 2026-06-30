@@ -16,7 +16,7 @@ import {
   getSupabase,
   getAllCompanies,
   switchUserCompany
-} from './db.js';
+} from './db.js?v=4';
 import { showToast, fileToBase64 } from './utils.js';
 import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js';
 import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js';
@@ -74,7 +74,7 @@ async function setupAuthListener() {
       console.log('Auth State Event:', event, session);
       
       if (session) {
-        const profile = await loadUserSession();
+        const profile = await loadUserSession(session);
         console.log('setupAuthListener -> Loaded profile:', profile);
         if (profile) {
           hideAuthModal();
