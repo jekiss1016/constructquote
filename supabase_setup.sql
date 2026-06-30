@@ -166,7 +166,8 @@ end;
 $$ language plpgsql security definer;
 
 -- Trigger registration
-create or replace trigger on_auth_user_created
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
@@ -193,9 +194,12 @@ $$ language sql security definer;
 
 -- Definer helper to fetch current user company_id
 create or replace function public.get_user_company_id()
-returns uuid as $$
-  select company_id from public.profiles
-  where id = auth.uid();
+returns uuid
+language sql
+security definer
+as $$
+  select company_id from public.profiles where id = auth.uid();
+$$;
 $$ language sql security definer;
 
 -- Definer helper to check write roles (sysadmin, owner, editor)
@@ -208,24 +212,20 @@ returns boolean as $$
 $$ language sql security definer;
 
 -- --- Policies for public.profiles ---
-create policy "Users can view profiles in their company" on public.profiles
-  for select using (company_id = public.get_user_company_id() or public.is_sysadmin());
+-- Recursive policy removed (use direct id-based policy instead)
 
-create policy "Owners/sysadmins can manage profiles" on public.profiles
-  for all using (
-    (company_id = public.get_user_company_id() and (select role from public.profiles where id = auth.uid()) in ('owner')) 
-    or public.is_sysadmin()
-  );
+-- NEW: allow a user to read their own profile by id (needed before a company is assigned)
+create policy "User can view own profile" on public.profiles
+  for select using (id = auth.uid());
 
+-- NEW: allow a user to insert their own profile on first sign‑up (company_id will be set after company creation)
+create policy "User can insert own profile" on public.profiles
+  for insert with check (id = auth.uid());
+
+-- The previous incomplete policy caused infinite recursion. It is removed.
+drop policy if exists "Owners/sysadmins can manage profiles" on public.profiles;
 -- --- Policies for public.company_invitations ---
-create policy "Users can view invites in their company" on public.company_invitations
-  for select using (company_id = public.get_user_company_id() or public.is_sysadmin());
-
-create policy "Owners/sysadmins can send invites" on public.company_invitations
-  for all using (
-    (company_id = public.get_user_company_id() and (select role from public.profiles where id = auth.uid()) in ('owner')) 
-    or public.is_sysadmin()
-  );
+-- Removed conflicting profile policies. The minimal policies are defined in supabase/rules.sql.
 
 -- --- Policies for public.categories ---
 create policy "Select categories based on company" on public.categories
