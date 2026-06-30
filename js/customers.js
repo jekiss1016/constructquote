@@ -1,5 +1,5 @@
 // Customer management controller
-import { getCustomers, saveCustomer, deleteCustomer, getQuotes, getSupabase, getCurrentUserProfile } from './db.js?v=4';
+import { getCustomers, saveCustomer, deleteCustomer, getQuotes, getSupabase, getCurrentUserProfile } from './db.js';
 import { formatCurrency, formatDateTime, showToast } from './utils.js';
 import { navigateToView, viewQuoteDetails } from './app.js';
 
