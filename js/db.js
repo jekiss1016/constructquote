@@ -66,7 +66,13 @@ export async function setSupabaseConfig(url, key) {
 export async function initSupabaseClient() {
   const config = await getSupabaseConfig();
   if (config && config.url && config.key) {
-    supabase = createClient(config.url, config.key);
+    supabase = createClient(config.url, config.key, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: true,
+        detectSessionInUrl: true
+      }
+    });
     return true;
   }
   supabase = null;

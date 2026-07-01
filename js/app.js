@@ -30,6 +30,12 @@ let activeFactorId = null;
 
 let isAppInitialized = false;
 
+// Session Expiry Timers
+let sessionWarningTimeout = null;
+let sessionExpiryTimeout = null;
+let sessionCountdownInterval = null;
+let currentSessionExpiryTime = 0;
+
 document.addEventListener('DOMContentLoaded', async () => {
   // 1. Check for Supabase configuration keys
   await initSupabaseClient();
@@ -38,6 +44,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
+  setupSessionWarningListeners();
   await setupAuthListener();
 });
 
@@ -76,6 +83,7 @@ async function setupAuthListener() {
       console.log('Auth State Event:', event, session);
       
       if (session) {
+        startSessionMonitoring(session);
         const profile = await loadUserSession(session);
         console.log('setupAuthListener -> Loaded profile:', profile);
         if (profile) {
@@ -93,6 +101,7 @@ async function setupAuthListener() {
           showAuthModal();
         }
       } else {
+        clearSessionMonitoring();
         showAuthModal();
       }
     } catch (e) {
@@ -100,6 +109,115 @@ async function setupAuthListener() {
       showAuthModal();
     }
   });
+}
+
+// Monitor session expiry for JWT warning/countdown
+function startSessionMonitoring(session) {
+  clearSessionMonitoring();
+  
+  if (!session || !session.expires_at) return;
+  
+  currentSessionExpiryTime = session.expires_at * 1000;
+  const timeLeftMs = currentSessionExpiryTime - Date.now();
+  
+  if (timeLeftMs <= 0) {
+    forceLogout();
+    return;
+  }
+  
+  // Warn user 60 seconds before expiration
+  const warningDelayMs = timeLeftMs - 60000;
+  
+  if (warningDelayMs > 0) {
+    sessionWarningTimeout = setTimeout(showSessionWarningModal, warningDelayMs);
+  } else {
+    // Session is already in the last 60 seconds, show warning immediately
+    showSessionWarningModal();
+  }
+  
+  // Set automatic hard logout when it expires
+  sessionExpiryTimeout = setTimeout(forceLogout, timeLeftMs);
+}
+
+function clearSessionMonitoring() {
+  if (sessionWarningTimeout) clearTimeout(sessionWarningTimeout);
+  if (sessionExpiryTimeout) clearTimeout(sessionExpiryTimeout);
+  if (sessionCountdownInterval) clearInterval(sessionCountdownInterval);
+  
+  sessionWarningTimeout = null;
+  sessionExpiryTimeout = null;
+  sessionCountdownInterval = null;
+  
+  // Hide warning modal if open
+  const warningModal = document.getElementById('session-timeout-modal');
+  if (warningModal) warningModal.classList.remove('active');
+}
+
+function showSessionWarningModal() {
+  const warningModal = document.getElementById('session-timeout-modal');
+  if (!warningModal) return;
+  
+  warningModal.classList.add('active');
+  
+  const updateCountdown = () => {
+    const secLeft = Math.ceil((currentSessionExpiryTime - Date.now()) / 1000);
+    const countdownEl = document.getElementById('session-countdown');
+    if (countdownEl) countdownEl.textContent = Math.max(0, secLeft);
+    
+    if (secLeft <= 0) {
+      clearInterval(sessionCountdownInterval);
+    }
+  };
+  
+  updateCountdown();
+  if (sessionCountdownInterval) clearInterval(sessionCountdownInterval);
+  sessionCountdownInterval = setInterval(updateCountdown, 1000);
+}
+
+async function forceLogout() {
+  clearSessionMonitoring();
+  const sb = getSupabase();
+  if (sb) {
+    await sb.auth.signOut();
+  }
+  showToast('Your session has expired. Please log in again.', 'warning');
+}
+
+// Setup event listeners for the session warning modal
+function setupSessionWarningListeners() {
+  const logoutBtn = document.getElementById('session-logout-btn');
+  const extendBtn = document.getElementById('session-extend-btn');
+  const warningModal = document.getElementById('session-timeout-modal');
+  
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', async () => {
+      clearSessionMonitoring();
+      const sb = getSupabase();
+      if (sb) {
+        await sb.auth.signOut();
+      }
+    });
+  }
+  
+  if (extendBtn) {
+    extendBtn.addEventListener('click', async () => {
+      const sb = getSupabase();
+      if (sb) {
+        showToast('Extending session...');
+        const { data, error } = await sb.auth.refreshSession();
+        if (error) {
+          showToast('Failed to extend session: ' + error.message, 'danger');
+          await sb.auth.signOut();
+        } else {
+          showToast('Session extended successfully.', 'success');
+          if (warningModal) warningModal.classList.remove('active');
+          if (data && data.session) {
+            startSessionMonitoring(data.session);
+          }
+        }
+      }
+    });
+  }
 }
 
 // Display Login/Signup card overlay
