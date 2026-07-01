@@ -122,6 +122,51 @@ export async function rawDbQuery(table, params = '') {
   return null;
 }
 
+export async function rawDbWrite(table, method, body, params = '') {
+  const config = await getSupabaseConfig();
+  if (!config) return { data: null, error: { message: 'Supabase configuration missing' } };
+  const token = await getAccessToken();
+  if (!token) return { data: null, error: { message: 'Authentication session not found' } };
+
+  let url = `${config.url}/rest/v1/${table}`;
+  if (params) {
+    url += `?${params}`;
+  }
+  
+  const headers = {
+    'apikey': config.key,
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  };
+  
+  if (method === 'POST' || method === 'PATCH') {
+    headers['Prefer'] = 'return=representation';
+  }
+
+  try {
+    const res = await fetch(url, {
+      method: method,
+      headers: headers,
+      body: body ? JSON.stringify(body) : undefined
+    });
+    
+    if (res.status === 204) {
+      return { data: null, error: null };
+    }
+    
+    const data = await res.json();
+    if (res.ok) {
+      return { data, error: null };
+    } else {
+      return { data: null, error: { message: data.message || data.details || `HTTP error ${res.status}` } };
+    }
+  } catch (err) {
+    console.error(`rawDbWrite error for table ${table}:`, err);
+    return { data: null, error: err };
+  }
+}
+
+
 export function getCurrentUserProfile() {
   return currentUserProfile;
 }
@@ -256,34 +301,31 @@ export async function getCategories() {
 }
 
 export async function saveCategory(categoryName) {
-  const sb = getSupabase();
-  if (!sb || !currentUserProfile) return { success: false, error: 'Not authenticated' };
+  if (!currentUserProfile) return { success: false, error: 'Not authenticated' };
   const trimmed = categoryName.trim();
   if (!trimmed) return { success: false, error: 'Category name cannot be empty.' };
   
-  const { error } = await sb
-    .from('categories')
-    .insert({
-      company_id: currentUserProfile.company_id,
-      name: trimmed
-    });
+  const { error } = await rawDbWrite('categories', 'POST', {
+    company_id: currentUserProfile.company_id,
+    name: trimmed
+  });
     
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
 
 export async function deleteCategory(categoryName) {
-  const sb = getSupabase();
-  if (!sb || !currentUserProfile) return { success: false, error: 'Not authenticated' };
+  if (!currentUserProfile) return { success: false, error: 'Not authenticated' };
   if (categoryName.toLowerCase() === 'labor') {
     return { success: false, error: 'Cannot delete the core "Labor" category.' };
   }
   
-  const { error } = await sb
-    .from('categories')
-    .delete()
-    .eq('company_id', currentUserProfile.company_id)
-    .eq('name', categoryName);
+  const { error } = await rawDbWrite(
+    'categories', 
+    'DELETE', 
+    null, 
+    `company_id=eq.${currentUserProfile.company_id}&name=eq.${encodeURIComponent(categoryName)}`
+  );
     
   if (error) return { success: false, error: error.message };
   return { success: true };
@@ -317,8 +359,7 @@ export async function getCustomerById(id) {
 }
 
 export async function saveCustomer(customer) {
-  const sb = getSupabase();
-  if (!sb || !currentUserProfile) return { success: false, error: 'Not authenticated' };
+  if (!currentUserProfile) return { success: false, error: 'Not authenticated' };
   
   const mapped = {
     company_id: currentUserProfile.company_id,
@@ -332,48 +373,42 @@ export async function saveCustomer(customer) {
   };
   
   if (customer.id) {
-    const { error } = await sb
-      .from('customers')
-      .update(mapped)
-      .eq('id', customer.id)
-      .eq('company_id', currentUserProfile.company_id);
+    const { data, error } = await rawDbWrite(
+      'customers', 
+      'PATCH', 
+      mapped, 
+      `id=eq.${customer.id}&company_id=eq.${currentUserProfile.company_id}`
+    );
     if (error) return { success: false, error: error.message };
-    return { success: true, customer };
+    const returnedObj = data && data.length > 0 ? data[0] : customer;
+    return { success: true, customer: returnedObj };
   } else {
-    const { data, error } = await sb
-      .from('customers')
-      .insert(mapped)
-      .select()
-      .single();
+    const { data, error } = await rawDbWrite('customers', 'POST', mapped);
     if (error) return { success: false, error: error.message };
-    return { success: true, customer: data };
+    const returnedObj = data && data.length > 0 ? data[0] : null;
+    return { success: true, customer: returnedObj };
   }
 }
 
 export async function isCustomerLinked(customerId) {
-  const sb = getSupabase();
-  if (!sb) return false;
-  const { data, error } = await sb
-    .from('quotes')
-    .select('id')
-    .eq('customer_id', customerId)
-    .limit(1);
+  if (!currentUserProfile) return false;
+  const data = await rawDbQuery('quotes', `company_id=eq.${currentUserProfile.company_id}&customer_id=eq.${customerId}&limit=1`);
   return data && data.length > 0;
 }
 
 export async function deleteCustomer(id) {
-  const sb = getSupabase();
-  if (!sb || !currentUserProfile) return { success: false, error: 'Not authenticated' };
+  if (!currentUserProfile) return { success: false, error: 'Not authenticated' };
   
   if (await isCustomerLinked(id)) {
     return { success: false, error: 'This customer has historical quotes linked and cannot be deleted. Please set their status to Inactive instead.' };
   }
   
-  const { error } = await sb
-    .from('customers')
-    .delete()
-    .eq('id', id)
-    .eq('company_id', currentUserProfile.company_id);
+  const { error } = await rawDbWrite(
+    'customers', 
+    'DELETE', 
+    null, 
+    `id=eq.${id}&company_id=eq.${currentUserProfile.company_id}`
+  );
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
@@ -406,11 +441,9 @@ export async function getProductById(id) {
 }
 
 export async function saveProduct(product) {
-  console.log('db: saveProduct starting...', product);
-  const sb = getSupabase();
-  console.log('db: saveProduct -> Supabase connected:', !!sb, 'currentUserProfile:', currentUserProfile);
-  if (!sb || !currentUserProfile) {
-    console.error('db: saveProduct -> Authentication failure. sb:', !!sb, 'profile:', currentUserProfile);
+  console.log('db: saveProduct starting (native)...', product);
+  if (!currentUserProfile) {
+    console.error('db: saveProduct -> Authentication failure. profile:', currentUserProfile);
     return { success: false, error: 'Not authenticated' };
   }
   
@@ -428,48 +461,40 @@ export async function saveProduct(product) {
   
   if (product.id) {
     console.log('db: saveProduct -> Performing UPDATE on products for ID:', product.id);
-    const { error } = await sb
-      .from('products')
-      .update(mapped)
-      .eq('id', product.id)
-      .eq('company_id', currentUserProfile.company_id);
+    const { data, error } = await rawDbWrite(
+      'products', 
+      'PATCH', 
+      mapped, 
+      `id=eq.${product.id}&company_id=eq.${currentUserProfile.company_id}`
+    );
     if (error) {
       console.error('db: saveProduct UPDATE error:', error);
       return { success: false, error: error.message };
     }
     console.log('db: saveProduct UPDATE success');
-    return { success: true, product };
+    const returnedObj = data && data.length > 0 ? data[0] : product;
+    return { success: true, product: returnedObj };
   } else {
     console.log('db: saveProduct -> Performing INSERT on products');
-    const { data, error } = await sb
-      .from('products')
-      .insert(mapped)
-      .select()
-      .single();
+    const { data, error } = await rawDbWrite('products', 'POST', mapped);
     if (error) {
       console.error('db: saveProduct INSERT error:', error);
       return { success: false, error: error.message };
     }
     console.log('db: saveProduct INSERT success. Data:', data);
-    return { success: true, product: data };
+    const returnedObj = data && data.length > 0 ? data[0] : null;
+    return { success: true, product: returnedObj };
   }
 }
 
 export async function isProductUsed(productId) {
-  const sb = getSupabase();
-  if (!sb || !currentUserProfile) return false;
-  const { data, error } = await sb
-    .from('quotes')
-    .select('id')
-    .eq('company_id', currentUserProfile.company_id)
-    .filter('sections', 'cs', `[{"items": [{"productId": "${productId}"}]}]`)
-    .limit(1);
+  if (!currentUserProfile) return false;
+  const data = await rawDbQuery('quotes', `company_id=eq.${currentUserProfile.company_id}&sections=cs.[{"items": [{"productId": "${productId}"}]}]&limit=1`);
   return data && data.length > 0;
 }
 
 export async function deleteProduct(id) {
-  const sb = getSupabase();
-  if (!sb || !currentUserProfile) return { success: false, error: 'Not authenticated' };
+  if (!currentUserProfile) return { success: false, error: 'Not authenticated' };
   
   if (await isProductUsed(id)) {
     const product = await getProductById(id);
@@ -480,11 +505,12 @@ export async function deleteProduct(id) {
     }
   }
   
-  const { error } = await sb
-    .from('products')
-    .delete()
-    .eq('id', id)
-    .eq('company_id', currentUserProfile.company_id);
+  const { error } = await rawDbWrite(
+    'products', 
+    'DELETE', 
+    null, 
+    `id=eq.${id}&company_id=eq.${currentUserProfile.company_id}`
+  );
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
@@ -566,24 +592,17 @@ export async function getQuoteById(id) {
 }
 
 export async function checkJobIdUnique(jobId, ignoreQuoteId = null) {
-  const sb = getSupabase();
-  if (!sb || !currentUserProfile) return true;
-  let query = sb
-    .from('quotes')
-    .select('id')
-    .eq('company_id', currentUserProfile.company_id)
-    .ilike('job_id', jobId.trim())
-    .eq('is_legacy', false);
+  if (!currentUserProfile) return true;
+  let params = `company_id=eq.${currentUserProfile.company_id}&job_id=ilike.${encodeURIComponent(jobId.trim())}&is_legacy=eq.false`;
   if (ignoreQuoteId) {
-    query = query.neq('id', ignoreQuoteId);
+    params += `&id=neq.${ignoreQuoteId}`;
   }
-  const { data } = await query;
+  const data = await rawDbQuery('quotes', params);
   return !data || data.length === 0;
 }
 
 export async function saveQuote(quote) {
-  const sb = getSupabase();
-  if (!sb || !currentUserProfile) return { success: false, error: 'Not authenticated' };
+  if (!currentUserProfile) return { success: false, error: 'Not authenticated' };
   
   if (!(await checkJobIdUnique(quote.jobId, quote.id))) {
     return { success: false, error: `Job ID "${quote.jobId}" is already assigned to another active quote. Job IDs must be unique.` };
@@ -644,7 +663,7 @@ export async function saveQuote(quote) {
         legacyCopy.status = 'Legacy';
         legacyCopy.parentQuoteId = existing.parentQuoteId || existing.id;
         
-        const { error: legError } = await sb.from('quotes').insert({
+        const { error: legError } = await rawDbWrite('quotes', 'POST', {
           company_id: currentUserProfile.company_id,
           job_id: legacyCopy.jobId,
           customer_id: legacyCopy.customerId,
@@ -675,37 +694,29 @@ export async function saveQuote(quote) {
       }
     }
     
-    const { error } = await sb
-      .from('quotes')
-      .update(mapped)
-      .eq('id', quote.id)
-      .eq('company_id', currentUserProfile.company_id);
+    const { data, error } = await rawDbWrite(
+      'quotes', 
+      'PATCH', 
+      mapped, 
+      `id=eq.${quote.id}&company_id=eq.${currentUserProfile.company_id}`
+    );
     if (error) return { success: false, error: error.message };
-    return { success: true, quote };
+    const returnedObj = data && data.length > 0 ? data[0] : quote;
+    return { success: true, quote: returnedObj };
   } else {
-    const { data: maxQ } = await sb
-      .from('quotes')
-      .select('quote_number')
-      .eq('company_id', currentUserProfile.company_id)
-      .order('quote_number', { ascending: false })
-      .limit(1);
-      
+    const maxQ = await rawDbQuery('quotes', `company_id=eq.${currentUserProfile.company_id}&order=quote_number.desc&limit=1`);
     const nextNum = maxQ && maxQ.length > 0 ? (parseInt(maxQ[0].quote_number) || 1000) + 1 : 1001;
     mapped.quote_number = nextNum;
     
-    const { data, error } = await sb
-      .from('quotes')
-      .insert(mapped)
-      .select()
-      .single();
+    const { data, error } = await rawDbWrite('quotes', 'POST', mapped);
     if (error) return { success: false, error: error.message };
-    return { success: true, quote: data };
+    const returnedObj = data && data.length > 0 ? data[0] : null;
+    return { success: true, quote: returnedObj };
   }
 }
 
 export async function saveQuotesRaw(quotesList) {
-  const sb = getSupabase();
-  if (!sb || !currentUserProfile) return;
+  if (!currentUserProfile) return;
   const mappedList = quotesList.map(q => ({
     id: q.id,
     company_id: currentUserProfile.company_id,
@@ -731,7 +742,21 @@ export async function saveQuotesRaw(quotesList) {
     documents: q.documents,
     receipts: q.receipts
   }));
-  await sb.from('quotes').upsert(mappedList);
+  const config = await getSupabaseConfig();
+  if (!config) return;
+  const token = await getAccessToken();
+  if (!token) return;
+  
+  await fetch(`${config.url}/rest/v1/quotes`, {
+    method: 'POST',
+    headers: {
+      'apikey': config.key,
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates'
+    },
+    body: JSON.stringify(mappedList)
+  });
 }
 
 export async function deleteQuote(id) {
@@ -765,8 +790,7 @@ export async function getSettings() {
 }
 
 export async function saveSettings(settingsObj) {
-  const sb = getSupabase();
-  if (!sb || !currentUserProfile) return { success: false, error: 'Not authenticated' };
+  if (!currentUserProfile) return { success: false, error: 'Not authenticated' };
   
   const mapped = {};
   if (settingsObj.companyName !== undefined) mapped.company_name = settingsObj.companyName;
@@ -780,14 +804,32 @@ export async function saveSettings(settingsObj) {
   
   mapped.company_id = currentUserProfile.company_id;
   
-  const { error } = await sb
-    .from('settings')
-    .upsert(mapped);
+  const config = await getSupabaseConfig();
+  if (!config) return { success: false, error: 'Supabase configuration missing.' };
+  const token = await getAccessToken();
+  if (!token) return { success: false, error: 'Authentication session not found.' };
+
+  try {
+    const res = await fetch(`${config.url}/rest/v1/settings`, {
+      method: 'POST',
+      headers: {
+        'apikey': config.key,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify(mapped)
+    });
     
-  if (error) {
-    return { success: false, error: error.message };
+    if (res.ok) {
+      return { success: true };
+    } else {
+      const data = await res.json();
+      return { success: false, error: data.message || `HTTP error ${res.status}` };
+    }
+  } catch (err) {
+    return { success: false, error: err.message };
   }
-  return { success: true };
 }
 
 /* ==================== DATABASE BACKUP & RESTORE ==================== */

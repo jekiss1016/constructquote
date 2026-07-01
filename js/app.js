@@ -16,7 +16,8 @@ import {
   getSupabase,
   getAllCompanies,
   switchUserCompany,
-  uploadFileToStorage
+  uploadFileToStorage,
+  rawDbWrite
 } from './db.js?v=5';
 import { showToast, fileToBase64 } from './utils.js';
 import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js';
@@ -891,7 +892,12 @@ async function loadTeamManagementUI() {
       if (confirm('Are you sure you want to remove this member? they will lose access to company data.')) {
         showToast('Removing user...');
         // Set member company_id to null or delete profile depending on model
-        const { error } = await sb.from('profiles').update({ company_id: null, role: 'viewer' }).eq('id', memberId);
+        const { error } = await rawDbWrite(
+          'profiles', 
+          'PATCH', 
+          { company_id: null, role: 'viewer' }, 
+          `id=eq.${memberId}`
+        );
         if (error) {
           showToast(error.message, 'danger');
         } else {
@@ -905,7 +911,12 @@ async function loadTeamManagementUI() {
       const email = cancelBtn.getAttribute('data-email');
       if (confirm(`Cancel pending invitation to "${email}"?`)) {
         showToast('Canceling invite...');
-        const { error } = await sb.from('company_invitations').delete().eq('company_id', profile.company_id).eq('email', email);
+        const { error } = await rawDbWrite(
+          'company_invitations', 
+          'DELETE', 
+          null, 
+          `company_id=eq.${profile.company_id}&email=eq.${encodeURIComponent(email)}`
+        );
         if (error) {
           showToast(error.message, 'danger');
         } else {
@@ -929,7 +940,7 @@ async function loadTeamManagementUI() {
       if (!email) return;
 
       showToast('Sending invitation...');
-      const { error } = await sb.from('company_invitations').insert({
+      const { error } = await rawDbWrite('company_invitations', 'POST', {
         company_id: profile.company_id,
         email,
         role
