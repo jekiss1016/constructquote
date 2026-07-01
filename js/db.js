@@ -121,6 +121,9 @@ export async function rawDbQuery(table, params = '') {
     });
     if (res.ok) {
       return await res.json();
+    } else {
+      const errText = await res.text();
+      console.error(`rawDbQuery failed for ${url}: status=${res.status}, body=${errText}`);
     }
   } catch (err) {
     console.error(`rawDbQuery error for table ${table}:`, err);
@@ -164,6 +167,7 @@ export async function rawDbWrite(table, method, body, params = '') {
     if (res.ok) {
       return { data, error: null };
     } else {
+      console.error(`rawDbWrite failed for table ${table}:`, data);
       return { data: null, error: { message: data.message || data.details || `HTTP error ${res.status}` } };
     }
   } catch (err) {
