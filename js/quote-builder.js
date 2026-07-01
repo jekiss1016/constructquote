@@ -405,10 +405,10 @@ function calculateTotals() {
   const taxVal = (subtotal + markupVal) * (currentQuote.taxRate / 100);
   const grandTotal = subtotal + markupVal + taxVal;
 
-  document.getElementById('summary-subtotal').textContent = formatCurrency(subtotal);
-  document.getElementById('summary-markup-val').textContent = formatCurrency(markupVal);
-  document.getElementById('summary-tax-val').textContent = formatCurrency(taxVal);
-  document.getElementById('summary-total').textContent = formatCurrency(grandTotal);
+  document.getElementById('builder-summary-subtotal').textContent = formatCurrency(subtotal);
+  document.getElementById('builder-summary-markup-val').textContent = formatCurrency(markupVal);
+  document.getElementById('builder-summary-tax-val').textContent = formatCurrency(taxVal);
+  document.getElementById('builder-summary-total').textContent = formatCurrency(grandTotal);
 }
 
 /* ==================== EVENT BINDINGS ==================== */
