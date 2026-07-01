@@ -583,41 +583,8 @@ export async function getQuotes() {
 }
 
 export async function getQuoteById(id) {
-  const sb = getSupabase();
-  if (!sb || !currentUserProfile) return null;
-  const { data, error } = await sb
-    .from('quotes')
-    .select('*')
-    .eq('id', id)
-    .eq('company_id', currentUserProfile.company_id)
-    .single();
-  if (error || !data) return null;
-  return {
-    id: data.id,
-    jobId: data.job_id,
-    quoteNumber: String(data.quote_number),
-    customerId: data.customer_id,
-    customerName: data.customer_name,
-    projectAddress: data.project_address,
-    customerPhone: data.customer_phone,
-    customerEmail: data.customer_email,
-    date: data.date,
-    expirationDate: data.expiration_date,
-    markupPercent: parseFloat(data.markup_percent) || 0,
-    taxRate: parseFloat(data.tax_rate) || 0,
-    notes: data.notes,
-    status: data.status || 'Pending',
-    version: data.version || 1,
-    parentQuoteId: data.parent_quote_id,
-    isLegacy: data.is_legacy === true,
-    createdDateTime: data.created_date_time,
-    dateWonLost: data.date_won_lost,
-    dateCompleted: data.date_completed,
-    sections: data.sections || [],
-    photos: data.photos || [],
-    documents: data.documents || [],
-    receipts: data.receipts || []
-  };
+  const quotes = await getQuotes();
+  return quotes.find(q => q.id === id) || null;
 }
 
 export async function checkJobIdUnique(jobId, ignoreQuoteId = null) {
