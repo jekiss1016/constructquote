@@ -212,8 +212,12 @@ function setupCatalogListeners() {
   // Submit Product Form (Create / Edit)
   if (form) {
     form.addEventListener('submit', async (e) => {
+      console.log('Catalog View: product-form submit event triggered');
       e.preventDefault();
-      if (isViewer) return;
+      if (isViewer) {
+        console.log('Catalog View: submit aborted because user is viewer');
+        return;
+      }
 
       const product = {
         id: document.getElementById('product-form-id').value || null,

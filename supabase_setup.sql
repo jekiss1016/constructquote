@@ -200,7 +200,6 @@ security definer
 as $$
   select company_id from public.profiles where id = auth.uid();
 $$;
-$$ language sql security definer;
 
 -- Definer helper to check write roles (sysadmin, owner, editor)
 create or replace function public.has_write_access()
@@ -214,53 +213,138 @@ $$ language sql security definer;
 -- --- Policies for public.profiles ---
 -- Recursive policy removed (use direct id-based policy instead)
 
--- NEW: allow a user to read their own profile by id (needed before a company is assigned)
+-- Allow a user to read their own profile by id (needed before a company is assigned)
+drop policy if exists "User can view own profile" on public.profiles;
 create policy "User can view own profile" on public.profiles
   for select using (id = auth.uid());
 
--- NEW: allow a user to insert their own profile on first sign‑up (company_id will be set after company creation)
+-- Allow a user to insert their own profile on first sign‑up (company_id will be set after company creation)
+drop policy if exists "User can insert own profile" on public.profiles;
 create policy "User can insert own profile" on public.profiles
   for insert with check (id = auth.uid());
 
+-- Allow a user to update their own profile (necessary for changing company_id or roles)
+drop policy if exists "User can update own profile" on public.profiles;
+create policy "User can update own profile" on public.profiles
+  for update using (id = auth.uid()) with check (id = auth.uid());
+
+-- Allow a user to delete their own profile
+drop policy if exists "User can delete own profile" on public.profiles;
+create policy "User can delete own profile" on public.profiles
+  for delete using (id = auth.uid());
+
 -- The previous incomplete policy caused infinite recursion. It is removed.
 drop policy if exists "Owners/sysadmins can manage profiles" on public.profiles;
+
 -- --- Policies for public.company_invitations ---
--- Removed conflicting profile policies. The minimal policies are defined in supabase/rules.sql.
+alter table public.company_invitations enable row level security;
+
+drop policy if exists "Select company invitations based on company" on public.company_invitations;
+create policy "Select company invitations based on company" on public.company_invitations
+  for select using (company_id = public.get_user_company_id() or public.is_sysadmin());
+
+drop policy if exists "Insert company invitations based on company write access" on public.company_invitations;
+create policy "Insert company invitations based on company write access" on public.company_invitations
+  for insert with check ((company_id = public.get_user_company_id() and public.has_write_access()) or public.is_sysadmin());
+
+drop policy if exists "Delete company invitations based on company write access" on public.company_invitations;
+create policy "Delete company invitations based on company write access" on public.company_invitations
+  for delete using ((company_id = public.get_user_company_id() and public.has_write_access()) or public.is_sysadmin());
 
 -- --- Policies for public.categories ---
+drop policy if exists "Select categories based on company" on public.categories;
 create policy "Select categories based on company" on public.categories
   for select using (company_id = public.get_user_company_id() or public.is_sysadmin());
 
-create policy "Manage categories based on company write access" on public.categories
-  for all using ((company_id = public.get_user_company_id() and public.has_write_access()) or public.is_sysadmin());
+drop policy if exists "Manage categories based on company write access" on public.categories;
+drop policy if exists "Insert categories based on company write access" on public.categories;
+create policy "Insert categories based on company write access" on public.categories
+  for insert with check ((company_id = public.get_user_company_id() and public.has_write_access()) or public.is_sysadmin());
+
+drop policy if exists "Update categories based on company write access" on public.categories;
+create policy "Update categories based on company write access" on public.categories
+  for update using ((company_id = public.get_user_company_id() and public.has_write_access()) or public.is_sysadmin())
+  with check ((company_id = public.get_user_company_id() and public.has_write_access()) or public.is_sysadmin());
+
+drop policy if exists "Delete categories based on company write access" on public.categories;
+create policy "Delete categories based on company write access" on public.categories
+  for delete using ((company_id = public.get_user_company_id() and public.has_write_access()) or public.is_sysadmin());
 
 -- --- Policies for public.products ---
+drop policy if exists "Select products based on company" on public.products;
 create policy "Select products based on company" on public.products
   for select using (company_id = public.get_user_company_id() or public.is_sysadmin());
 
-create policy "Manage products based on company write access" on public.products
-  for all using ((company_id = public.get_user_company_id() and public.has_write_access()) or public.is_sysadmin());
+drop policy if exists "Manage products based on company write access" on public.products;
+drop policy if exists "Insert products based on company write access" on public.products;
+create policy "Insert products based on company write access" on public.products
+  for insert with check ((company_id = public.get_user_company_id() and public.has_write_access()) or public.is_sysadmin());
+
+drop policy if exists "Update products based on company write access" on public.products;
+create policy "Update products based on company write access" on public.products
+  for update using ((company_id = public.get_user_company_id() and public.has_write_access()) or public.is_sysadmin())
+  with check ((company_id = public.get_user_company_id() and public.has_write_access()) or public.is_sysadmin());
+
+drop policy if exists "Delete products based on company write access" on public.products;
+create policy "Delete products based on company write access" on public.products
+  for delete using ((company_id = public.get_user_company_id() and public.has_write_access()) or public.is_sysadmin());
 
 -- --- Policies for public.customers ---
+drop policy if exists "Select customers based on company" on public.customers;
 create policy "Select customers based on company" on public.customers
   for select using (company_id = public.get_user_company_id() or public.is_sysadmin());
 
-create policy "Manage customers based on company write access" on public.customers
-  for all using ((company_id = public.get_user_company_id() and public.has_write_access()) or public.is_sysadmin());
+drop policy if exists "Manage customers based on company write access" on public.customers;
+drop policy if exists "Insert customers based on company write access" on public.customers;
+create policy "Insert customers based on company write access" on public.customers
+  for insert with check ((company_id = public.get_user_company_id() and public.has_write_access()) or public.is_sysadmin());
+
+drop policy if exists "Update customers based on company write access" on public.customers;
+create policy "Update customers based on company write access" on public.customers
+  for update using ((company_id = public.get_user_company_id() and public.has_write_access()) or public.is_sysadmin())
+  with check ((company_id = public.get_user_company_id() and public.has_write_access()) or public.is_sysadmin());
+
+drop policy if exists "Delete customers based on company write access" on public.customers;
+create policy "Delete customers based on company write access" on public.customers
+  for delete using ((company_id = public.get_user_company_id() and public.has_write_access()) or public.is_sysadmin());
 
 -- --- Policies for public.quotes ---
+drop policy if exists "Select quotes based on company" on public.quotes;
 create policy "Select quotes based on company" on public.quotes
   for select using (company_id = public.get_user_company_id() or public.is_sysadmin());
 
-create policy "Manage quotes based on company write access" on public.quotes
-  for all using ((company_id = public.get_user_company_id() and public.has_write_access()) or public.is_sysadmin());
+drop policy if exists "Manage quotes based on company write access" on public.quotes;
+drop policy if exists "Insert quotes based on company write access" on public.quotes;
+create policy "Insert quotes based on company write access" on public.quotes
+  for insert with check ((company_id = public.get_user_company_id() and public.has_write_access()) or public.is_sysadmin());
+
+drop policy if exists "Update quotes based on company write access" on public.quotes;
+create policy "Update quotes based on company write access" on public.quotes
+  for update using ((company_id = public.get_user_company_id() and public.has_write_access()) or public.is_sysadmin())
+  with check ((company_id = public.get_user_company_id() and public.has_write_access()) or public.is_sysadmin());
+
+drop policy if exists "Delete quotes based on company write access" on public.quotes;
+create policy "Delete quotes based on company write access" on public.quotes
+  for delete using ((company_id = public.get_user_company_id() and public.has_write_access()) or public.is_sysadmin());
 
 -- --- Policies for public.settings ---
+drop policy if exists "Select settings based on company" on public.settings;
 create policy "Select settings based on company" on public.settings
   for select using (company_id = public.get_user_company_id() or public.is_sysadmin());
 
-create policy "Manage settings based on company write access" on public.settings
-  for all using ((company_id = public.get_user_company_id() and public.has_write_access()) or public.is_sysadmin());
+drop policy if exists "Manage settings based on company write access" on public.settings;
+drop policy if exists "Insert settings based on company write access" on public.settings;
+create policy "Insert settings based on company write access" on public.settings
+  for insert with check ((company_id = public.get_user_company_id() and public.has_write_access()) or public.is_sysadmin());
+
+drop policy if exists "Update settings based on company write access" on public.settings;
+create policy "Update settings based on company write access" on public.settings
+  for update using ((company_id = public.get_user_company_id() and public.has_write_access()) or public.is_sysadmin())
+  with check ((company_id = public.get_user_company_id() and public.has_write_access()) or public.is_sysadmin());
+
+drop policy if exists "Delete settings based on company write access" on public.settings;
+create policy "Delete settings based on company write access" on public.settings
+  for delete using ((company_id = public.get_user_company_id() and public.has_write_access()) or public.is_sysadmin());
 
 -- ==================== 5. STORAGE BUCKETS SETUP ====================
 
@@ -273,19 +357,35 @@ insert into storage.buckets (id, name, public) values
 on conflict (id) do nothing;
 
 -- Storage Policies for Public Reading
+drop policy if exists "Public Read Access on PDF Contracts" on storage.objects;
 create policy "Public Read Access on PDF Contracts" on storage.objects
   for select using (bucket_id = 'pdf-contracts');
+drop policy if exists "Public Read Access on Job Receipts" on storage.objects;
 create policy "Public Read Access on Job Receipts" on storage.objects
   for select using (bucket_id = 'job-receipts');
+drop policy if exists "Public Read Access on Company Logos" on storage.objects;
 create policy "Public Read Access on Company Logos" on storage.objects
   for select using (bucket_id = 'company-logos');
+drop policy if exists "Public Read Access on Project Photos" on storage.objects;
 create policy "Public Read Access on Project Photos" on storage.objects
   for select using (bucket_id = 'project-photos');
 
--- Storage Policies for Upload/Delete (User matches folder company ID prefix)
+-- Storage Policies for Upload/Delete (User matches folder company ID prefix, or is sysadmin)
+drop policy if exists "Write Access on company buckets" on storage.objects;
 create policy "Write Access on company buckets" on storage.objects
   for all using (
     auth.role() = 'authenticated' 
     and (bucket_id in ('pdf-contracts', 'job-receipts', 'company-logos', 'project-photos'))
-    and (split_part(name, '/', 1) = (select company_id::text from public.profiles where id = auth.uid()))
+    and (
+      split_part(name, '/', 1) = public.get_user_company_id()::text
+      or public.is_sysadmin()
+    )
+  )
+  with check (
+    auth.role() = 'authenticated' 
+    and (bucket_id in ('pdf-contracts', 'job-receipts', 'company-logos', 'project-photos'))
+    and (
+      split_part(name, '/', 1) = public.get_user_company_id()::text
+      or public.is_sysadmin()
+    )
   );

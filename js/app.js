@@ -660,22 +660,29 @@ function setupSettingsHandlers() {
   // Settings Company Logo upload to Supabase Storage
   if (logoUpload) {
     logoUpload.addEventListener('change', async (e) => {
+      console.log('App: settings-logo-upload change event triggered. Files count:', e.target.files.length);
       if (e.target.files.length > 0 && !isViewer) {
         const file = e.target.files[0];
         const sb = getSupabase();
+        console.log('App: settings-logo-upload -> file:', file.name, 'sb connected:', !!sb, 'profile:', profile);
         if (sb && profile) {
           showToast('Uploading brand logo...');
           const filePath = `${profile.company_id}/settings_logo_${Math.random().toString(36).substr(2, 9)}_${file.name}`;
+          console.log('App: settings-logo-upload -> Uploading to path:', filePath);
           const { error } = await sb.storage.from('company-logos').upload(filePath, file);
           
           if (error) {
+            console.error('App: settings-logo-upload -> Storage upload error:', error);
             showToast('Logo upload failed: ' + error.message, 'danger');
             return;
           }
           
+          console.log('App: settings-logo-upload -> Storage upload success. Fetching public URL...');
           const { data: { publicUrl } } = sb.storage.from('company-logos').getPublicUrl(filePath);
+          console.log('App: settings-logo-upload -> Public URL:', publicUrl, 'Saving settings...');
           const res = await saveSettings({ companyLogo: publicUrl });
           if (res.success) {
+            console.log('App: settings-logo-upload -> Settings updated successfully');
             const logoPreview = document.getElementById('settings-logo-preview');
             logoPreview.innerHTML = `<img src="${publicUrl}" alt="Company Logo">`;
             if (logoClear) logoClear.style.display = 'flex';
@@ -683,9 +690,14 @@ function setupSettingsHandlers() {
             showToast('Default company logo saved.');
             await updateBrandHeader();
           } else {
+            console.error('App: settings-logo-upload -> Save settings error:', res.error);
             showToast(res.error, 'danger');
           }
+        } else {
+          console.error('App: settings-logo-upload aborted: sb or profile is missing. sb:', !!sb, 'profile:', profile);
         }
+      } else {
+        console.log('App: settings-logo-upload aborted: no files or user is viewer. isViewer:', isViewer);
       }
     });
   }

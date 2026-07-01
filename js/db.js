@@ -406,8 +406,13 @@ export async function getProductById(id) {
 }
 
 export async function saveProduct(product) {
+  console.log('db: saveProduct starting...', product);
   const sb = getSupabase();
-  if (!sb || !currentUserProfile) return { success: false, error: 'Not authenticated' };
+  console.log('db: saveProduct -> Supabase connected:', !!sb, 'currentUserProfile:', currentUserProfile);
+  if (!sb || !currentUserProfile) {
+    console.error('db: saveProduct -> Authentication failure. sb:', !!sb, 'profile:', currentUserProfile);
+    return { success: false, error: 'Not authenticated' };
+  }
   
   const mapped = {
     company_id: currentUserProfile.company_id,
@@ -419,22 +424,33 @@ export async function saveProduct(product) {
     status: product.status || 'Active',
     description: product.description
   };
+  console.log('db: saveProduct -> Mapped database payload:', mapped);
   
   if (product.id) {
+    console.log('db: saveProduct -> Performing UPDATE on products for ID:', product.id);
     const { error } = await sb
       .from('products')
       .update(mapped)
       .eq('id', product.id)
       .eq('company_id', currentUserProfile.company_id);
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      console.error('db: saveProduct UPDATE error:', error);
+      return { success: false, error: error.message };
+    }
+    console.log('db: saveProduct UPDATE success');
     return { success: true, product };
   } else {
+    console.log('db: saveProduct -> Performing INSERT on products');
     const { data, error } = await sb
       .from('products')
       .insert(mapped)
       .select()
       .single();
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      console.error('db: saveProduct INSERT error:', error);
+      return { success: false, error: error.message };
+    }
+    console.log('db: saveProduct INSERT success. Data:', data);
     return { success: true, product: data };
   }
 }
