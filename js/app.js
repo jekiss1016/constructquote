@@ -408,6 +408,11 @@ function hideAuthModal() {
 
 // Boots application views and listeners
 async function initAppViews() {
+  if (isAppInitialized) {
+    console.log('initAppViews -> Already initialized. Skipping duplicate initialization.');
+    return;
+  }
+  isAppInitialized = true;
   console.log('initAppViews -> Starting components initialization...');
   // Initialize View Components
   try {

@@ -132,3 +132,25 @@ export function compressImage(base64Str, maxWidth = 600, maxHeight = 600) {
     img.onerror = (err) => reject(err);
   });
 }
+
+// Formats a phone number string to (xxx) xxx-xxxx mask
+export function formatPhoneNumber(value) {
+  if (!value) return '';
+  const clean = value.replace(/\D/g, '').slice(0, 10);
+  const match = clean.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
+  if (!match) return value;
+  let part1 = match[1];
+  let part2 = match[2];
+  let part3 = match[3];
+  
+  if (clean.length === 0) {
+    return '';
+  }
+  if (clean.length <= 3) {
+    return part1;
+  }
+  if (clean.length <= 6) {
+    return `(${part1}) ${part2}`;
+  }
+  return `(${part1}) ${part2}-${part3}`;
+}

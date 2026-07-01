@@ -1,6 +1,6 @@
 // Customer management controller
 import { getCustomers, saveCustomer, deleteCustomer, getQuotes, getSupabase, getCurrentUserProfile, uploadFileToStorage, getCustomerById } from './db.js?v=5';
-import { formatCurrency, formatDateTime, showToast } from './utils.js';
+import { formatCurrency, formatDateTime, showToast, formatPhoneNumber } from './utils.js';
 import { navigateToView, viewQuoteDetails } from './app.js?v=5';
 
 let activeSearchQuery = '';
@@ -206,7 +206,7 @@ function addContactRow(contact = { name: '', role: '', email: '', phone: '' }) {
     <input type="text" class="contact-row-input contact-name" value="${escapeHtml(contact.name)}" placeholder="Contact Name" required>
     <input type="text" class="contact-row-input contact-role" value="${escapeHtml(contact.role)}" placeholder="Role (e.g. Architect)">
     <input type="email" class="contact-row-input contact-email" value="${escapeHtml(contact.email)}" placeholder="Email">
-    <input type="tel" class="contact-row-input contact-phone" value="${escapeHtml(contact.phone)}" placeholder="Phone">
+    <input type="tel" class="contact-row-input contact-phone" value="${escapeHtml(formatPhoneNumber(contact.phone))}" placeholder="Phone">
     <button type="button" class="item-delete-btn contact-row-remove" title="Remove Contact" style="padding: 0.25rem;">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="16" height="16">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -214,6 +214,18 @@ function addContactRow(contact = { name: '', role: '', email: '', phone: '' }) {
     </button>
   `;
   container.appendChild(row);
+
+  const phoneInput = row.querySelector('.contact-phone');
+  if (phoneInput) {
+    applyPhoneMask(phoneInput);
+  }
+}
+
+function applyPhoneMask(inputEl) {
+  if (!inputEl) return;
+  inputEl.addEventListener('input', (e) => {
+    e.target.value = formatPhoneNumber(e.target.value);
+  });
 }
 
 // Set up UI Event Listeners for Customers Tab
@@ -235,6 +247,11 @@ function setupCustomerListeners() {
 
   const profile = getCurrentUserProfile();
   const isViewer = profile && profile.role === 'viewer';
+
+  const phoneInput = document.getElementById('customer-form-phone');
+  if (phoneInput) {
+    applyPhoneMask(phoneInput);
+  }
 
   // Toggle View limitations
   if (isViewer) {
@@ -463,7 +480,7 @@ function setupCustomerListeners() {
           document.getElementById('customer-form-id').value = c.id;
           document.getElementById('customer-form-name').value = c.name;
           document.getElementById('customer-form-email').value = c.email || '';
-          document.getElementById('customer-form-phone').value = c.phone || '';
+          document.getElementById('customer-form-phone').value = formatPhoneNumber(c.phone || '');
           document.getElementById('customer-form-address').value = c.address;
           
           contactsList.innerHTML = '';
