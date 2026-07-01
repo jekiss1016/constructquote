@@ -662,6 +662,7 @@ export async function saveQuote(quote) {
         const { error: legError } = await rawDbWrite('quotes', 'POST', {
           company_id: currentUserProfile.company_id,
           job_id: legacyCopy.jobId,
+          quote_number: parseInt(legacyCopy.quoteNumber),
           customer_id: legacyCopy.customerId,
           customer_name: legacyCopy.customerName,
           project_address: legacyCopy.projectAddress,
