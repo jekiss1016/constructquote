@@ -120,9 +120,9 @@ export async function renderQuotesTable() {
   const quotes = (await getQuotes()).filter(q => !q.isLegacy);
 
   let filtered = quotes.filter(q => 
-    q.customerName.toLowerCase().includes(activeSearchQuery.toLowerCase()) ||
-    q.jobId.toLowerCase().includes(activeSearchQuery.toLowerCase()) ||
-    q.projectAddress.toLowerCase().includes(activeSearchQuery.toLowerCase())
+    (q.customerName || '').toLowerCase().includes(activeSearchQuery.toLowerCase()) ||
+    (q.jobId || '').toLowerCase().includes(activeSearchQuery.toLowerCase()) ||
+    (q.projectAddress || '').toLowerCase().includes(activeSearchQuery.toLowerCase())
   );
 
   if (activeStatusFilter === 'pending') {
