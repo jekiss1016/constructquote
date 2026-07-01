@@ -575,6 +575,10 @@ export async function getQuotes() {
     createdDateTime: q.created_date_time,
     dateWonLost: q.date_won_lost,
     dateCompleted: q.date_completed,
+    companyLogo: q.company_logo || '',
+    printShowDetails: q.print_show_details !== false,
+    printShowDetailPricing: q.print_show_detail_pricing !== false,
+    printShowQuantities: q.print_show_quantities !== false,
     sections: q.sections || [],
     photos: q.photos || [],
     documents: q.documents || [],
@@ -633,6 +637,10 @@ export async function saveQuote(quote) {
     is_legacy: quote.isLegacy === true,
     date_won_lost: quote.dateWonLost,
     date_completed: quote.dateCompleted,
+    company_logo: quote.companyLogo || '',
+    print_show_details: quote.printShowDetails !== false,
+    print_show_detail_pricing: quote.printShowDetailPricing !== false,
+    print_show_quantities: quote.printShowQuantities !== false,
     sections: quote.sections || [],
     photos: quote.photos || [],
     documents: quote.documents || [],
@@ -651,7 +659,11 @@ export async function saveQuote(quote) {
         existing.customerEmail !== quote.customerEmail ||
         existing.markupPercent !== quote.markupPercent ||
         existing.taxRate !== quote.taxRate ||
-        existing.expirationDate !== quote.expirationDate;
+        existing.expirationDate !== quote.expirationDate ||
+        existing.companyLogo !== quote.companyLogo ||
+        existing.printShowDetails !== quote.printShowDetails ||
+        existing.printShowDetailPricing !== quote.printShowDetailPricing ||
+        existing.printShowQuantities !== quote.printShowQuantities;
         
       if (contentChanged && !existing.isLegacy) {
         const legacyCopy = { ...existing };
@@ -679,6 +691,10 @@ export async function saveQuote(quote) {
           is_legacy: true,
           date_won_lost: legacyCopy.dateWonLost,
           date_completed: legacyCopy.dateCompleted,
+          company_logo: legacyCopy.companyLogo || '',
+          print_show_details: legacyCopy.printShowDetails !== false,
+          print_show_detail_pricing: legacyCopy.printShowDetailPricing !== false,
+          print_show_quantities: legacyCopy.printShowQuantities !== false,
           sections: legacyCopy.sections,
           photos: legacyCopy.photos,
           documents: legacyCopy.documents,
@@ -734,7 +750,11 @@ export async function saveQuotesRaw(quotesList) {
     is_legacy: q.isLegacy === true,
     date_won_lost: q.dateWonLost,
     date_completed: q.dateCompleted,
-    sections: q.sections,
+    company_logo: q.companyLogo || '',
+    print_show_details: q.printShowDetails !== false,
+    print_show_detail_pricing: q.printShowDetailPricing !== false,
+    print_show_quantities: q.printShowQuantities !== false,
+    sections: q.sections || [],
     photos: q.photos,
     documents: q.documents,
     receipts: q.receipts
