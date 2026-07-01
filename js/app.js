@@ -89,7 +89,6 @@ async function setupAuthListener() {
         if (profile) {
           hideAuthModal();
           if (!isAppInitialized) {
-            isAppInitialized = true;
             await initAppViews();
           } else {
             // Refresh settings/branding on state update
