@@ -157,11 +157,18 @@ function showAuthModal() {
         }
       } else {
         showToast('Provisioning tenant environment...');
-        const { data, error } = await sb.auth.signUp({ email, password });
+        const redirectUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '') + '/verified.html';
+        const { data, error } = await sb.auth.signUp({ 
+          email, 
+          password,
+          options: {
+            emailRedirectTo: redirectUrl
+          }
+        });
         if (error) {
           showToast(error.message, 'danger');
         } else {
-          showToast('Signup successful! Check email or sign in.', 'success');
+          showToast('Signup successful! Check your email to verify and activate your account.', 'success');
           setTab('login');
         }
       }
