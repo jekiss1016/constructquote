@@ -206,7 +206,7 @@ function addContactRow(contact = { name: '', role: '', email: '', phone: '' }) {
     <input type="text" class="contact-row-input contact-name" value="${escapeHtml(contact.name)}" placeholder="Contact Name" required>
     <input type="text" class="contact-row-input contact-role" value="${escapeHtml(contact.role)}" placeholder="Role (e.g. Architect)">
     <input type="email" class="contact-row-input contact-email" value="${escapeHtml(contact.email)}" placeholder="Email">
-    <input type="tel" class="contact-row-input contact-phone" value="${escapeHtml(formatPhoneNumber(contact.phone))}" placeholder="Phone">
+    <input type="tel" class="contact-row-input contact-phone" value="${escapeHtml(formatPhoneNumber(contact.phone))}" placeholder="Phone" maxlength="14">
     <button type="button" class="item-delete-btn contact-row-remove" title="Remove Contact" style="padding: 0.25rem;">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="16" height="16">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -412,7 +412,7 @@ function setupCustomerListeners() {
               name,
               role: row.querySelector('.contact-role').value.trim(),
               email: row.querySelector('.contact-email').value.trim(),
-              phone: row.querySelector('.contact-phone').value.trim()
+              phone: formatPhoneNumber(row.querySelector('.contact-phone').value.trim())
             });
           }
         });
@@ -421,8 +421,12 @@ function setupCustomerListeners() {
           id: document.getElementById('customer-form-id').value || null,
           name: document.getElementById('customer-form-name').value.trim(),
           email: document.getElementById('customer-form-email').value.trim(),
-          phone: document.getElementById('customer-form-phone').value.trim(),
-          address: document.getElementById('customer-form-address').value.trim(),
+          phone: formatPhoneNumber(document.getElementById('customer-form-phone').value.trim()),
+          address1: document.getElementById('customer-form-address1').value.trim(),
+          address2: document.getElementById('customer-form-address2').value.trim(),
+          city: document.getElementById('customer-form-city').value.trim(),
+          state: document.getElementById('customer-form-state').value.trim().toUpperCase(),
+          zip: document.getElementById('customer-form-zip').value.trim(),
           contacts,
           documents: activeCustomerDocs
         };
@@ -481,7 +485,11 @@ function setupCustomerListeners() {
           document.getElementById('customer-form-name').value = c.name;
           document.getElementById('customer-form-email').value = c.email || '';
           document.getElementById('customer-form-phone').value = formatPhoneNumber(c.phone || '');
-          document.getElementById('customer-form-address').value = c.address;
+          document.getElementById('customer-form-address1').value = c.address1 || '';
+          document.getElementById('customer-form-address2').value = c.address2 || '';
+          document.getElementById('customer-form-city').value = c.city || '';
+          document.getElementById('customer-form-state').value = c.state || '';
+          document.getElementById('customer-form-zip').value = c.zip || '';
           
           contactsList.innerHTML = '';
           if (c.contacts && c.contacts.length > 0) {

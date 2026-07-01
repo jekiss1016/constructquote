@@ -347,16 +347,31 @@ export async function getCustomers() {
   const data = await rawDbQuery('customers', `company_id=eq.${currentUserProfile.company_id}&order=name.asc`);
   console.log('getCustomers -> Customers fetched. Data length:', data ? data.length : 0);
   if (!data) return [];
-  return data.map(c => ({
-    id: c.id,
-    name: c.name,
-    email: c.email,
-    phone: c.phone,
-    address: c.address,
-    status: c.status || 'Active',
-    contacts: c.contacts || [],
-    documents: c.documents || []
-  }));
+  return data.map(c => {
+    let combinedAddress = c.address1 || '';
+    if (c.address2) {
+      combinedAddress += '\n' + c.address2;
+    }
+    if (c.city || c.state || c.zip) {
+      combinedAddress += '\n' + (c.city || '') + ', ' + (c.state || '') + ' ' + (c.zip || '');
+    }
+    
+    return {
+      id: c.id,
+      name: c.name,
+      email: c.email,
+      phone: c.phone,
+      address1: c.address1 || '',
+      address2: c.address2 || '',
+      city: c.city || '',
+      state: c.state || '',
+      zip: c.zip || '',
+      address: combinedAddress.trim(),
+      status: c.status || 'Active',
+      contacts: c.contacts || [],
+      documents: c.documents || []
+    };
+  });
 }
 
 export async function getCustomerById(id) {
@@ -372,7 +387,11 @@ export async function saveCustomer(customer) {
     name: customer.name,
     email: customer.email,
     phone: customer.phone,
-    address: customer.address,
+    address1: customer.address1 || '',
+    address2: customer.address2 || '',
+    city: customer.city || '',
+    state: customer.state || '',
+    zip: customer.zip || '',
     status: customer.status || 'Active',
     contacts: customer.contacts || [],
     documents: customer.documents || []
