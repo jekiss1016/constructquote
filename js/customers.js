@@ -253,6 +253,13 @@ function setupCustomerListeners() {
     applyPhoneMask(phoneInput);
   }
 
+  const zipInput = document.getElementById('customer-form-zip');
+  if (zipInput) {
+    zipInput.addEventListener('input', (e) => {
+      e.target.value = e.target.value.replace(/\D/g, '').slice(0, 5);
+    });
+  }
+
   // Toggle View limitations
   if (isViewer) {
     if (addBtn) addBtn.style.display = 'none';
