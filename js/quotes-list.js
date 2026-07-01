@@ -9,9 +9,11 @@ let selectedQuoteId = null;
 let detailPhotoBase64 = '';
 
 export async function initQuotesListView() {
+  console.log('initQuotesListView -> Starting...');
   await renderDashboardStats();
   await renderDashboardExpirations();
   await renderQuotesTable();
+  console.log('initQuotesListView -> Rendering finished, calling setupListListeners...');
   setupListListeners();
 }
 
@@ -934,9 +936,11 @@ async function handleReactivateSubmit() {
 
 // Setup Event listeners for dashboard and quote list view
 function setupListListeners() {
+  console.log('setupListListeners -> Starting...');
   const searchInput = document.getElementById('quotes-search-input');
   const tabs = document.getElementById('quotes-status-tabs');
   const tableBody = document.getElementById('quotes-table-body');
+  console.log('setupListListeners -> searchInput:', !!searchInput, 'tabs:', !!tabs, 'tableBody:', !!tableBody);
   const expTbody = document.getElementById('dashboard-expiration-list');
   const detailActions = document.getElementById('detail-actions-bar');
   const updatePricesBtn = document.getElementById('detail-update-prices-btn');
@@ -970,9 +974,12 @@ function setupListListeners() {
   }
 
   if (tableBody) {
+    console.log('setupListListeners -> Binding click event listener to tableBody');
     tableBody.addEventListener('click', async (e) => {
+      console.log('tableBody click event detected. Target:', e.target);
       const viewBtn = e.target.closest('.view-quote-btn');
       const editBtn = e.target.closest('.edit-quote-btn');
+      console.log('tableBody click -> viewBtn:', viewBtn, 'editBtn:', editBtn);
       const wonBtn = e.target.closest('.mark-won-btn');
       const lostBtn = e.target.closest('.mark-lost-btn');
       const inactiveBtn = e.target.closest('.mark-inactive-btn');
