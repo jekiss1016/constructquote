@@ -959,3 +959,45 @@ export async function switchUserCompany(companyId) {
   }
   return false;
 }
+
+/* ==================== NATIVE FILE UPLOADER ==================== */
+export async function uploadFileToStorage(bucket, filePath, file) {
+  console.log('db: uploadFileToStorage starting...', { bucket, filePath, fileName: file.name, fileSize: file.size });
+  const config = await getSupabaseConfig();
+  if (!config) {
+    console.error('db: uploadFileToStorage -> Config missing');
+    return { data: null, error: { message: 'Supabase configuration missing.' } };
+  }
+  const token = await getAccessToken();
+  if (!token) {
+    console.error('db: uploadFileToStorage -> Access token missing');
+    return { data: null, error: { message: 'Authentication session not found.' } };
+  }
+
+  const url = `${config.url}/storage/v1/object/${bucket}/${filePath}`;
+  console.log('db: uploadFileToStorage -> Fetching REST URL:', url);
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'apikey': config.key,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': file.type || 'application/octet-stream'
+      },
+      body: file
+    });
+    
+    console.log('db: uploadFileToStorage -> Response status:', res.status);
+    const data = await res.json();
+    console.log('db: uploadFileToStorage -> Response payload:', data);
+    
+    if (res.ok) {
+      return { data, error: null };
+    } else {
+      return { data: null, error: { message: data.message || `HTTP error ${res.status}` } };
+    }
+  } catch (err) {
+    console.error('db: uploadFileToStorage -> Catch error:', err);
+    return { data: null, error: { message: err.message } };
+  }
+}

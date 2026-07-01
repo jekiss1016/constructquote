@@ -15,7 +15,8 @@ import {
   migrateLocalStorageToSupabase,
   getSupabase,
   getAllCompanies,
-  switchUserCompany
+  switchUserCompany,
+  uploadFileToStorage
 } from './db.js?v=5';
 import { showToast, fileToBase64 } from './utils.js';
 import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js';
@@ -669,7 +670,7 @@ function setupSettingsHandlers() {
           showToast('Uploading brand logo...');
           const filePath = `${profile.company_id}/settings_logo_${Math.random().toString(36).substr(2, 9)}_${file.name}`;
           console.log('App: settings-logo-upload -> Uploading to path:', filePath);
-          const { error } = await sb.storage.from('company-logos').upload(filePath, file);
+          const { error } = await uploadFileToStorage('company-logos', filePath, file);
           
           if (error) {
             console.error('App: settings-logo-upload -> Storage upload error:', error);

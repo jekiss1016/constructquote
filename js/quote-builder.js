@@ -1,5 +1,5 @@
 // Quote Builder view controller
-import { getProducts, getSettings, saveQuote, checkJobIdUnique, saveSettings, getCustomers, getSupabase, getCurrentUserProfile } from './db.js?v=5';
+import { getProducts, getSettings, saveQuote, checkJobIdUnique, saveSettings, getCustomers, getSupabase, getCurrentUserProfile, uploadFileToStorage } from './db.js?v=5';
 import { formatCurrency, showToast, fileToBase64, generateJobIdSuggestion, compressImage } from './utils.js';
 import { navigateToView } from './app.js?v=5';
 import { renderQuoteDetails } from './quotes-list.js';
@@ -753,7 +753,7 @@ function setupBuilderListeners() {
         if (sb && profile) {
           showToast('Uploading company logo...');
           const filePath = `${profile.company_id}/logo_${Math.random().toString(36).substr(2, 9)}_${file.name}`;
-          const { error } = await sb.storage.from('company-logos').upload(filePath, file);
+          const { error } = await uploadFileToStorage('company-logos', filePath, file);
           
           if (error) {
             showToast('Upload failed: ' + error.message, 'danger');
@@ -799,7 +799,7 @@ function setupBuilderListeners() {
         if (sb && profile) {
           showToast('Uploading project gallery photo...');
           const filePath = `${profile.company_id}/builder_${Math.random().toString(36).substr(2, 9)}_${file.name}`;
-          const { error } = await sb.storage.from('project-photos').upload(filePath, file);
+          const { error } = await uploadFileToStorage('project-photos', filePath, file);
           
           if (error) {
             showToast('Upload failed: ' + error.message, 'danger');

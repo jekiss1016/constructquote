@@ -1,5 +1,5 @@
 // Customer management controller
-import { getCustomers, saveCustomer, deleteCustomer, getQuotes, getSupabase, getCurrentUserProfile } from './db.js?v=5';
+import { getCustomers, saveCustomer, deleteCustomer, getQuotes, getSupabase, getCurrentUserProfile, uploadFileToStorage } from './db.js?v=5';
 import { formatCurrency, formatDateTime, showToast } from './utils.js';
 import { navigateToView, viewQuoteDetails } from './app.js?v=5';
 
@@ -275,9 +275,7 @@ function setupCustomerListeners() {
         showToast('Uploading contract document...');
         const filePath = `${profile.company_id}/${Math.random().toString(36).substr(2, 9)}_${file.name}`;
         
-        const { error } = await sb.storage
-          .from('pdf-contracts')
-          .upload(filePath, file);
+        const { error } = await uploadFileToStorage('pdf-contracts', filePath, file);
 
         if (error) {
           showToast('Upload failed: ' + error.message, 'danger');

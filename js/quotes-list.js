@@ -1,5 +1,5 @@
 // Quotes List & Dashboard management controller
-import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase } from './db.js?v=5';
+import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage } from './db.js?v=5';
 import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage } from './utils.js';
 import { navigateToView, editQuote, duplicateQuoteAsTemplate } from './app.js?v=5';
 
@@ -1140,7 +1140,7 @@ function setupListListeners() {
         if (sb && profile && selectedQuoteId) {
           showToast('Uploading project gallery photo...');
           const filePath = `${profile.company_id}/quotes/${selectedQuoteId}/gallery_${Math.random().toString(36).substr(2, 9)}_${file.name}`;
-          const { error } = await sb.storage.from('project-photos').upload(filePath, file);
+          const { error } = await uploadFileToStorage('project-photos', filePath, file);
           
           if (error) {
             showToast('Upload failed: ' + error.message, 'danger');
@@ -1241,7 +1241,7 @@ function setupListListeners() {
         if (sb && profile && selectedQuoteId) {
           showToast('Uploading PDF document...');
           const filePath = `${profile.company_id}/quotes/${selectedQuoteId}/doc_${Math.random().toString(36).substr(2, 9)}_${file.name}`;
-          const { error } = await sb.storage.from('pdf-contracts').upload(filePath, file);
+          const { error } = await uploadFileToStorage('pdf-contracts', filePath, file);
           
           if (error) {
             showToast('Upload failed: ' + error.message, 'danger');
@@ -1307,7 +1307,7 @@ function setupListListeners() {
         if (sb && profile && selectedQuoteId) {
           showToast('Uploading receipt photo...');
           const filePath = `${profile.company_id}/quotes/${selectedQuoteId}/receipt_${Math.random().toString(36).substr(2, 9)}_${file.name}`;
-          const { error } = await sb.storage.from('job-receipts').upload(filePath, file);
+          const { error } = await uploadFileToStorage('job-receipts', filePath, file);
           
           if (error) {
             showToast('Upload failed: ' + error.message, 'danger');
