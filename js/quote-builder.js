@@ -354,7 +354,7 @@ export async function renderBuilderSections() {
             </button>
           </div>
           <div style="font-weight: 700; font-size: 0.85rem; color: var(--text-secondary);">
-            Section Subtotal: <span style="color: var(--primary); font-size: 0.95rem;">${formatCurrency(calculateSectionSum(section))}</span>
+            Section Subtotal: <span class="section-subtotal-value" style="color: var(--primary); font-size: 0.95rem;">${formatCurrency(calculateSectionSum(section))}</span>
           </div>
         </div>
       </div>
@@ -574,7 +574,10 @@ function setupBuilderListeners() {
         row.querySelector('td:nth-last-child(2)').textContent = formatCurrency(itemTotal);
         
         // Update section subtotal and grand totals
-        card.querySelector('.section-product-select').closest('div').querySelector('span').textContent = formatCurrency(calculateSectionSum(section));
+        const subtotalEl = card.querySelector('.section-subtotal-value');
+        if (subtotalEl) {
+          subtotalEl.textContent = formatCurrency(calculateSectionSum(section));
+        }
         calculateTotals();
       }
     });
