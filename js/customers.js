@@ -1,5 +1,5 @@
 // Customer management controller
-import { getCustomers, saveCustomer, deleteCustomer, getQuotes, getSupabase, getCurrentUserProfile, uploadFileToStorage } from './db.js?v=5';
+import { getCustomers, saveCustomer, deleteCustomer, getQuotes, getSupabase, getCurrentUserProfile, uploadFileToStorage, getCustomerById } from './db.js?v=5';
 import { formatCurrency, formatDateTime, showToast } from './utils.js';
 import { navigateToView, viewQuoteDetails } from './app.js?v=5';
 
@@ -379,40 +379,56 @@ function setupCustomerListeners() {
       e.preventDefault();
       if (isViewer) return;
 
-      const contactRows = contactsList.querySelectorAll('.contact-entry-row');
-      const contacts = [];
-      contactRows.forEach(row => {
-        const name = row.querySelector('.contact-name').value.trim();
-        if (name) {
-          contacts.push({
-            name,
-            role: row.querySelector('.contact-role').value.trim(),
-            email: row.querySelector('.contact-email').value.trim(),
-            phone: row.querySelector('.contact-phone').value.trim()
-          });
-        }
-      });
+      const submitBtn = document.getElementById('customer-modal-submit-btn');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving...';
+      }
 
-      const customer = {
-        id: document.getElementById('customer-form-id').value || null,
-        name: document.getElementById('customer-form-name').value.trim(),
-        email: document.getElementById('customer-form-email').value.trim(),
-        phone: document.getElementById('customer-form-phone').value.trim(),
-        address: document.getElementById('customer-form-address').value.trim(),
-        contacts,
-        documents: activeCustomerDocs
-      };
+      try {
+        const contactRows = contactsList.querySelectorAll('.contact-entry-row');
+        const contacts = [];
+        contactRows.forEach(row => {
+          const name = row.querySelector('.contact-name').value.trim();
+          if (name) {
+            contacts.push({
+              name,
+              role: row.querySelector('.contact-role').value.trim(),
+              email: row.querySelector('.contact-email').value.trim(),
+              phone: row.querySelector('.contact-phone').value.trim()
+            });
+          }
+        });
 
-      const res = await saveCustomer(customer);
-      if (res.success) {
-        showToast(customer.id ? 'Customer profile updated.' : 'Customer profile created.');
-        if (inlineSaveCallback) {
-          inlineSaveCallback(res.customer);
+        const customer = {
+          id: document.getElementById('customer-form-id').value || null,
+          name: document.getElementById('customer-form-name').value.trim(),
+          email: document.getElementById('customer-form-email').value.trim(),
+          phone: document.getElementById('customer-form-phone').value.trim(),
+          address: document.getElementById('customer-form-address').value.trim(),
+          contacts,
+          documents: activeCustomerDocs
+        };
+
+        const res = await saveCustomer(customer);
+        if (res.success) {
+          showToast(customer.id ? 'Customer profile updated.' : 'Customer profile created.');
+          if (inlineSaveCallback) {
+            inlineSaveCallback(res.customer);
+          }
+          closeModal();
+          await renderCustomersTable();
+        } else {
+          showToast(res.error, 'danger');
         }
-        closeModal();
-        await renderCustomersTable();
-      } else {
-        showToast(res.error, 'danger');
+      } catch (err) {
+        console.error('Error saving customer:', err);
+        showToast('Error saving customer profile.', 'danger');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Save Customer';
+        }
       }
     });
   }
