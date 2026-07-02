@@ -45,6 +45,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   setupSessionWarningListeners();
+  setupForgotPasswordListeners();
+  setupRecoveryFormListener();
   await setupAuthListener();
 });
 
@@ -81,6 +83,13 @@ async function setupAuthListener() {
   sb.auth.onAuthStateChange(async (event, session) => {
     try {
       console.log('Auth State Event:', event, session);
+      
+      if (event === 'PASSWORD_RECOVERY') {
+        const recoveryModal = document.getElementById('recovery-modal');
+        if (recoveryModal) recoveryModal.classList.add('active');
+        hideAuthModal();
+        return;
+      }
       
       if (session) {
         startSessionMonitoring(session);
@@ -219,10 +228,115 @@ function setupSessionWarningListeners() {
   }
 }
 
+// Setup event listeners for Forgot Password request flow
+function setupForgotPasswordListeners() {
+  const backBtn = document.getElementById('auth-forgot-back-btn');
+  const forgotForm = document.getElementById('auth-forgot-form');
+
+  if (backBtn) {
+    backBtn.addEventListener('click', () => {
+      document.getElementById('auth-forgot-container').style.display = 'none';
+      document.getElementById('auth-main-container').style.display = 'block';
+    });
+  }
+
+  if (forgotForm) {
+    forgotForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('auth-forgot-email').value.trim();
+      const submitBtn = document.getElementById('auth-forgot-submit-btn');
+
+      if (!email) return;
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Sending...';
+
+      try {
+        const sb = getSupabase();
+        if (!sb) throw new Error('Supabase client not initialized');
+
+        const { error } = await sb.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin + window.location.pathname
+        });
+
+        if (error) {
+          showToast(error.message, 'danger');
+        } else {
+          showToast('Password reset link sent! Please check your email.');
+          // Toggle back to login
+          document.getElementById('auth-forgot-container').style.display = 'none';
+          document.getElementById('auth-main-container').style.display = 'block';
+        }
+      } catch (err) {
+        console.error('Forgot password error:', err);
+        showToast('An error occurred. Please try again.', 'danger');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Send Reset Link';
+      }
+    });
+  }
+}
+
+// Setup event listeners for the Password Recovery Form
+function setupRecoveryFormListener() {
+  const recoveryForm = document.getElementById('recovery-form');
+  if (recoveryForm) {
+    recoveryForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const newPassword = document.getElementById('recovery-new-password').value;
+      const confirmPassword = document.getElementById('recovery-confirm-password').value;
+
+      if (!newPassword || newPassword.length < 6) {
+        showToast('Password must be at least 6 characters long.', 'danger');
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        showToast('Passwords do not match.', 'danger');
+        return;
+      }
+
+      const submitBtn = document.getElementById('recovery-submit-btn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Resetting...';
+
+      try {
+        const sb = getSupabase();
+        if (!sb) throw new Error('Supabase client not initialized');
+
+        const { error } = await sb.auth.updateUser({ password: newPassword });
+        if (error) {
+          showToast(error.message, 'danger');
+        } else {
+          showToast('Password reset successfully! Logging you in...');
+          const recoveryModal = document.getElementById('recovery-modal');
+          if (recoveryModal) recoveryModal.classList.remove('active');
+          
+          if (!isAppInitialized) {
+            await initAppViews();
+          }
+        }
+      } catch (err) {
+        console.error('Password recovery error:', err);
+        showToast('An error occurred during password reset.', 'danger');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Reset Password';
+      }
+    });
+  }
+}
+
 // Display Login/Signup card overlay
 function showAuthModal() {
   const modal = document.getElementById('auth-modal');
   if (modal) modal.classList.add('active');
+
+  const authMainCont = document.getElementById('auth-main-container');
+  const authForgotCont = document.getElementById('auth-forgot-container');
+  if (authMainCont) authMainCont.style.display = 'block';
+  if (authForgotCont) authForgotCont.style.display = 'none';
 
   const tabLogin = document.getElementById('auth-tab-login');
   const tabSignup = document.getElementById('auth-tab-signup');
@@ -254,6 +368,16 @@ function showAuthModal() {
     // Remove clone listener if already bound
     const newForm = form.cloneNode(true);
     form.parentNode.replaceChild(newForm, form);
+
+    // Bind Forgot Password Link inside the new form!
+    const forgotLink = newForm.querySelector('#auth-forgot-password-link');
+    if (forgotLink) {
+      forgotLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (authMainCont) authMainCont.style.display = 'none';
+        if (authForgotCont) authForgotCont.style.display = 'block';
+      });
+    }
 
     newForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -711,6 +835,32 @@ async function loadDefaultSettingsToUI() {
   const profile = getCurrentUserProfile();
   const isViewer = profile && profile.role === 'viewer';
 
+  const profileEmailInput = document.getElementById('profile-email');
+  if (profileEmailInput && profile) {
+    profileEmailInput.value = profile.email || '';
+  }
+
+  const sb = getSupabase();
+  let isGoogleUser = false;
+  if (sb) {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session && session.user) {
+      isGoogleUser = session.user.app_metadata?.provider === 'google' || 
+                     (session.user.identities && session.user.identities.some(i => i.provider === 'google'));
+    }
+  }
+
+  const profileLocalForm = document.getElementById('profile-local-form');
+  const profileOauthNotice = document.getElementById('profile-oauth-notice');
+
+  if (isGoogleUser) {
+    if (profileLocalForm) profileLocalForm.style.display = 'none';
+    if (profileOauthNotice) profileOauthNotice.style.display = 'block';
+  } else {
+    if (profileLocalForm) profileLocalForm.style.display = 'flex';
+    if (profileOauthNotice) profileOauthNotice.style.display = 'none';
+  }
+
   if (nameInput) {
     nameInput.value = settings.companyName || '';
     nameInput.disabled = isViewer;
@@ -873,6 +1023,48 @@ function setupSettingsHandlers() {
         }
       });
     }
+  }
+
+  // Profile Change Password Handler
+  const updatePasswordBtn = document.getElementById('profile-change-password-btn');
+  if (updatePasswordBtn) {
+    updatePasswordBtn.addEventListener('click', async () => {
+      const newPassword = document.getElementById('profile-new-password').value;
+      const confirmPassword = document.getElementById('profile-confirm-password').value;
+
+      if (!newPassword || newPassword.length < 6) {
+        showToast('Password must be at least 6 characters long.', 'danger');
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        showToast('Passwords do not match.', 'danger');
+        return;
+      }
+
+      updatePasswordBtn.disabled = true;
+      updatePasswordBtn.textContent = 'Updating...';
+
+      try {
+        const sb = getSupabase();
+        if (!sb) throw new Error('Supabase client not initialized');
+
+        const { error } = await sb.auth.updateUser({ password: newPassword });
+        if (error) {
+          showToast(error.message, 'danger');
+        } else {
+          showToast('Password updated successfully!');
+          document.getElementById('profile-new-password').value = '';
+          document.getElementById('profile-confirm-password').value = '';
+        }
+      } catch (err) {
+        console.error('Password update error:', err);
+        showToast('An error occurred during password update.', 'danger');
+      } finally {
+        updatePasswordBtn.disabled = false;
+        updatePasswordBtn.textContent = 'Update Password';
+      }
+    });
   }
 }
 
