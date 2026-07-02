@@ -29,6 +29,7 @@ let activeChallengeId = null;
 let activeFactorId = null;
 
 let isAppInitialized = false;
+let currentUserSession = null;
 
 // Session Expiry Timers
 let sessionWarningTimeout = null;
@@ -83,6 +84,7 @@ async function setupAuthListener() {
   sb.auth.onAuthStateChange(async (event, session) => {
     try {
       console.log('Auth State Event:', event, session);
+      currentUserSession = session;
       
       if (event === 'PASSWORD_RECOVERY') {
         const recoveryModal = document.getElementById('recovery-modal');
@@ -846,31 +848,19 @@ async function loadDefaultSettingsToUI() {
     profileEmailInput.value = profile.email || '';
   }
 
-  const sb = getSupabase();
   let isGoogleUser = false;
-  try {
-    if (sb) {
-      console.log('loadDefaultSettingsToUI -> Fetching session...');
-      const sessionRes = await sb.auth.getSession();
-      console.log('loadDefaultSettingsToUI -> Session response:', sessionRes);
-      const session = sessionRes?.data?.session;
-      if (session && session.user) {
-        const user = session.user;
-        console.log('loadDefaultSettingsToUI -> User object:', user);
-        console.log('loadDefaultSettingsToUI -> app_metadata:', user.app_metadata);
-        console.log('loadDefaultSettingsToUI -> identities:', user.identities);
-        isGoogleUser = user.app_metadata?.provider === 'google' || 
-                       (user.app_metadata?.providers && user.app_metadata.providers.includes('google')) ||
-                       (user.identities && user.identities.some(i => i.provider === 'google'));
-        console.log('loadDefaultSettingsToUI -> Calculated isGoogleUser:', isGoogleUser);
-      } else {
-        console.log('loadDefaultSettingsToUI -> No session or user found!');
-      }
-    } else {
-      console.warn('loadDefaultSettingsToUI -> Supabase client not initialized!');
-    }
-  } catch (err) {
-    console.error('Error loading session details for profile check:', err);
+  if (currentUserSession && currentUserSession.user) {
+    const user = currentUserSession.user;
+    console.log('loadDefaultSettingsToUI -> Synchronously checking user object:', user);
+    console.log('loadDefaultSettingsToUI -> app_metadata:', user.app_metadata);
+    console.log('loadDefaultSettingsToUI -> identities:', user.identities);
+    
+    isGoogleUser = user.app_metadata?.provider === 'google' || 
+                   (user.app_metadata?.providers && user.app_metadata.providers.includes('google')) ||
+                   (user.identities && user.identities.some(i => i.provider === 'google'));
+    console.log('loadDefaultSettingsToUI -> Calculated isGoogleUser:', isGoogleUser);
+  } else {
+    console.log('loadDefaultSettingsToUI -> No currentUserSession or user found!');
   }
 
   const profileLocalForm = document.getElementById('profile-local-form');
