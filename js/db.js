@@ -7,7 +7,7 @@ const KEYS = {
 };
 
 // Default setup values
-const DEFAULT_CATEGORIES = ['Labor', 'Underlay', 'Framing', 'Finishing', 'Drywall', 'Flooring'];
+const DEFAULT_CATEGORIES = ['Category 1'];
 
 const DEFAULT_SETTINGS = {
   companyName: 'ConstructQuote Pro Ltd.',
@@ -337,6 +337,40 @@ export async function deleteCategory(categoryName) {
     `company_id=eq.${currentUserProfile.company_id}&name=eq.${encodeURIComponent(categoryName)}`
   );
     
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+export async function renameCategory(oldName, newName) {
+  if (!currentUserProfile) return { success: false, error: 'Not authenticated' };
+  
+  const oldTrimmed = oldName.trim();
+  const newTrimmed = newName.trim();
+  if (!oldTrimmed || !newTrimmed) {
+    return { success: false, error: 'Category names cannot be empty.' };
+  }
+  
+  if (oldTrimmed.toLowerCase() === 'labor' || newTrimmed.toLowerCase() === 'labor') {
+    return { success: false, error: 'Cannot modify the core "Labor" category.' };
+  }
+  
+  // 1. Check if any products are currently linked to this category
+  const linkedProducts = await rawDbQuery(
+    'products', 
+    `company_id=eq.${currentUserProfile.company_id}&category=eq.${encodeURIComponent(oldTrimmed)}&limit=1`
+  );
+  if (linkedProducts && linkedProducts.length > 0) {
+    return { success: false, error: 'Cannot rename category: one or more products are currently linked to it.' };
+  }
+  
+  // 2. Perform the update on categories table
+  const { error } = await rawDbWrite(
+    'categories',
+    'PATCH',
+    { name: newTrimmed },
+    `company_id=eq.${currentUserProfile.company_id}&name=eq.${encodeURIComponent(oldTrimmed)}`
+  );
+  
   if (error) return { success: false, error: error.message };
   return { success: true };
 }

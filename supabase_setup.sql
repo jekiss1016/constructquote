@@ -157,12 +157,7 @@ begin
 
     -- Seed default categories for this company
     insert into public.categories (company_id, name) values
-      (new_company_id, 'Labor'),
-      (new_company_id, 'Underlay'),
-      (new_company_id, 'Framing'),
-      (new_company_id, 'Finishing'),
-      (new_company_id, 'Drywall'),
-      (new_company_id, 'Flooring');
+      (new_company_id, 'Category 1');
 
     -- Insert profile as owner
     insert into public.profiles (id, company_id, role, email)

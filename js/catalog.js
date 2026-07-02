@@ -1,5 +1,5 @@
 // Product Catalog management controller
-import { getProducts, getCategories, saveProduct, deleteProduct, saveCategory, deleteCategory, getQuotes, getCurrentUserProfile } from './db.js?v=5';
+import { getProducts, getCategories, saveProduct, deleteProduct, saveCategory, deleteCategory, renameCategory, getQuotes, getCurrentUserProfile } from './db.js?v=5';
 import { formatCurrency, showToast } from './utils.js';
 
 let activeSearchQuery = '';
@@ -126,11 +126,18 @@ export async function renderCategoryList() {
     const deleteBtn = isViewer ? '' : (isLabor ? `
       <span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">Locked</span>
     ` : `
-      <button type="button" class="item-delete-btn delete-category-btn" data-category="${escapeHtml(cat)}" style="padding: 0.15rem;">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-        </svg>
-      </button>
+      <div style="display: flex; gap: 0.25rem;">
+        <button type="button" class="item-delete-btn edit-category-btn" data-category="${escapeHtml(cat)}" style="padding: 0.15rem;" title="Rename Category">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+          </svg>
+        </button>
+        <button type="button" class="item-delete-btn delete-category-btn" data-category="${escapeHtml(cat)}" style="padding: 0.15rem;" title="Delete Category">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </button>
+      </div>
     `);
 
     return `
@@ -324,6 +331,35 @@ function setupCatalogListeners() {
   if (catAddInput) {
     catAddInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') handleAddCategory();
+    });
+  }
+
+  // Category Manager: Edit Category Name
+  if (catList) {
+    catList.addEventListener('click', async (e) => {
+      const btn = e.target.closest('.edit-category-btn');
+      if (btn && !isViewer) {
+        const cat = btn.getAttribute('data-category');
+        const newName = prompt(`Enter new name for category "${cat}":`, cat);
+        if (newName === null) return; // Cancelled
+        
+        const trimmed = newName.trim();
+        if (!trimmed) {
+          showToast('Category name cannot be empty.', 'danger');
+          return;
+        }
+        if (trimmed === cat) return; // Unchanged
+        
+        showToast('Updating category name...');
+        const res = await renameCategory(cat, trimmed);
+        if (res.success) {
+          showToast(`Category "${cat}" renamed to "${trimmed}".`, 'success');
+          await renderCategoryList();
+          await populateCategoryDropdowns();
+        } else {
+          showToast(res.error, 'danger');
+        }
+      }
     });
   }
 

@@ -55,8 +55,8 @@ export async function startNewQuote() {
     sections: [
       {
         id: 'sec_' + Math.random().toString(36).substr(2, 9),
-        title: 'Section 1 - Foundation & Excavation',
-        description: 'Excavation, grading, and pouring of the concrete pad including structural footings.',
+        title: 'Section One',
+        description: '',
         items: []
       }
     ],
