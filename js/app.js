@@ -842,12 +842,18 @@ async function loadDefaultSettingsToUI() {
 
   const sb = getSupabase();
   let isGoogleUser = false;
-  if (sb) {
-    const { data: { session } } = await sb.auth.getSession();
-    if (session && session.user) {
-      isGoogleUser = session.user.app_metadata?.provider === 'google' || 
-                     (session.user.identities && session.user.identities.some(i => i.provider === 'google'));
+  try {
+    if (sb) {
+      const sessionRes = await sb.auth.getSession();
+      const session = sessionRes?.data?.session;
+      if (session && session.user) {
+        const user = session.user;
+        isGoogleUser = user.app_metadata?.provider === 'google' || 
+                       (user.identities && user.identities.some(i => i.provider === 'google'));
+      }
     }
+  } catch (err) {
+    console.error('Error loading session details for profile check:', err);
   }
 
   const profileLocalForm = document.getElementById('profile-local-form');
