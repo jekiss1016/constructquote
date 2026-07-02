@@ -672,13 +672,16 @@ export async function viewQuoteDetails(id) {
 }
 
 export async function updateBrandHeader() {
+  console.log('updateBrandHeader -> Starting...');
   const settings = await getSettings();
   const nameEl = document.getElementById('brand-company-name');
   const logoContainer = document.getElementById('brand-logo-container');
   const profile = getCurrentUserProfile();
+  console.log('updateBrandHeader -> Profile:', profile, 'nameEl:', !!nameEl);
 
   if (nameEl) {
     if (profile && profile.role === 'sysadmin') {
+      console.log('updateBrandHeader -> User is sysadmin! Loading all companies...');
       const companies = await getAllCompanies();
       let selectHtml = `<select id="brand-company-select" style="
         background: var(--bg-secondary);
@@ -821,7 +824,9 @@ function setupThemeToggler() {
 }
 
 async function loadDefaultSettingsToUI() {
+  console.log('loadDefaultSettingsToUI -> Starting...');
   const settings = await getSettings();
+  console.log('loadDefaultSettingsToUI -> Settings loaded:', settings);
   
   const nameInput = document.getElementById('settings-co-name');
   const addrInput = document.getElementById('settings-co-address');
@@ -834,6 +839,7 @@ async function loadDefaultSettingsToUI() {
 
   const profile = getCurrentUserProfile();
   const isViewer = profile && profile.role === 'viewer';
+  console.log('loadDefaultSettingsToUI -> Profile:', profile);
 
   const profileEmailInput = document.getElementById('profile-email');
   if (profileEmailInput && profile) {
@@ -844,13 +850,24 @@ async function loadDefaultSettingsToUI() {
   let isGoogleUser = false;
   try {
     if (sb) {
+      console.log('loadDefaultSettingsToUI -> Fetching session...');
       const sessionRes = await sb.auth.getSession();
+      console.log('loadDefaultSettingsToUI -> Session response:', sessionRes);
       const session = sessionRes?.data?.session;
       if (session && session.user) {
         const user = session.user;
+        console.log('loadDefaultSettingsToUI -> User object:', user);
+        console.log('loadDefaultSettingsToUI -> app_metadata:', user.app_metadata);
+        console.log('loadDefaultSettingsToUI -> identities:', user.identities);
         isGoogleUser = user.app_metadata?.provider === 'google' || 
+                       (user.app_metadata?.providers && user.app_metadata.providers.includes('google')) ||
                        (user.identities && user.identities.some(i => i.provider === 'google'));
+        console.log('loadDefaultSettingsToUI -> Calculated isGoogleUser:', isGoogleUser);
+      } else {
+        console.log('loadDefaultSettingsToUI -> No session or user found!');
       }
+    } else {
+      console.warn('loadDefaultSettingsToUI -> Supabase client not initialized!');
     }
   } catch (err) {
     console.error('Error loading session details for profile check:', err);
