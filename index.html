@@ -2,6 +2,15 @@
 <html lang="en" data-theme="light">
 <head>
   <script>
+    // Self-healing module cache-clearing routine
+    try {
+      if (!localStorage.getItem('cq-cache-cleared-v33')) {
+        localStorage.clear();
+        localStorage.setItem('cq-cache-cleared-v33', 'true');
+        window.location.reload(true);
+      }
+    } catch (e) {}
+
     window.onerror = function(msg, url, line, col, error) {
       const errDiv = document.createElement('div');
       errDiv.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:red;color:white;padding:1rem;z-index:999999;font-family:monospace;white-space:pre-wrap;font-size:12px;box-shadow: 0 4px 6px rgba(0,0,0,0.1);';
@@ -1654,7 +1663,7 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Javascript Modules -->
-  <script type="module" src="js/app.js?v=33"></script>
+  <script type="module" src="js/app.js?v=34"></script>
 
 </body>
 </html>
