@@ -701,7 +701,8 @@ export async function saveQuote(quote) {
         existing.companyLogo !== quote.companyLogo ||
         existing.printShowDetails !== quote.printShowDetails ||
         existing.printShowDetailPricing !== quote.printShowDetailPricing ||
-        existing.printShowQuantities !== quote.printShowQuantities;
+        existing.printShowQuantities !== quote.printShowQuantities ||
+        ((existing.status === 'Won' || existing.status === 'Lost') && quote.status === 'Pending');
         
       if (contentChanged && !existing.isLegacy) {
         const legacyCopy = { ...existing };
