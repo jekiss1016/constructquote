@@ -18,12 +18,12 @@ import {
   switchUserCompany,
   uploadFileToStorage,
   rawDbWrite
-} from './db.js?v=40';
+} from './db.js?v=41';
 import { showToast, fileToBase64 } from './utils.js';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=40';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=40';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=40';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=40';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=41';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=41';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=41';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=41';
 
 let activeChallengeId = null;
 let activeFactorId = null;
@@ -770,7 +770,6 @@ export async function updateBrandHeader() {
           try {
             const newCompanyId = e.target.value;
             const companyName = e.target.options[e.target.selectedIndex].text;
-            showToast(`Switching to ${companyName}...`);
             const success = await switchUserCompany(newCompanyId);
             if (success) {
               showToast(`Switched to ${companyName}!`, 'success');
