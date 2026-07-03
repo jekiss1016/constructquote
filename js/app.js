@@ -101,6 +101,7 @@ async function setupAuthListener() {
         console.log('setupAuthListener -> Loaded profile:', profile);
         if (profile) {
           hideAuthModal();
+          applyUserRoleRestrictions(profile);
           if (!isAppInitialized) {
             await initAppViews();
           } else {
@@ -114,6 +115,7 @@ async function setupAuthListener() {
         }
       } else {
         clearSessionMonitoring();
+        applyUserRoleRestrictions(null);
         showAuthModal();
       }
     } catch (e) {
@@ -121,6 +123,32 @@ async function setupAuthListener() {
       showAuthModal();
     }
   });
+}
+
+function applyUserRoleRestrictions(profile) {
+  const isViewer = profile && profile.role === 'viewer';
+  const catalogTab = document.querySelector('.nav-item[data-target="catalog-view"]');
+  const settingsTab = document.querySelector('.nav-item[data-target="settings-view"]');
+  
+  if (catalogTab) {
+    catalogTab.style.display = isViewer ? 'none' : 'block';
+  }
+  if (settingsTab) {
+    settingsTab.style.display = isViewer ? 'none' : 'block';
+  }
+  
+  // Dashboard quick actions
+  const dashActCat = document.getElementById('dash-action-manage-catalog');
+  const dashActSet = document.getElementById('dash-action-settings');
+  const dashActNew = document.getElementById('dash-action-new-quote');
+  const dashNewBtn = document.getElementById('dashboard-new-quote-btn');
+  const listNewBtn = document.getElementById('list-new-quote-btn');
+  
+  if (dashActCat) dashActCat.style.display = isViewer ? 'none' : 'flex';
+  if (dashActSet) dashActSet.style.display = isViewer ? 'none' : 'flex';
+  if (dashActNew) dashActNew.style.display = isViewer ? 'none' : 'flex';
+  if (dashNewBtn) dashNewBtn.style.display = isViewer ? 'none' : 'inline-flex';
+  if (listNewBtn) listNewBtn.style.display = isViewer ? 'none' : 'inline-flex';
 }
 
 // Monitor session expiry for JWT warning/countdown
@@ -607,6 +635,14 @@ async function initAppViews() {
 
 /* ==================== VIEW ROUTER ==================== */
 export async function navigateToView(viewId) {
+  const profile = getCurrentUserProfile();
+  if (profile && profile.role === 'viewer') {
+    if (viewId === 'catalog-view' || viewId === 'settings-view' || viewId === 'builder-view') {
+      showToast('Viewers do not have access to this page.', 'danger');
+      return navigateToView('dashboard-view');
+    }
+  }
+
   const sections = document.querySelectorAll('.view-section');
   sections.forEach(s => s.classList.remove('active'));
 
@@ -1166,7 +1202,7 @@ async function loadTeamManagementUI() {
   if (!card || !tbody) return;
 
   const profile = getCurrentUserProfile();
-  if (!profile || (profile.role !== 'owner' && profile.role !== 'sysadmin')) {
+  if (!profile || (profile.role !== 'owner' && profile.role !== 'editor' && profile.role !== 'sysadmin')) {
     card.style.display = 'none';
     return;
   }

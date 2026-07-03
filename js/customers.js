@@ -516,6 +516,12 @@ function setupCustomerListeners() {
             c.contacts.forEach(contact => addContactRow(contact));
           }
 
+          // Enable/disable form inputs based on role
+          const formInputs = form.querySelectorAll('input, textarea, select');
+          formInputs.forEach(input => {
+            input.disabled = isViewer;
+          });
+
           activeCustomerDocs = c.documents || [];
           renderCustomerDocuments(activeCustomerDocs);
 

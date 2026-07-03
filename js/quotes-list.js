@@ -659,19 +659,7 @@ export async function renderQuoteDetails(id) {
     }
   }
 
-  // Toggle widget view based on viewer role
-  const uploadPhotoGroup = document.getElementById('detail-gallery-upload')?.closest('.form-group');
-  if (uploadPhotoGroup) {
-    uploadPhotoGroup.style.display = isViewer ? 'none' : 'block';
-  }
-  const uploadDocGroup = document.getElementById('detail-doc-upload')?.closest('.form-group');
-  if (uploadDocGroup) {
-    uploadDocGroup.style.display = isViewer ? 'none' : 'block';
-  }
-  const uploadRcptGroup = document.getElementById('detail-receipt-upload')?.closest('.form-group');
-  if (uploadRcptGroup) {
-    uploadRcptGroup.style.display = isViewer ? 'none' : 'block';
-  }
+  // Viewers can upload files but cannot delete them
 
   // Reset add photo panel state
   const detailPhotoAddFields = document.getElementById('detail-photo-add-fields');
@@ -1171,7 +1159,7 @@ function setupListListeners() {
 
   if (detailGalleryUpload) {
     detailGalleryUpload.addEventListener('change', async (e) => {
-      if (e.target.files.length > 0 && !isViewer) {
+      if (e.target.files.length > 0) {
         const file = e.target.files[0];
         const sb = getSupabase();
         if (sb && profile && selectedQuoteId) {
@@ -1210,7 +1198,6 @@ function setupListListeners() {
 
   if (detailPhotoSave) {
     detailPhotoSave.addEventListener('click', async () => {
-      if (isViewer) return;
       const label = detailPhotoLabel.value.trim() || 'Project Gallery Photo';
       const category = detailPhotoCategory.value;
 
@@ -1266,7 +1253,7 @@ function setupListListeners() {
   const docsListContainer = document.getElementById('detail-docs-list');
   if (docUpload) {
     docUpload.addEventListener('change', async (e) => {
-      if (e.target.files.length > 0 && !isViewer) {
+      if (e.target.files.length > 0) {
         const file = e.target.files[0];
         if (file.type !== 'application/pdf') {
           showToast('Only PDF files are supported.', 'danger');
@@ -1338,7 +1325,7 @@ function setupListListeners() {
   const receiptsListContainer = document.getElementById('detail-receipts-list');
   if (receiptUpload) {
     receiptUpload.addEventListener('change', async (e) => {
-      if (e.target.files.length > 0 && !isViewer) {
+      if (e.target.files.length > 0) {
         const file = e.target.files[0];
         const sb = getSupabase();
         if (sb && profile && selectedQuoteId) {
