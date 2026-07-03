@@ -4,9 +4,9 @@
   <script>
     // Self-healing module cache-clearing routine
     try {
-      if (!localStorage.getItem('cq-cache-cleared-v39')) {
+      if (!localStorage.getItem('cq-cache-cleared-v40')) {
         localStorage.clear();
-        localStorage.setItem('cq-cache-cleared-v39', 'true');
+        localStorage.setItem('cq-cache-cleared-v40', 'true');
         window.location.reload(true);
       }
     } catch (e) {}
@@ -1679,7 +1679,7 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Javascript Modules -->
-  <script type="module" src="js/app.js?v=39"></script>
+  <script type="module" src="js/app.js?v=40"></script>
 
 </body>
 </html>

@@ -18,12 +18,12 @@ import {
   switchUserCompany,
   uploadFileToStorage,
   rawDbWrite
-} from './db.js?v=39';
+} from './db.js?v=40';
 import { showToast, fileToBase64 } from './utils.js';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=39';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=39';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=39';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=39';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=40';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=40';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=40';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=40';
 
 let activeChallengeId = null;
 let activeFactorId = null;
@@ -32,6 +32,7 @@ let isAppInitialized = false;
 let currentUserSession = null;
 let isSettingsListenersSetup = false;
 let isDbUtilityListenersSetup = false;
+let isSwitchingCompany = false;
 
 // Session Expiry Timers
 let sessionWarningTimeout = null;
@@ -763,28 +764,37 @@ export async function updateBrandHeader() {
       const selectEl = document.getElementById('brand-company-select');
       if (selectEl) {
         selectEl.addEventListener('change', async (e) => {
-          const newCompanyId = e.target.value;
-          const companyName = e.target.options[e.target.selectedIndex].text;
-          showToast(`Switching to ${companyName}...`);
-          const success = await switchUserCompany(newCompanyId);
-          if (success) {
-            showToast(`Switched to ${companyName}!`, 'success');
-            
-            // Retrigger same initialization pipeline as login, using the active session
-            const profile = await loadUserSession(currentUserSession);
-            if (profile) {
-              applyUserRoleRestrictions(profile);
-              await loadDefaultSettingsToUI();
-              updateBrandHeader();
-              await loadTeamManagementUI();
+          if (isSwitchingCompany) return;
+          isSwitchingCompany = true;
+          
+          try {
+            const newCompanyId = e.target.value;
+            const companyName = e.target.options[e.target.selectedIndex].text;
+            showToast(`Switching to ${companyName}...`);
+            const success = await switchUserCompany(newCompanyId);
+            if (success) {
+              showToast(`Switched to ${companyName}!`, 'success');
               
-              // Refresh and re-render current view dynamically
-              const activeViewEl = document.querySelector('.view-section.active');
-              const activeViewId = activeViewEl ? activeViewEl.id : 'dashboard-view';
-              await navigateToView(activeViewId);
+              // Retrigger same initialization pipeline as login, using the active session
+              const profile = await loadUserSession(currentUserSession);
+              if (profile) {
+                applyUserRoleRestrictions(profile);
+                await loadDefaultSettingsToUI();
+                updateBrandHeader();
+                await loadTeamManagementUI();
+                
+                // Refresh and re-render current view dynamically
+                const activeViewEl = document.querySelector('.view-section.active');
+                const activeViewId = activeViewEl ? activeViewEl.id : 'dashboard-view';
+                await navigateToView(activeViewId);
+              }
+            } else {
+              showToast('Failed to switch company.', 'danger');
             }
-          } else {
-            showToast('Failed to switch company.', 'danger');
+          } catch (err) {
+            console.error('Error during company switch event:', err);
+          } finally {
+            isSwitchingCompany = false;
           }
         });
       }
