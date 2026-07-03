@@ -90,17 +90,42 @@ export function isSupabaseConnected() {
 export async function getAccessToken() {
   const config = await getSupabaseConfig();
   if (!config || !config.url) return null;
+  
+  // Try checking cached token in localStorage first for speed
   try {
     const projectRef = config.url.split('//')[1].split('.')[0];
     const key = `sb-${projectRef}-auth-token`;
     const data = localStorage.getItem(key);
     if (data) {
       const parsed = JSON.parse(data);
-      return parsed.access_token;
+      const access_token = parsed.access_token;
+      const expires_at = parsed.expires_at; // unix timestamp in seconds
+      
+      // If token has at least 30 seconds of life remaining, return it
+      if (access_token && expires_at && (expires_at * 1000 - 30000 > Date.now())) {
+        return access_token;
+      }
     }
   } catch (e) {
-    console.error('Error reading access token:', e);
+    console.error('Error reading access token from localStorage:', e);
   }
+
+  // If expired or missing, try getting/refreshing via supabase auth client
+  if (supabase) {
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (data && data.session) {
+        return data.session.access_token;
+      }
+    } catch (e) {
+      console.error('Error fetching session from supabase auth:', e);
+    }
+    
+    // If getting session failed (or session is null), token is fully expired
+    console.warn('Session expired, forcing sign out.');
+    await supabase.auth.signOut();
+  }
+  
   return null;
 }
 
@@ -124,6 +149,10 @@ export async function rawDbQuery(table, params = '') {
     } else {
       const errText = await res.text();
       console.error(`rawDbQuery failed for ${url}: status=${res.status}, body=${errText}`);
+      if (res.status === 401 && supabase) {
+        console.warn('API returned 401 Unauthorized, signing out.');
+        await supabase.auth.signOut();
+      }
     }
   } catch (err) {
     console.error(`rawDbQuery error for table ${table}:`, err);
@@ -168,6 +197,10 @@ export async function rawDbWrite(table, method, body, params = '') {
       return { data, error: null };
     } else {
       console.error(`rawDbWrite failed for table ${table}:`, data);
+      if (res.status === 401 && supabase) {
+        console.warn('API returned 401 Unauthorized, signing out.');
+        await supabase.auth.signOut();
+      }
       return { data: null, error: { message: data.message || data.details || `HTTP error ${res.status}` } };
     }
   } catch (err) {
