@@ -456,10 +456,10 @@ CREATE POLICY "Owners/sysadmins can delete profiles in same company" ON public.p
   );
 
 -- =====================================================================
--- Claims Sync, Dynamic Security Definer Helpers & RLS (v27)
+-- Claims Sync, Hybrid Security Definer Helpers & RLS (v28)
 -- =====================================================================
 
--- 1. Redefine trigger function handle_new_user to auto-confirm emails and create profile
+-- 1. Redefine trigger function handle_new_user to auto-create profiles safely without dangerous auth.users updates
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -480,12 +480,6 @@ BEGIN
     
     -- Remove the invitation record
     DELETE FROM public.company_invitations WHERE LOWER(email) = LOWER(NEW.email);
-
-    -- Auto-confirm email
-    UPDATE auth.users
-    SET email_confirmed_at = now(),
-        confirmed_at = now()
-    WHERE id = NEW.id;
   ELSE
     -- Create new company tenant for signup
     INSERT INTO public.companies (name)
@@ -503,22 +497,17 @@ BEGIN
     -- Insert profile as owner
     INSERT INTO public.profiles (id, company_id, role, email)
     VALUES (NEW.id, new_company_id, 'owner', NEW.email);
-
-    -- Auto-confirm email
-    UPDATE auth.users
-    SET email_confirmed_at = now(),
-        confirmed_at = now()
-    WHERE id = NEW.id;
   END IF;
 
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 2. Redefine security definer helper functions to dynamically query tables (completely recursion-free as they bypass RLS internally)
+-- 2. Redefine security definer helper functions to use a hybrid claim/DB check (recursion-free and dynamically synchronized)
 CREATE OR REPLACE FUNCTION public.is_sysadmin()
 RETURNS boolean AS $$
-  SELECT EXISTS (
+  SELECT COALESCE(auth.jwt() -> 'app_metadata' ->> 'role' = 'sysadmin', false)
+  OR EXISTS (
     SELECT 1 FROM public.profiles
     WHERE id = auth.uid() AND role = 'sysadmin'
   );
@@ -529,12 +518,16 @@ RETURNS uuid
 LANGUAGE sql
 SECURITY DEFINER
 AS $$
-  SELECT company_id FROM public.profiles WHERE id = auth.uid();
+  SELECT COALESCE(
+    (auth.jwt() -> 'app_metadata' ->> 'company_id')::uuid,
+    (SELECT company_id FROM public.profiles WHERE id = auth.uid())
+  );
 $$;
 
 CREATE OR REPLACE FUNCTION public.has_write_access()
 RETURNS boolean AS $$
-  SELECT EXISTS (
+  SELECT COALESCE(auth.jwt() -> 'app_metadata' ->> 'role' IN ('sysadmin', 'owner', 'editor'), false)
+  OR EXISTS (
     SELECT 1 FROM public.profiles
     WHERE id = auth.uid() AND role IN ('sysadmin', 'owner', 'editor')
   );
@@ -572,6 +565,7 @@ CREATE POLICY "Owners/sysadmins can delete profiles in same company" ON public.p
     OR public.is_sysadmin()
     OR (company_id = public.get_user_company_id() AND public.has_write_access())
   );
+
 
 
 
