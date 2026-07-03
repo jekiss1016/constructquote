@@ -121,9 +121,12 @@ export async function renderCategoryList() {
   const isViewer = profile && profile.role === 'viewer';
 
   const categories = await getCategories();
+  const products = await getProducts();
+
   catListContainer.innerHTML = categories.map(cat => {
-    const isLabor = cat.toLowerCase() === 'labor';
-    const deleteBtn = isViewer ? '' : (isLabor ? `
+    // Check if any product matches this category name (case-insensitive)
+    const hasProducts = products.some(p => p.category && p.category.toLowerCase() === cat.toLowerCase());
+    const deleteBtn = isViewer ? '' : (hasProducts ? `
       <span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">Locked</span>
     ` : `
       <div style="display: flex; gap: 0.25rem;">
@@ -160,8 +163,13 @@ export async function populateCategoryDropdowns() {
   `).join('');
 }
 
+let isCatalogListenersSetup = false;
+
 // Set up UI Event Listeners for Catalog Tab
 function setupCatalogListeners() {
+  if (isCatalogListenersSetup) return;
+  isCatalogListenersSetup = true;
+
   const modal = document.getElementById('product-modal');
   const addBtn = document.getElementById('catalog-new-product-btn');
   const closeBtn = document.getElementById('product-modal-close-btn');

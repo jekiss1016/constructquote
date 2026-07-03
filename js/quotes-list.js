@@ -934,8 +934,12 @@ async function handleReactivateSubmit() {
   await renderDashboardStats();
 }
 
+let isListListenersSetup = false;
+
 // Setup Event listeners for dashboard and quote list view
 function setupListListeners() {
+  if (isListListenersSetup) return;
+  isListListenersSetup = true;
   console.log('setupListListeners -> Starting...');
   const searchInput = document.getElementById('quotes-search-input');
   const tabs = document.getElementById('quotes-status-tabs');

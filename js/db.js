@@ -326,9 +326,6 @@ export async function saveCategory(categoryName) {
 
 export async function deleteCategory(categoryName) {
   if (!currentUserProfile) return { success: false, error: 'Not authenticated' };
-  if (categoryName.toLowerCase() === 'labor') {
-    return { success: false, error: 'Cannot delete the core "Labor" category.' };
-  }
   
   const { error } = await rawDbWrite(
     'categories', 
@@ -348,10 +345,6 @@ export async function renameCategory(oldName, newName) {
   const newTrimmed = newName.trim();
   if (!oldTrimmed || !newTrimmed) {
     return { success: false, error: 'Category names cannot be empty.' };
-  }
-  
-  if (oldTrimmed.toLowerCase() === 'labor' || newTrimmed.toLowerCase() === 'labor') {
-    return { success: false, error: 'Cannot modify the core "Labor" category.' };
   }
   
   // 1. Update the categories table name first

@@ -30,6 +30,8 @@ let activeFactorId = null;
 
 let isAppInitialized = false;
 let currentUserSession = null;
+let isSettingsListenersSetup = false;
+let isDbUtilityListenersSetup = false;
 
 // Session Expiry Timers
 let sessionWarningTimeout = null;
@@ -921,6 +923,8 @@ async function loadDefaultSettingsToUI() {
 }
 
 function setupSettingsHandlers() {
+  if (isSettingsListenersSetup) return;
+  isSettingsListenersSetup = true;
   const saveBtn = document.getElementById('settings-save-btn');
   const logoUpload = document.getElementById('settings-logo-upload');
   const logoClear = document.getElementById('settings-logo-clear-btn');
@@ -1082,6 +1086,8 @@ function setupSettingsHandlers() {
 }
 
 function setupDatabaseUtilityHandlers() {
+  if (isDbUtilityListenersSetup) return;
+  isDbUtilityListenersSetup = true;
   const backupBtn = document.getElementById('db-backup-btn');
   const restoreUpload = document.getElementById('db-restore-upload');
 

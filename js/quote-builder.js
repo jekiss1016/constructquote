@@ -411,8 +411,12 @@ function calculateTotals() {
   document.getElementById('builder-summary-total').textContent = formatCurrency(grandTotal);
 }
 
+let isBuilderListenersSetup = false;
+
 /* ==================== EVENT BINDINGS ==================== */
 function setupBuilderListeners() {
+  if (isBuilderListenersSetup) return;
+  isBuilderListenersSetup = true;
   const container = document.getElementById('builder-sections-container');
   const addSectionBtn = document.getElementById('builder-add-section-btn');
   
