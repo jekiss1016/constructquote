@@ -881,8 +881,9 @@ async function handleUpdateQuoteStatus(status) {
   const res = await saveQuote(quote);
   if (res.success) {
     showToast(`Quote status updated to "${status}".`);
-    await renderQuoteDetails(quote.id);
+    await renderQuotesTable();
     await renderDashboardStats();
+    navigateToView('quotes-view');
   } else {
     showToast(res.error, 'danger');
   }
