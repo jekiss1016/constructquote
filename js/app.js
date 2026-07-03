@@ -901,6 +901,18 @@ async function loadDefaultSettingsToUI() {
     taxInput.disabled = isViewer;
   }
 
+  const plusTaxCheck = document.getElementById('settings-default-tax-plus-applicable');
+  if (plusTaxCheck) {
+    plusTaxCheck.checked = settings.defaultTaxPlusApplicable || false;
+    plusTaxCheck.disabled = isViewer;
+  }
+
+  const termsTextarea = document.getElementById('settings-default-terms-notes');
+  if (termsTextarea) {
+    termsTextarea.value = settings.defaultTermsNotes || '';
+    termsTextarea.disabled = isViewer;
+  }
+
   const saveBtn = document.getElementById('settings-save-btn');
   if (saveBtn) saveBtn.style.display = isViewer ? 'none' : 'inline-flex';
 
@@ -941,7 +953,9 @@ function setupSettingsHandlers() {
         companyPhone: document.getElementById('settings-co-phone').value.trim(),
         companyEmail: document.getElementById('settings-co-email').value.trim(),
         defaultMarkupPercent: parseFloat(document.getElementById('settings-default-markup').value) || 0,
-        defaultTaxRate: parseFloat(document.getElementById('settings-default-tax').value) || 0
+        defaultTaxRate: parseFloat(document.getElementById('settings-default-tax').value) || 0,
+        defaultTaxPlusApplicable: document.getElementById('settings-default-tax-plus-applicable').checked,
+        defaultTermsNotes: document.getElementById('settings-default-terms-notes').value.trim()
       };
 
       const res = await saveSettings(updated);

@@ -411,7 +411,10 @@ export async function getCustomers() {
       address: combinedAddress.trim(),
       status: c.status || 'Active',
       contacts: c.contacts || [],
-      documents: c.documents || []
+      documents: c.documents || [],
+      defaultTermsNotes: c.default_terms_notes || '',
+      defaultMarkupPercent: parseFloat(c.default_markup_percent) || 0,
+      defaultTaxPlusApplicable: c.default_tax_plus_applicable || false
     };
   });
 }
@@ -436,7 +439,10 @@ export async function saveCustomer(customer) {
     zip: customer.zip || '',
     status: customer.status || 'Active',
     contacts: customer.contacts || [],
-    documents: customer.documents || []
+    documents: customer.documents || [],
+    default_terms_notes: customer.defaultTermsNotes || '',
+    default_markup_percent: parseFloat(customer.defaultMarkupPercent) || 0,
+    default_tax_plus_applicable: customer.defaultTaxPlusApplicable || false
   };
   
   if (customer.id) {
@@ -620,7 +626,8 @@ export async function getQuotes() {
     sections: q.sections || [],
     photos: q.photos || [],
     documents: q.documents || [],
-    receipts: q.receipts || []
+    receipts: q.receipts || [],
+    taxPlusApplicable: q.tax_plus_applicable === true
   }));
 }
 
@@ -679,6 +686,7 @@ export async function saveQuote(quote) {
     print_show_details: quote.printShowDetails !== false,
     print_show_detail_pricing: quote.printShowDetailPricing !== false,
     print_show_quantities: quote.printShowQuantities !== false,
+    tax_plus_applicable: quote.taxPlusApplicable === true,
     sections: quote.sections || [],
     photos: quote.photos || [],
     documents: quote.documents || [],
@@ -702,6 +710,7 @@ export async function saveQuote(quote) {
         existing.printShowDetails !== quote.printShowDetails ||
         existing.printShowDetailPricing !== quote.printShowDetailPricing ||
         existing.printShowQuantities !== quote.printShowQuantities ||
+        existing.taxPlusApplicable !== quote.taxPlusApplicable ||
         ((existing.status === 'Won' || existing.status === 'Lost') && quote.status === 'Pending');
         
       if (contentChanged && !existing.isLegacy) {
@@ -734,6 +743,7 @@ export async function saveQuote(quote) {
           print_show_details: legacyCopy.printShowDetails !== false,
           print_show_detail_pricing: legacyCopy.printShowDetailPricing !== false,
           print_show_quantities: legacyCopy.printShowQuantities !== false,
+          tax_plus_applicable: legacyCopy.taxPlusApplicable === true,
           sections: legacyCopy.sections,
           photos: legacyCopy.photos,
           documents: legacyCopy.documents,
@@ -793,6 +803,7 @@ export async function saveQuotesRaw(quotesList) {
     print_show_details: q.printShowDetails !== false,
     print_show_detail_pricing: q.printShowDetailPricing !== false,
     print_show_quantities: q.printShowQuantities !== false,
+    tax_plus_applicable: q.taxPlusApplicable === true,
     sections: q.sections || [],
     photos: q.photos,
     documents: q.documents,
@@ -841,7 +852,9 @@ export async function getSettings() {
     defaultTaxRate: parseFloat(row.default_tax_rate) || 0,
     defaultMarkupPercent: parseFloat(row.default_markup_percent) || 0,
     companyLogo: row.company_logo,
-    theme: row.theme || 'light'
+    theme: row.theme || 'light',
+    defaultTermsNotes: row.default_terms_notes || '',
+    defaultTaxPlusApplicable: row.default_tax_plus_applicable || false
   };
 }
 
@@ -857,6 +870,8 @@ export async function saveSettings(settingsObj) {
   if (settingsObj.defaultMarkupPercent !== undefined) mapped.default_markup_percent = settingsObj.defaultMarkupPercent;
   if (settingsObj.companyLogo !== undefined) mapped.company_logo = settingsObj.companyLogo;
   if (settingsObj.theme !== undefined) mapped.theme = settingsObj.theme;
+  if (settingsObj.defaultTermsNotes !== undefined) mapped.default_terms_notes = settingsObj.defaultTermsNotes;
+  if (settingsObj.defaultTaxPlusApplicable !== undefined) mapped.default_tax_plus_applicable = settingsObj.defaultTaxPlusApplicable;
   
   mapped.company_id = currentUserProfile.company_id;
   

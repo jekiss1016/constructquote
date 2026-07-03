@@ -32,7 +32,7 @@ export async function renderDashboardStats() {
       return secSum + secSub;
     }, 0);
     const markupVal = sub * (q.markupPercent / 100);
-    const taxVal = (sub + markupVal) * (q.taxRate / 100);
+    const taxVal = q.taxPlusApplicable ? 0 : (sub + markupVal) * (q.taxRate / 100);
     return acc + (sub + markupVal + taxVal);
   }, 0);
 
@@ -90,7 +90,9 @@ export async function renderDashboardExpirations() {
       const secSub = sec.items.reduce((sum, item) => sum + (item.qty * (item.price + item.laborRate)), 0);
       return secSum + secSub;
     }, 0);
-    const total = sub + (sub * (q.markupPercent / 100)) + ((sub + (sub * (q.markupPercent / 100))) * (q.taxRate / 100));
+    const markupVal = sub * (q.markupPercent / 100);
+    const taxVal = q.taxPlusApplicable ? 0 : (sub + markupVal) * (q.taxRate / 100);
+    const total = sub + markupVal + taxVal;
     
     const isExpired = new Date(q.expirationDate) < today;
     const expiryDisplay = isExpired 
@@ -154,7 +156,9 @@ export async function renderQuotesTable() {
       const secSub = sec.items.reduce((sum, item) => sum + (item.qty * (item.price + item.laborRate)), 0);
       return secSum + secSub;
     }, 0);
-    const total = sub + (sub * (q.markupPercent / 100)) + ((sub + (sub * (q.markupPercent / 100))) * (q.taxRate / 100));
+    const markupVal = sub * (q.markupPercent / 100);
+    const taxVal = q.taxPlusApplicable ? 0 : (sub + markupVal) * (q.taxRate / 100);
+    const total = sub + markupVal + taxVal;
 
     let statusBadge = '';
     if (q.status === 'Pending') statusBadge = '<span class="badge badge-pending">Pending</span>';
@@ -566,7 +570,7 @@ export async function renderQuoteDetails(id) {
     return secSum + secSub;
   }, 0);
   const markupVal = subtotal * (quote.markupPercent / 100);
-  const taxVal = (subtotal + markupVal) * (quote.taxRate / 100);
+  const taxVal = quote.taxPlusApplicable ? 0 : (subtotal + markupVal) * (quote.taxRate / 100);
   const total = subtotal + markupVal + taxVal;
 
   document.getElementById('paper-subtotal').textContent = formatCurrency(subtotal);
@@ -579,15 +583,36 @@ export async function renderQuoteDetails(id) {
     document.getElementById('paper-markup-row').style.display = 'none';
   }
 
-  if (quote.taxRate > 0) {
-    document.getElementById('paper-tax-row').style.display = 'table-row';
-    document.getElementById('paper-tax-label').textContent = quote.taxRate;
-    document.getElementById('paper-tax-amount').textContent = formatCurrency(taxVal);
-  } else {
-    document.getElementById('paper-tax-row').style.display = 'none';
+  const paperTaxRow = document.getElementById('paper-tax-row');
+  const paperTaxLabelWrapper = document.getElementById('paper-tax-label-wrapper');
+  const paperTaxAmount = document.getElementById('paper-tax-amount');
+  
+  if (paperTaxRow && paperTaxLabelWrapper && paperTaxAmount) {
+    if (quote.taxPlusApplicable) {
+      paperTaxRow.style.display = 'table-row';
+      paperTaxLabelWrapper.innerHTML = 'Sales Tax:';
+      paperTaxAmount.textContent = 'Plus Any Applicable Taxes';
+      paperTaxAmount.style.fontStyle = 'italic';
+      paperTaxAmount.style.fontWeight = '500';
+    } else if (quote.taxRate > 0) {
+      paperTaxRow.style.display = 'table-row';
+      paperTaxLabelWrapper.innerHTML = 'Sales Tax (<span id="paper-tax-label">0</span>%):';
+      document.getElementById('paper-tax-label').textContent = quote.taxRate;
+      paperTaxAmount.textContent = formatCurrency(taxVal);
+      paperTaxAmount.style.fontStyle = 'normal';
+      paperTaxAmount.style.fontWeight = 'normal';
+    } else {
+      paperTaxRow.style.display = 'none';
+    }
   }
 
   document.getElementById('paper-total').textContent = formatCurrency(total);
+  
+  const paperSigCoName = document.getElementById('paper-sig-co-name');
+  if (paperSigCoName) {
+    paperSigCoName.textContent = settings.companyName || 'Company';
+  }
+
   document.getElementById('paper-notes').textContent = quote.notes || 'No extra terms specified.';
 
   // Reset notes inline edit UI
@@ -778,7 +803,9 @@ async function renderVersionHistoryList(activeQuote) {
       const secSub = sec.items.reduce((sum, item) => sum + (item.qty * (item.price + item.laborRate)), 0);
       return secSum + secSub;
     }, 0);
-    const total = sub + (sub * (q.markupPercent / 100)) + ((sub + (sub * (q.markupPercent / 100))) * (q.taxRate / 100));
+    const markupVal = sub * (q.markupPercent / 100);
+    const taxVal = q.taxPlusApplicable ? 0 : (sub + markupVal) * (q.taxRate / 100);
+    const total = sub + markupVal + taxVal;
 
     return `
       <div class="version-history-item ${isActive ? 'active' : ''}" data-id="${q.id}">

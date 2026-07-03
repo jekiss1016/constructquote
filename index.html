@@ -565,7 +565,13 @@
             </div>
 
             <div class="form-group" style="margin-bottom: 0.5rem;">
-              <label class="form-label" for="builder-tax">Sales Tax (%)</label>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                <label class="form-label" for="builder-tax" style="margin-bottom: 0;">Sales Tax (%)</label>
+                <label style="display: flex; align-items: center; gap: 0.25rem; font-size: 0.72rem; font-weight: 500; color: var(--text-secondary); cursor: pointer; margin-bottom: 0; user-select: none;">
+                  <input type="checkbox" id="builder-tax-plus-applicable" style="cursor: pointer;">
+                  Plus Applicable Taxes
+                </label>
+              </div>
               <input type="number" class="form-input" id="builder-tax" value="0" min="0" step="0.1">
             </div>
 
@@ -721,7 +727,7 @@
                       <td style="text-align: right;" id="paper-markup-amount">$0.00</td>
                     </tr>
                     <tr id="paper-tax-row">
-                      <td style="text-align: left; font-weight: 500;">Sales Tax (<span id="paper-tax-label">0</span>%):</td>
+                      <td style="text-align: left; font-weight: 500;" id="paper-tax-label-wrapper">Sales Tax (<span id="paper-tax-label">0</span>%):</td>
                       <td style="text-align: right;" id="paper-tax-amount">$0.00</td>
                     </tr>
                     <tr class="total-row">
@@ -733,17 +739,21 @@
               </div>
             </div>
 
-
-
             <!-- Signatures -->
-            <div class="paper-signature-block">
+            <div class="paper-signature-block" style="margin-top: 3.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; font-size: 0.8rem;">
               <div>
-                <p>Approved By (Client Signature)</p>
-                <div class="signature-line">Date</div>
+                <p style="font-weight: bold; margin-bottom: 2.5rem; color: #1e293b;">Client Acceptance</p>
+                <div style="display: flex; gap: 1.5rem; align-items: flex-end;">
+                  <div style="flex: 2.5; border-top: 1.5px solid #64748b; padding-top: 0.25rem; text-align: left; color: #64748b; font-size: 0.75rem; font-weight: 500;">Client Signature</div>
+                  <div style="flex: 1; border-top: 1.5px solid #64748b; padding-top: 0.25rem; text-align: left; color: #64748b; font-size: 0.75rem; font-weight: 500;">Date</div>
+                </div>
               </div>
               <div>
-                <p>Authorized Representative Signature</p>
-                <div class="signature-line">Date</div>
+                <p style="font-weight: bold; margin-bottom: 2.5rem; color: #1e293b;"><span id="paper-sig-co-name">Company</span> Authorized Representative</p>
+                <div style="display: flex; gap: 1.5rem; align-items: flex-end;">
+                  <div style="flex: 2.5; border-top: 1.5px solid #64748b; padding-top: 0.25rem; text-align: left; color: #64748b; font-size: 0.75rem; font-weight: 500;">Authorized Signature</div>
+                  <div style="flex: 1; border-top: 1.5px solid #64748b; padding-top: 0.25rem; text-align: left; color: #64748b; font-size: 0.75rem; font-weight: 500;">Date</div>
+                </div>
               </div>
             </div>
 
@@ -946,6 +956,16 @@
                 <label class="form-label" for="settings-default-tax">Default Sales Tax Rate (%)</label>
                 <input type="number" class="form-input" id="settings-default-tax" value="8.25" min="0" step="0.01">
               </div>
+            <div class="form-group" style="margin-top: 0.5rem; margin-bottom: 1rem;">
+              <label class="form-checkbox-label" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); cursor: pointer;">
+                <input type="checkbox" id="settings-default-tax-plus-applicable" style="cursor: pointer;">
+                Default to "Plus Any Applicable Taxes" (hides numeric tax total)
+              </label>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.25rem;">
+              <label class="form-label" for="settings-default-terms-notes">Default Terms & Notes</label>
+              <textarea class="form-input" id="settings-default-terms-notes" rows="3" placeholder="Default payment terms, validations, etc."></textarea>
             </div>
 
             <button type="button" class="btn btn-primary" id="settings-save-btn" style="align-self: flex-start;">Save Profile</button>
@@ -1378,8 +1398,29 @@
             <div style="display: flex; flex-direction: column; gap: 0.5rem;" id="customer-documents-list">
               <!-- Dynamically populated PDF links -->
             </div>
-          </div>
-        </form>
+            <!-- Quote Default Overrides -->
+            <div style="border-top: 1px solid var(--border-color); padding-top: 1.25rem; margin-top: 1.5rem;">
+              <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.75rem;">Quote Defaults & Overrides</h4>
+              
+              <div class="form-group-row">
+                <div class="form-group">
+                  <label class="form-label" for="customer-form-default-markup">Default Markup Percentage (%)</label>
+                  <input type="number" class="form-input" id="customer-form-default-markup" placeholder="Uses company default if empty" min="0" step="0.1">
+                </div>
+                <div class="form-group" style="display: flex; align-items: flex-end; padding-bottom: 0.65rem;">
+                  <label class="form-checkbox-label" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); cursor: pointer; user-select: none;">
+                    <input type="checkbox" id="customer-form-default-tax-plus-applicable" style="cursor: pointer;">
+                    Default to "Plus Any Applicable Taxes"
+                  </label>
+                </div>
+              </div>
+              
+              <div class="form-group" style="margin-top: 0.5rem;">
+                <label class="form-label" for="customer-form-default-terms-notes">Default Terms & Notes</label>
+                <textarea class="form-input" id="customer-form-default-terms-notes" rows="3" placeholder="Uses company default terms if empty"></textarea>
+              </div>
+            </div>
+          </form>
 
         <!-- Related Quotes History -->
         <div id="customer-quotes-history-section" style="border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1.5rem; display: none;">
@@ -1611,7 +1652,7 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Javascript Modules -->
-  <script type="module" src="js/app.js?v=17"></script>
+  <script type="module" src="js/app.js?v=18"></script>
 
 </body>
 </html>

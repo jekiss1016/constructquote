@@ -121,7 +121,9 @@ async function renderCustomerQuoteHistory(customerId) {
       const secSub = sec.items.reduce((sum, item) => sum + (item.qty * (item.price + item.laborRate)), 0);
       return secSum + secSub;
     }, 0);
-    const total = subtotal + (subtotal * (q.markupPercent / 100)) + ((subtotal + (subtotal * (q.markupPercent / 100))) * (q.taxRate / 100));
+    const markupVal = subtotal * (q.markupPercent / 100);
+    const taxVal = q.taxPlusApplicable ? 0 : (subtotal + markupVal) * (q.taxRate / 100);
+    const total = subtotal + markupVal + taxVal;
 
     return `
       <tr>
@@ -183,6 +185,10 @@ export function openCustomerModalInline(callback = null) {
   form.reset();
   document.getElementById('customer-form-id').value = '';
   document.getElementById('customer-modal-title').textContent = 'Add Database Customer';
+  
+  document.getElementById('customer-form-default-markup').value = '';
+  document.getElementById('customer-form-default-terms-notes').value = '';
+  document.getElementById('customer-form-default-tax-plus-applicable').checked = false;
   
   const contactsList = document.getElementById('customer-contacts-list');
   contactsList.innerHTML = ''; // Reset contacts
@@ -435,7 +441,10 @@ function setupCustomerListeners() {
           state: document.getElementById('customer-form-state').value.trim().toUpperCase(),
           zip: document.getElementById('customer-form-zip').value.trim(),
           contacts,
-          documents: activeCustomerDocs
+          documents: activeCustomerDocs,
+          defaultMarkupPercent: parseFloat(document.getElementById('customer-form-default-markup').value) || 0,
+          defaultTermsNotes: document.getElementById('customer-form-default-terms-notes').value.trim(),
+          defaultTaxPlusApplicable: document.getElementById('customer-form-default-tax-plus-applicable').checked
         };
 
         const res = await saveCustomer(customer);
@@ -497,6 +506,10 @@ function setupCustomerListeners() {
           document.getElementById('customer-form-city').value = c.city || '';
           document.getElementById('customer-form-state').value = c.state || '';
           document.getElementById('customer-form-zip').value = c.zip || '';
+          
+          document.getElementById('customer-form-default-markup').value = c.defaultMarkupPercent || '';
+          document.getElementById('customer-form-default-terms-notes').value = c.defaultTermsNotes || '';
+          document.getElementById('customer-form-default-tax-plus-applicable').checked = c.defaultTaxPlusApplicable || false;
           
           contactsList.innerHTML = '';
           if (c.contacts && c.contacts.length > 0) {

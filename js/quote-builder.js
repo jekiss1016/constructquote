@@ -32,6 +32,7 @@ let currentQuote = {
 
 let activePhotoUrl = ''; 
 let galleryFilterCategory = 'all';
+let isTaxRateEdited = false;
 
 export function initQuoteBuilderView() {
   setupBuilderListeners();
@@ -61,10 +62,11 @@ export async function startNewQuote() {
       }
     ],
     taxRate: settings.defaultTaxRate || 0,
+    taxPlusApplicable: settings.defaultTaxPlusApplicable || false,
     markupPercent: settings.defaultMarkupPercent || 0,
     status: 'Pending',
     companyLogo: settings.companyLogo || '',
-    notes: 'Payment Terms: 50% deposit required upon authorization, 50% upon project completion. Quote is valid until expiration date.',
+    notes: settings.defaultTermsNotes || 'Payment Terms: 50% deposit required upon authorization, 50% upon project completion. Quote is valid until expiration date.',
     photos: [],
     printShowDetails: true,
     printShowDetailPricing: true,
@@ -72,6 +74,7 @@ export async function startNewQuote() {
     isLegacy: false,
     version: 1
   };
+  isTaxRateEdited = false;
 
   await populateCustomerSelectDropdown();
   populateBuilderFields();
@@ -85,8 +88,10 @@ export async function startNewQuote() {
 // Edit existing quote
 export async function loadQuoteForEditing(quote) {
   currentQuote = JSON.parse(JSON.stringify(quote)); // Deep clone
+  if (currentQuote.taxPlusApplicable === undefined) currentQuote.taxPlusApplicable = false;
   if (!currentQuote.photos) currentQuote.photos = [];
   if (!currentQuote.sections) currentQuote.sections = [];
+  isTaxRateEdited = false;
   
   // Backward compatibility check
   if (currentQuote.items && currentQuote.sections.length === 0) {
@@ -111,8 +116,10 @@ export async function loadQuoteForEditing(quote) {
 // Clone quote as template
 export async function loadQuoteAsTemplate(quote) {
   currentQuote = JSON.parse(JSON.stringify(quote));
+  if (currentQuote.taxPlusApplicable === undefined) currentQuote.taxPlusApplicable = false;
   if (!currentQuote.photos) currentQuote.photos = [];
   if (!currentQuote.sections) currentQuote.sections = [];
+  isTaxRateEdited = false;
   
   if (currentQuote.items && currentQuote.sections.length === 0) {
     currentQuote.sections = [{
@@ -173,6 +180,12 @@ function populateBuilderFields() {
   document.getElementById('builder-markup').value = currentQuote.markupPercent;
   document.getElementById('builder-tax').value = currentQuote.taxRate;
   document.getElementById('builder-notes').value = currentQuote.notes;
+
+  const plusTaxCheck = document.getElementById('builder-tax-plus-applicable');
+  if (plusTaxCheck) {
+    plusTaxCheck.checked = currentQuote.taxPlusApplicable || false;
+    document.getElementById('builder-tax').disabled = currentQuote.taxPlusApplicable || false;
+  }
 
   const detCheck = document.getElementById('print-show-details');
   const prCheck = document.getElementById('print-show-pricing');
@@ -402,12 +415,20 @@ function calculateTotals() {
   const subtotal = currentQuote.sections.reduce((sum, sec) => sum + calculateSectionSum(sec), 0);
   
   const markupVal = subtotal * (currentQuote.markupPercent / 100);
-  const taxVal = (subtotal + markupVal) * (currentQuote.taxRate / 100);
+  const isPlusTaxes = currentQuote.taxPlusApplicable || false;
+  const taxVal = isPlusTaxes ? 0 : (subtotal + markupVal) * (currentQuote.taxRate / 100);
   const grandTotal = subtotal + markupVal + taxVal;
 
   document.getElementById('builder-summary-subtotal').textContent = formatCurrency(subtotal);
   document.getElementById('builder-summary-markup-val').textContent = formatCurrency(markupVal);
-  document.getElementById('builder-summary-tax-val').textContent = formatCurrency(taxVal);
+  
+  const taxSummaryVal = document.getElementById('builder-summary-tax-val');
+  if (isPlusTaxes) {
+    taxSummaryVal.textContent = "Plus Applicable Taxes";
+  } else {
+    taxSummaryVal.textContent = formatCurrency(taxVal);
+  }
+  
   document.getElementById('builder-summary-total').textContent = formatCurrency(grandTotal);
 }
 
@@ -508,18 +529,25 @@ function setupBuilderListeners() {
   if (markupInput) {
     markupInput.addEventListener('input', () => {
       currentQuote.markupPercent = parseFloat(markupInput.value) || 0;
-      calculateTotals();
     });
   }
   if (taxInput) {
     taxInput.addEventListener('input', () => {
       currentQuote.taxRate = parseFloat(taxInput.value) || 0;
-      calculateTotals();
+      isTaxRateEdited = true;
     });
   }
   if (notesTextarea) {
     notesTextarea.addEventListener('input', () => {
       currentQuote.notes = notesTextarea.value;
+    });
+  }
+  const taxPlusCheck = document.getElementById('builder-tax-plus-applicable');
+  if (taxPlusCheck) {
+    taxPlusCheck.addEventListener('change', () => {
+      currentQuote.taxPlusApplicable = taxPlusCheck.checked;
+      if (taxInput) taxInput.disabled = taxPlusCheck.checked;
+      calculateTotals();
     });
   }
 
@@ -685,6 +713,7 @@ function setupBuilderListeners() {
   if (customerSelect) {
     customerSelect.addEventListener('change', async () => {
       const custId = customerSelect.value;
+      const settings = await getSettings();
       if (custId) {
         const customers = await getCustomers();
         const c = customers.find(cust => cust.id === custId);
@@ -699,10 +728,49 @@ function setupBuilderListeners() {
           currentQuote.customerEmail = c.email || '';
           currentQuote.customerPhone = c.phone || '';
           currentQuote.projectAddress = c.address;
-          showToast(`Linked customer "${c.name}" details.`);
+
+          // Default markup
+          const defaultMarkup = c.defaultMarkupPercent > 0 ? c.defaultMarkupPercent : (settings.defaultMarkupPercent || 15);
+          currentQuote.markupPercent = defaultMarkup;
+          document.getElementById('builder-markup').value = defaultMarkup;
+
+          // Default terms
+          const defaultTerms = c.defaultTermsNotes ? c.defaultTermsNotes : (settings.defaultTermsNotes || '');
+          currentQuote.notes = defaultTerms;
+          document.getElementById('builder-notes').value = defaultTerms;
+
+          // Default plus tax applicable
+          const plusTax = c.defaultTaxPlusApplicable !== undefined ? c.defaultTaxPlusApplicable : (settings.defaultTaxPlusApplicable || false);
+          currentQuote.taxPlusApplicable = plusTax;
+          const plusTaxCheck = document.getElementById('builder-tax-plus-applicable');
+          if (plusTaxCheck) {
+            plusTaxCheck.checked = plusTax;
+            if (taxInput) taxInput.disabled = plusTax;
+          }
+
+          showToast(`Linked customer "${c.name}" defaults.`);
+          calculateTotals();
         }
       } else {
         currentQuote.customerId = null;
+        // Revert to global settings defaults
+        const defaultMarkup = settings.defaultMarkupPercent || 15;
+        currentQuote.markupPercent = defaultMarkup;
+        document.getElementById('builder-markup').value = defaultMarkup;
+
+        const defaultTerms = settings.defaultTermsNotes || '';
+        currentQuote.notes = defaultTerms;
+        document.getElementById('builder-notes').value = defaultTerms;
+
+        const plusTax = settings.defaultTaxPlusApplicable || false;
+        currentQuote.taxPlusApplicable = plusTax;
+        const plusTaxCheck = document.getElementById('builder-tax-plus-applicable');
+        if (plusTaxCheck) {
+          plusTaxCheck.checked = plusTax;
+          if (taxInput) taxInput.disabled = plusTax;
+        }
+
+        calculateTotals();
       }
     });
   }
@@ -936,6 +1004,12 @@ function setupBuilderListeners() {
       if (totalItems === 0) {
         showToast('Quote must have at least one line item in a section.', 'danger');
         return;
+      }
+
+      if (!currentQuote.taxPlusApplicable && !isTaxRateEdited) {
+        if (!confirm(`You have not modified the sales tax rate. Are you sure you want to save with the current tax rate of ${currentQuote.taxRate}%?`)) {
+          return;
+        }
       }
 
       const missingTitle = currentQuote.sections.some(s => !s.title.trim());
