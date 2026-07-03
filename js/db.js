@@ -354,24 +354,35 @@ export async function renameCategory(oldName, newName) {
     return { success: false, error: 'Cannot modify the core "Labor" category.' };
   }
   
-  // 1. Check if any products are currently linked to this category
-  const linkedProducts = await rawDbQuery(
-    'products', 
-    `company_id=eq.${currentUserProfile.company_id}&category=eq.${encodeURIComponent(oldTrimmed)}&limit=1`
-  );
-  if (linkedProducts && linkedProducts.length > 0) {
-    return { success: false, error: 'Cannot rename category: one or more products are currently linked to it.' };
-  }
-  
-  // 2. Perform the update on categories table
-  const { error } = await rawDbWrite(
+  // 1. Update the categories table name first
+  const { error: catErr } = await rawDbWrite(
     'categories',
     'PATCH',
     { name: newTrimmed },
     `company_id=eq.${currentUserProfile.company_id}&name=eq.${encodeURIComponent(oldTrimmed)}`
   );
+  if (catErr) return { success: false, error: catErr.message };
+
+  // 2. Query and update all products referencing this category to match the new name
+  try {
+    const productsToUpdate = await rawDbQuery(
+      'products',
+      `company_id=eq.${currentUserProfile.company_id}&category=eq.${encodeURIComponent(oldTrimmed)}`
+    );
+    if (productsToUpdate && productsToUpdate.length > 0) {
+      for (const prod of productsToUpdate) {
+        await rawDbWrite(
+          'products',
+          'PATCH',
+          { category: newTrimmed },
+          `id=eq.${prod.id}&company_id=eq.${currentUserProfile.company_id}`
+        );
+      }
+    }
+  } catch (prodErr) {
+    console.error('Error updating products category references:', prodErr);
+  }
   
-  if (error) return { success: false, error: error.message };
   return { success: true };
 }
 
