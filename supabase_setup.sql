@@ -503,14 +503,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 2. Redefine security definer helper functions to use a hybrid claim/DB check (recursion-free and dynamically synchronized)
+-- 2. Redefine security definer helper functions (recursion-free JWT claims for roles, dynamic DB lookup for company switching)
 CREATE OR REPLACE FUNCTION public.is_sysadmin()
 RETURNS boolean AS $$
-  SELECT COALESCE(auth.jwt() -> 'app_metadata' ->> 'role' = 'sysadmin', false)
-  OR EXISTS (
-    SELECT 1 FROM public.profiles
-    WHERE id = auth.uid() AND role = 'sysadmin'
-  );
+  SELECT COALESCE(auth.jwt() -> 'app_metadata' ->> 'role' = 'sysadmin', false);
 $$ LANGUAGE sql SECURITY DEFINER;
 
 CREATE OR REPLACE FUNCTION public.get_user_company_id()
@@ -518,19 +514,12 @@ RETURNS uuid
 LANGUAGE sql
 SECURITY DEFINER
 AS $$
-  SELECT COALESCE(
-    (auth.jwt() -> 'app_metadata' ->> 'company_id')::uuid,
-    (SELECT company_id FROM public.profiles WHERE id = auth.uid())
-  );
+  SELECT company_id FROM public.profiles WHERE id = auth.uid();
 $$;
 
 CREATE OR REPLACE FUNCTION public.has_write_access()
 RETURNS boolean AS $$
-  SELECT COALESCE(auth.jwt() -> 'app_metadata' ->> 'role' IN ('sysadmin', 'owner', 'editor'), false)
-  OR EXISTS (
-    SELECT 1 FROM public.profiles
-    WHERE id = auth.uid() AND role IN ('sysadmin', 'owner', 'editor')
-  );
+  SELECT COALESCE(auth.jwt() -> 'app_metadata' ->> 'role' IN ('sysadmin', 'owner', 'editor'), false);
 $$ LANGUAGE sql SECURITY DEFINER;
 
 -- 3. Re-create RLS select/insert/update/delete policies for profiles
@@ -593,6 +582,14 @@ CREATE POLICY "Delete companies for sysadmin" ON public.companies
   FOR DELETE USING (
     public.is_sysadmin()
   );
+
+-- 4. Sync custom claims for all existing profiles to auth.users raw_app_meta_data
+UPDATE auth.users u
+SET raw_app_meta_data = COALESCE(u.raw_app_meta_data, '{}'::jsonb) || 
+                        jsonb_build_object('role', p.role, 'company_id', p.company_id)
+FROM public.profiles p
+WHERE u.id = p.id;
+
 
 
 
