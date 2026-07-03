@@ -702,20 +702,25 @@ BEGIN
   email_html := email_html || '<p style="color: #94a3b8; font-size: 12px; text-align: center;">If you did not expect this invitation, you can safely ignore this email.</p>';
   email_html := email_html || '</div>';
 
-  -- Trigger HTTP POST request to Resend
-  PERFORM net.http_post(
-    url := 'https://api.resend.com/emails',
-    headers := jsonb_build_object(
-      'Content-Type', 'application/json',
-      'Authorization', 'Bearer ' || resend_key
-    ),
-    body := jsonb_build_object(
-      'from', 'ConstructQuote <onboarding@resend.dev>',
-      'to', ARRAY[NEW.email],
-      'subject', 'Invitation to join ' || co_name,
-      'html', email_html
-    )
-  );
+  -- Trigger HTTP POST request to Resend securely, catching any network/CORS or structure errors
+  BEGIN
+    PERFORM net.http_post(
+      'https://api.resend.com/emails',
+      jsonb_build_object(
+        'from', 'ConstructQuote <onboarding@resend.dev>',
+        'to', NEW.email,
+        'subject', 'Invitation to join ' || co_name,
+        'html', email_html
+      ),
+      '{}'::jsonb,
+      jsonb_build_object(
+        'Content-Type', 'application/json',
+        'Authorization', 'Bearer ' || resend_key
+      )
+    );
+  EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING 'Failed to send invitation email via pg_net: %', SQLERRM;
+  END;
 
   RETURN NEW;
 END;

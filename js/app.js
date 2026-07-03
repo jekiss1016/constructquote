@@ -17,12 +17,12 @@ import {
   switchUserCompany,
   uploadFileToStorage,
   rawDbWrite
-} from './db.js?v=43';
+} from './db.js?v=44';
 import { showToast, fileToBase64 } from './utils.js';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=43';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=43';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=43';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=43';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=44';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=44';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=44';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=44';
 
 let activeChallengeId = null;
 let activeFactorId = null;
