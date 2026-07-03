@@ -503,10 +503,13 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 2. Redefine security definer helper functions (recursion-free JWT claims for roles, dynamic DB lookup for company switching)
+-- 2. Redefine security definer helper functions (recursion-free database lookup for live roles and company switching)
 CREATE OR REPLACE FUNCTION public.is_sysadmin()
 RETURNS boolean AS $$
-  SELECT COALESCE(auth.jwt() -> 'app_metadata' ->> 'role' = 'sysadmin', false);
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'sysadmin'
+  );
 $$ LANGUAGE sql SECURITY DEFINER;
 
 CREATE OR REPLACE FUNCTION public.get_user_company_id()
@@ -519,7 +522,10 @@ $$;
 
 CREATE OR REPLACE FUNCTION public.has_write_access()
 RETURNS boolean AS $$
-  SELECT COALESCE(auth.jwt() -> 'app_metadata' ->> 'role' IN ('sysadmin', 'owner', 'editor'), false);
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role IN ('sysadmin', 'owner', 'editor')
+  );
 $$ LANGUAGE sql SECURITY DEFINER;
 
 -- 3. Re-create RLS select/insert/update/delete policies for profiles

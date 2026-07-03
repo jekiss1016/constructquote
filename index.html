@@ -4,12 +4,28 @@
   <script>
     // Self-healing module cache-clearing routine
     try {
-      if (!localStorage.getItem('cq-cache-cleared-v35')) {
+      if (!localStorage.getItem('cq-cache-cleared-v36')) {
         localStorage.clear();
-        localStorage.setItem('cq-cache-cleared-v35', 'true');
+        localStorage.setItem('cq-cache-cleared-v36', 'true');
         window.location.reload(true);
       }
     } catch (e) {}
+
+    // Inline global logout utility (bypass ES Module loading sequence entirely)
+    function globalLogout() {
+      console.log('HTML globalLogout -> Triggered!');
+      try {
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const key = localStorage.key(i);
+          if (key && (key.includes('supabase.auth') || key.includes('auth-token') || key.includes('supabase-key'))) {
+            localStorage.removeItem(key);
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+      window.location.reload(true);
+    }
 
     window.onerror = function(msg, url, line, col, error) {
       const errDiv = document.createElement('div');
@@ -96,7 +112,7 @@
           </svg>
           <span id="theme-toggle-label">Dark Theme</span>
         </button>
-        <button type="button" class="theme-toggle-btn" id="auth-logout-btn" style="background-color: var(--danger-light); color: var(--danger); border-color: rgba(239, 68, 68, 0.25); display: none;">
+        <button type="button" class="theme-toggle-btn" id="auth-logout-btn" onclick="globalLogout()" style="background-color: var(--danger-light); color: var(--danger); border-color: rgba(239, 68, 68, 0.25); display: none;">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="16" height="16">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
@@ -1142,7 +1158,7 @@
               <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: -0.5rem;">
                 Manage your active cloud connection and log out of your account.
               </p>
-              <button type="button" class="btn btn-danger settings-logout-btn" style="width: 100%; justify-content: center; font-size: 0.85rem; padding: 0.45rem; margin-top: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+              <button type="button" class="btn btn-danger settings-logout-btn" onclick="globalLogout()" style="width: 100%; justify-content: center; font-size: 0.85rem; padding: 0.45rem; margin-top: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="16" height="16">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
@@ -1653,7 +1669,7 @@
         </p>
       </div>
       <div class="modal-footer" style="border-top: none; padding: 1.25rem; display: flex; gap: 0.75rem; width: 100%; box-sizing: border-box;">
-        <button type="button" class="btn btn-secondary" id="session-logout-btn" style="flex: 1; justify-content: center; font-size: 0.9rem; padding: 0.65rem;">Sign Out</button>
+        <button type="button" class="btn btn-secondary" id="session-logout-btn" onclick="globalLogout()" style="flex: 1; justify-content: center; font-size: 0.9rem; padding: 0.65rem;">Sign Out</button>
         <button type="button" class="btn btn-primary" id="session-extend-btn" style="flex: 1; justify-content: center; font-size: 0.9rem; padding: 0.65rem;">Stay Signed In</button>
       </div>
     </div>
@@ -1663,7 +1679,7 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Javascript Modules -->
-  <script type="module" src="js/app.js?v=35"></script>
+  <script type="module" src="js/app.js?v=36"></script>
 
 </body>
 </html>
