@@ -4,7 +4,8 @@
   "description": "Custom construction quoting application with pricing version control, templates, Job ID uniqueness, and print-to-PDF styles.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "build": "echo 'No build step required'"
   },
   "keywords": [
     "construction",
