@@ -503,12 +503,29 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 2. Redefine security definer helper functions (recursion-free database lookup for live roles and company switching)
+-- 2. Define profile-to-auth.users sync trigger and dynamic RLS helper functions (recursion-free)
+CREATE OR REPLACE FUNCTION public.sync_profile_to_auth_users()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE auth.users
+  SET raw_app_meta_data = COALESCE(raw_app_meta_data, '{}'::jsonb) || 
+                          jsonb_build_object('role', NEW.role, 'company_id', NEW.company_id)
+  WHERE id = NEW.id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS tr_sync_profile_to_auth_users ON public.profiles;
+CREATE TRIGGER tr_sync_profile_to_auth_users
+AFTER UPDATE OF role, company_id ON public.profiles
+FOR EACH ROW
+EXECUTE FUNCTION public.sync_profile_to_auth_users();
+
 CREATE OR REPLACE FUNCTION public.is_sysadmin()
 RETURNS boolean AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.profiles
-    WHERE id = auth.uid() AND role = 'sysadmin'
+  SELECT COALESCE(
+    (SELECT raw_app_meta_data ->> 'role' = 'sysadmin' FROM auth.users WHERE id = auth.uid()),
+    false
   );
 $$ LANGUAGE sql SECURITY DEFINER;
 
@@ -517,14 +534,14 @@ RETURNS uuid
 LANGUAGE sql
 SECURITY DEFINER
 AS $$
-  SELECT company_id FROM public.profiles WHERE id = auth.uid();
+  SELECT (raw_app_meta_data ->> 'company_id')::uuid FROM auth.users WHERE id = auth.uid();
 $$;
 
 CREATE OR REPLACE FUNCTION public.has_write_access()
 RETURNS boolean AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.profiles
-    WHERE id = auth.uid() AND role IN ('sysadmin', 'owner', 'editor')
+  SELECT COALESCE(
+    (SELECT raw_app_meta_data ->> 'role' IN ('sysadmin', 'owner', 'editor') FROM auth.users WHERE id = auth.uid()),
+    false
   );
 $$ LANGUAGE sql SECURITY DEFINER;
 
