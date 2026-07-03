@@ -453,7 +453,7 @@ export async function renderQuoteDetails(id) {
       const rows = [];
       
       quote.sections.forEach(sec => {
-        const secSub = sec.items.reduce((sum, item) => sum + (item.qty * (item.price + item.laborRate)), 0);
+        const secSub = sec.items.reduce((sum, item) => sum + (item.qty * (item.price + item.laborRate) * (1 + (quote.markupPercent || 0) / 100)), 0);
 
         if (!showQuantities) {
           rows.push(`
@@ -476,22 +476,14 @@ export async function renderQuoteDetails(id) {
         }
 
         sec.items.forEach(item => {
-          const itemTotal = item.qty * (item.price + item.laborRate);
+          const itemUnitPrice = (item.price + item.laborRate) * (1 + (quote.markupPercent || 0) / 100);
+          const itemTotal = item.qty * itemUnitPrice;
           
           let descLines = '';
           if (item.productId && item.description) {
             descLines = `<div class="paper-item-desc">${escapeHtml(item.description)}</div>`;
           } else if (item.isLaborOnly) {
             descLines = `<div class="paper-item-desc" style="font-style: italic;">Custom labor task</div>`;
-          }
-
-          let priceDetails = '';
-          if (item.price > 0 && item.laborRate > 0) {
-            priceDetails = `Mat: ${formatCurrency(item.price)} + Lab: ${formatCurrency(item.laborRate)}`;
-          } else if (item.price > 0) {
-            priceDetails = `Mat: ${formatCurrency(item.price)}`;
-          } else {
-            priceDetails = `Lab: ${formatCurrency(item.laborRate)}`;
           }
 
           if (!showQuantities) {
@@ -518,9 +510,8 @@ export async function renderQuoteDetails(id) {
                   </td>
                   <td style="text-align: center; font-weight: 500;">${item.qty}</td>
                   <td style="text-align: center; font-weight: 500;">${item.uom}</td>
-                  <td style="text-align: right; color: #475569;">
-                    <div style="font-size: 0.75rem;">${priceDetails}</div>
-                    <div style="font-size: 0.8rem; font-weight: 700; color: #334155; margin-top: 0.05rem;">${formatCurrency(item.price + item.laborRate)}</div>
+                  <td style="text-align: right; color: #334155; vertical-align: middle;">
+                    <div style="font-size: 0.8rem; font-weight: 700; color: #334155;">${formatCurrency(itemUnitPrice)}</div>
                   </td>
                   <td style="text-align: right; font-weight: 600; color: #334155; vertical-align: middle;">${formatCurrency(itemTotal)}</td>
                 </tr>
@@ -565,22 +556,18 @@ export async function renderQuoteDetails(id) {
     paperTbody.innerHTML = tbodyHtml;
   }
 
-  const subtotal = quote.sections.reduce((secSum, sec) => {
-    const secSub = sec.items.reduce((sum, item) => sum + (item.qty * (item.price + item.laborRate)), 0);
-    return secSum + secSub;
+  const subtotal = quote.sections.reduce((sum, sec) => {
+    const secSub = sec.items.reduce((sum, item) => sum + (item.qty * (item.price + item.laborRate) * (1 + (quote.markupPercent || 0) / 100)), 0);
+    return sum + secSub;
   }, 0);
-  const markupVal = subtotal * (quote.markupPercent / 100);
-  const taxVal = quote.taxPlusApplicable ? 0 : (subtotal + markupVal) * (quote.taxRate / 100);
-  const total = subtotal + markupVal + taxVal;
+  const taxVal = quote.taxPlusApplicable ? 0 : subtotal * (quote.taxRate / 100);
+  const total = subtotal + taxVal;
 
   document.getElementById('paper-subtotal').textContent = formatCurrency(subtotal);
   
-  if (quote.markupPercent > 0) {
-    document.getElementById('paper-markup-row').style.display = 'table-row';
-    document.getElementById('paper-markup-label').textContent = quote.markupPercent;
-    document.getElementById('paper-markup-amount').textContent = formatCurrency(markupVal);
-  } else {
-    document.getElementById('paper-markup-row').style.display = 'none';
+  const paperMarkupRow = document.getElementById('paper-markup-row');
+  if (paperMarkupRow) {
+    paperMarkupRow.style.display = 'none';
   }
 
   const paperTaxRow = document.getElementById('paper-tax-row');

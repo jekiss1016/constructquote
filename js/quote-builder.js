@@ -271,6 +271,7 @@ export async function renderBuilderSections() {
       rowsHtml = section.items.map((item, itemIdx) => {
         const isLaborOnly = item.isLaborOnly === true;
         const itemTotal = item.qty * (item.price + item.laborRate);
+        const markedUpTotal = itemTotal * (1 + (currentQuote.markupPercent || 0) / 100);
         
         return `
           <tr data-sec-idx="${secIdx}" data-item-idx="${itemIdx}">
@@ -306,10 +307,13 @@ export async function renderBuilderSections() {
             <td>
               <input type="number" class="item-row-input item-labor-input" value="${item.laborRate.toFixed(2)}" min="0" step="0.01" style="width: 80px;">
             </td>
-            <td style="font-weight: 700; color: var(--text-primary); text-align: right; font-size: 0.9rem;">
+            <td class="builder-item-cost-total" style="font-weight: 500; color: var(--text-muted); text-align: right; font-size: 0.85rem; vertical-align: middle;">
               ${formatCurrency(itemTotal)}
             </td>
-            <td style="text-align: right;">
+            <td class="builder-item-markedup-total" style="font-weight: 700; color: var(--text-primary); text-align: right; font-size: 0.9rem; vertical-align: middle;">
+              ${formatCurrency(markedUpTotal)}
+            </td>
+            <td style="text-align: right; vertical-align: middle;">
               <button type="button" class="item-delete-btn remove-item-btn" title="Remove Item">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -341,14 +345,15 @@ export async function renderBuilderSections() {
           <table class="custom-table select-table" style="font-size: 0.85rem;">
             <thead>
               <tr>
-                <th style="width: 35%;">Item Detail</th>
-                <th style="width: 12%;">Category</th>
-                <th style="width: 10%;">UOM</th>
-                <th style="width: 10%;">Qty</th>
-                <th style="width: 11%;">Material ($)</th>
-                <th style="width: 11%;">Labor ($)</th>
-                <th style="width: 11%; text-align: right;">Total Price</th>
-                <th style="width: 5%;"></th>
+                <th style="width: 30%;">Item Detail</th>
+                <th style="width: 10%;">Category</th>
+                <th style="width: 8%;">UOM</th>
+                <th style="width: 8%;">Qty</th>
+                <th style="width: 10%;">Material ($)</th>
+                <th style="width: 10%;">Labor ($)</th>
+                <th style="width: 10%; text-align: right;">Cost Sub</th>
+                <th style="width: 10%; text-align: right;">Total w/ Markup</th>
+                <th style="width: 4%;"></th>
               </tr>
             </thead>
             <tbody>
@@ -366,8 +371,9 @@ export async function renderBuilderSections() {
               ➕ Custom Labor
             </button>
           </div>
-          <div style="font-weight: 700; font-size: 0.85rem; color: var(--text-secondary);">
-            Section Subtotal: <span class="section-subtotal-value" style="color: var(--primary); font-size: 0.95rem;">${formatCurrency(calculateSectionSum(section))}</span>
+          <div style="font-weight: 700; font-size: 0.85rem; color: var(--text-secondary); display: flex; gap: 1.5rem;">
+            <span>Cost Subtotal: <span class="section-subtotal-value" style="color: var(--text-muted); font-weight: 500;">${formatCurrency(calculateSectionSum(section))}</span></span>
+            <span>Subtotal w/ Markup: <span class="section-markedup-subtotal-value" style="color: var(--primary);">${formatCurrency(calculateSectionSum(section) * (1 + (currentQuote.markupPercent || 0) / 100))}</span></span>
           </div>
         </div>
       </div>
@@ -377,6 +383,36 @@ export async function renderBuilderSections() {
 
 function calculateSectionSum(section) {
   return section.items.reduce((sum, item) => sum + (item.qty * (item.price + item.laborRate)), 0);
+}
+
+function updateBuilderMarkedUpTotals() {
+  const markup = currentQuote.markupPercent || 0;
+  currentQuote.sections.forEach((section, secIdx) => {
+    let secSum = 0;
+    section.items.forEach((item, itemIdx) => {
+      const itemTotal = item.qty * (item.price + item.laborRate);
+      const markedUpTotal = itemTotal * (1 + markup / 100);
+      secSum += itemTotal;
+      
+      const row = document.querySelector(`tr[data-sec-idx="${secIdx}"][data-item-idx="${itemIdx}"]`);
+      if (row) {
+        const costCell = row.querySelector('.builder-item-cost-total');
+        if (costCell) costCell.textContent = formatCurrency(itemTotal);
+        const markupCell = row.querySelector('.builder-item-markedup-total');
+        if (markupCell) markupCell.textContent = formatCurrency(markedUpTotal);
+      }
+    });
+    
+    const secCard = document.querySelector(`.section-card[data-sec-idx="${secIdx}"]`);
+    if (secCard) {
+      const subtotalEl = secCard.querySelector('.section-subtotal-value');
+      if (subtotalEl) subtotalEl.textContent = formatCurrency(secSum);
+      const markedUpSpan = secCard.querySelector('.section-markedup-subtotal-value');
+      if (markedUpSpan) {
+        markedUpSpan.textContent = formatCurrency(secSum * (1 + markup / 100));
+      }
+    }
+  });
 }
 
 /* ==================== PHOTO GALLERY RENDER ==================== */
@@ -525,10 +561,11 @@ function setupBuilderListeners() {
     });
   }
 
-  // Markup / Tax rate changes
   if (markupInput) {
     markupInput.addEventListener('input', () => {
       currentQuote.markupPercent = parseFloat(markupInput.value) || 0;
+      calculateTotals();
+      updateBuilderMarkedUpTotals();
     });
   }
   if (taxInput) {
@@ -603,12 +640,19 @@ function setupBuilderListeners() {
 
         // Trigger subtotal update
         const itemTotal = item.qty * (item.price + item.laborRate);
-        row.querySelector('td:nth-last-child(2)').textContent = formatCurrency(itemTotal);
+        const costCell = row.querySelector('.builder-item-cost-total');
+        if (costCell) costCell.textContent = formatCurrency(itemTotal);
+        const markupCell = row.querySelector('.builder-item-markedup-total');
+        if (markupCell) markupCell.textContent = formatCurrency(itemTotal * (1 + (currentQuote.markupPercent || 0) / 100));
         
         // Update section subtotal and grand totals
         const subtotalEl = card.querySelector('.section-subtotal-value');
         if (subtotalEl) {
           subtotalEl.textContent = formatCurrency(calculateSectionSum(section));
+        }
+        const markedUpSpan = card.querySelector('.section-markedup-subtotal-value');
+        if (markedUpSpan) {
+          markedUpSpan.textContent = formatCurrency(calculateSectionSum(section) * (1 + (currentQuote.markupPercent || 0) / 100));
         }
         calculateTotals();
       }
