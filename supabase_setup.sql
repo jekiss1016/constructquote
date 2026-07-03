@@ -455,3 +455,127 @@ CREATE POLICY "Owners/sysadmins can delete profiles in same company" ON public.p
     OR (company_id = public.get_user_company_id() AND public.has_write_access())
   );
 
+-- =====================================================================
+-- Custom Claims Sync & Recursion-Free RLS Helpers (v26)
+-- =====================================================================
+
+-- 1. Redefine trigger function handle_new_user to sync role & company_id to auth.users and auto-confirm emails
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+DECLARE
+  invited_company_id uuid;
+  invited_role text;
+  new_company_id uuid;
+BEGIN
+  -- Check if the signing up user's email has a pending company invitation (case-insensitive)
+  SELECT company_id, role INTO invited_company_id, invited_role
+  FROM public.company_invitations
+  WHERE LOWER(email) = LOWER(NEW.email)
+  LIMIT 1;
+
+  IF invited_company_id IS NOT NULL THEN
+    -- Join inviting company
+    INSERT INTO public.profiles (id, company_id, role, email)
+    VALUES (NEW.id, invited_company_id, invited_role, NEW.email);
+    
+    -- Remove the invitation record
+    DELETE FROM public.company_invitations WHERE LOWER(email) = LOWER(NEW.email);
+
+    -- Sync custom claims and confirm email
+    UPDATE auth.users
+    SET raw_app_meta_data = COALESCE(raw_app_meta_data, '{}'::jsonb) || 
+                            jsonb_build_object('role', invited_role, 'company_id', invited_company_id),
+        email_confirmed_at = now(),
+        confirmed_at = now()
+    WHERE id = NEW.id;
+  ELSE
+    -- Create new company tenant for signup
+    INSERT INTO public.companies (name)
+    VALUES ('New Contractor Co.')
+    RETURNING id INTO new_company_id;
+
+    -- Add settings for company
+    INSERT INTO public.settings (company_id, company_name)
+    VALUES (new_company_id, 'New Contractor Co.');
+
+    -- Seed default categories for this company
+    INSERT INTO public.categories (company_id, name) VALUES
+      (new_company_id, 'Category 1');
+
+    -- Insert profile as owner
+    INSERT INTO public.profiles (id, company_id, role, email)
+    VALUES (NEW.id, new_company_id, 'owner', NEW.email);
+
+    -- Sync custom claims and confirm email
+    UPDATE auth.users
+    SET raw_app_meta_data = COALESCE(raw_app_meta_data, '{}'::jsonb) || 
+                            jsonb_build_object('role', 'owner', 'company_id', new_company_id),
+        email_confirmed_at = now(),
+        confirmed_at = now()
+    WHERE id = NEW.id;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 2. Retroactively sync custom claims for all existing profiles to auth.users
+UPDATE auth.users u
+SET raw_app_meta_data = COALESCE(u.raw_app_meta_data, '{}'::jsonb) || 
+                        jsonb_build_object('role', p.role, 'company_id', p.company_id)
+FROM public.profiles p
+WHERE u.id = p.id;
+
+-- 3. Redefine security definer helper functions to read custom claims from JWT to prevent recursion
+CREATE OR REPLACE FUNCTION public.is_sysadmin()
+RETURNS boolean AS $$
+  SELECT COALESCE(auth.jwt() -> 'app_metadata' ->> 'role' = 'sysadmin', false);
+$$ LANGUAGE sql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION public.get_user_company_id()
+RETURNS uuid
+LANGUAGE sql
+SECURITY DEFINER
+AS $$
+  SELECT (auth.jwt() -> 'app_metadata' ->> 'company_id')::uuid;
+$$;
+
+CREATE OR REPLACE FUNCTION public.has_write_access()
+RETURNS boolean AS $$
+  SELECT COALESCE(auth.jwt() -> 'app_metadata' ->> 'role' IN ('sysadmin', 'owner', 'editor'), false);
+$$ LANGUAGE sql SECURITY DEFINER;
+
+-- 4. Re-create the select policy for profiles using the claim-based helpers
+DROP POLICY IF EXISTS "Users can view profiles in same company" ON public.profiles;
+CREATE POLICY "Users can view profiles in same company" ON public.profiles
+  FOR SELECT USING (
+    id = auth.uid()
+    OR public.is_sysadmin()
+    OR (company_id = public.get_user_company_id())
+  );
+
+DROP POLICY IF EXISTS "Owners/sysadmins can insert profiles in same company" ON public.profiles;
+CREATE POLICY "Owners/sysadmins can insert profiles in same company" ON public.profiles
+  FOR INSERT WITH CHECK (
+    id = auth.uid()
+    OR public.is_sysadmin()
+    OR (company_id = public.get_user_company_id() AND public.has_write_access())
+  );
+
+DROP POLICY IF EXISTS "Owners/sysadmins can update profiles in same company" ON public.profiles;
+CREATE POLICY "Owners/sysadmins can update profiles in same company" ON public.profiles
+  FOR UPDATE USING (
+    id = auth.uid()
+    OR public.is_sysadmin()
+    OR (company_id = public.get_user_company_id() AND public.has_write_access())
+  );
+
+DROP POLICY IF EXISTS "Owners/sysadmins can delete profiles in same company" ON public.profiles;
+CREATE POLICY "Owners/sysadmins can delete profiles in same company" ON public.profiles
+  FOR DELETE USING (
+    id = auth.uid()
+    OR public.is_sysadmin()
+    OR (company_id = public.get_user_company_id() AND public.has_write_access())
+  );
+
+

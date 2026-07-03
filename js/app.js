@@ -1226,6 +1226,9 @@ async function loadTeamManagementUI() {
   const { data: members, error: mErr } = await membersQuery;
   const { data: invites, error: iErr } = await invitesQuery;
 
+  if (mErr) console.error('loadTeamManagementUI -> Error fetching members:', mErr);
+  if (iErr) console.error('loadTeamManagementUI -> Error fetching invites:', iErr);
+
   let rowsHtml = '';
 
   if (members) {
