@@ -607,10 +607,22 @@ async function initAppViews() {
     const logoutBtns = document.querySelectorAll('#auth-logout-btn, .settings-logout-btn');
     logoutBtns.forEach(btn => {
       btn.addEventListener('click', async () => {
-        const sb = getSupabase();
-        if (sb) {
-          await sb.auth.signOut();
-          showToast('Logged out of cloud session.');
+        try {
+          const sb = getSupabase();
+          if (sb) {
+            await sb.auth.signOut();
+          }
+        } catch (err) {
+          console.error('Error during signOut:', err);
+        } finally {
+          // Manually clean up any local storage auth keys to ensure they are redirected
+          for (let i = localStorage.length - 1; i >= 0; i--) {
+            const key = localStorage.key(i);
+            if (key && (key.includes('supabase.auth') || key.includes('auth-token') || key.includes('supabase-key'))) {
+              localStorage.removeItem(key);
+            }
+          }
+          showToast('Logged out.');
           window.location.reload();
         }
       });
@@ -721,8 +733,8 @@ export async function updateBrandHeader() {
 
   if (nameEl) {
     if (profile && profile.role === 'sysadmin') {
-      console.log('updateBrandHeader -> User is sysadmin! Loading all companies...');
       const companies = await getAllCompanies();
+      const hasSelected = companies.some(c => c.id === profile.company_id);
       let selectHtml = `<select id="brand-company-select" style="
         background: var(--bg-secondary);
         color: var(--text-primary);
@@ -738,6 +750,9 @@ export async function updateBrandHeader() {
         box-sizing: border-box;
         margin-top: 0.25rem;
       ">`;
+      if (!hasSelected) {
+        selectHtml += `<option value="" disabled selected>-- Select Company --</option>`;
+      }
       companies.forEach(company => {
         const isSelected = company.id === profile.company_id ? 'selected' : '';
         selectHtml += `<option value="${company.id}" ${isSelected}>${company.name}</option>`;
