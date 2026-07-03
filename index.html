@@ -4,9 +4,9 @@
   <script>
     // Self-healing module cache-clearing routine
     try {
-      if (!localStorage.getItem('cq-cache-cleared-v41')) {
+      if (!localStorage.getItem('cq-cache-cleared-v42')) {
         localStorage.clear();
-        localStorage.setItem('cq-cache-cleared-v41', 'true');
+        localStorage.setItem('cq-cache-cleared-v42', 'true');
         window.location.reload(true);
       }
     } catch (e) {}
@@ -1093,18 +1093,6 @@
               </button>
             </div>
 
-            <!-- Database Migration to Supabase Card -->
-            <div class="widget-card" id="settings-migration-card">
-              <div class="widget-header" style="border-bottom: none; padding-bottom: 0;">
-                <h3 class="widget-title">Local Data Migration</h3>
-              </div>
-              <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: -0.5rem; margin-bottom: 0.75rem;">
-                Copy your old browser local quotes and catalogs up to your new Supabase cloud database.
-              </p>
-              <button type="button" class="btn btn-secondary" id="settings-migrate-db-btn" style="width: 100%; justify-content: center; font-size: 0.8rem; padding: 0.45rem;">
-                Migrate LocalStorage to Supabase
-              </button>
-            </div>
 
             <!-- Logo Preview Widget -->
             <div class="widget-card">
@@ -1679,7 +1667,7 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Javascript Modules -->
-  <script type="module" src="js/app.js?v=41"></script>
+  <script type="module" src="js/app.js?v=42"></script>
 
 </body>
 </html>

@@ -12,18 +12,17 @@ import {
   exportDB, 
   importDB, 
   getQuoteById, 
-  migrateLocalStorageToSupabase,
   getSupabase,
   getAllCompanies,
   switchUserCompany,
   uploadFileToStorage,
   rawDbWrite
-} from './db.js?v=41';
+} from './db.js?v=42';
 import { showToast, fileToBase64 } from './utils.js';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=41';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=41';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=41';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=41';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=42';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=42';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=42';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=42';
 
 let activeChallengeId = null;
 let activeFactorId = null;
@@ -1107,26 +1106,7 @@ function setupSettingsHandlers() {
     });
   }
 
-  // Local Storage to Supabase Migrator button handler
-  const migrateBtn = document.getElementById('settings-migrate-db-btn');
-  if (migrateBtn) {
-    if (isViewer) {
-      migrateBtn.style.display = 'none';
-    } else {
-      migrateBtn.addEventListener('click', async () => {
-        if (confirm('Are you sure you want to migrate all browser LocalStorage quotes/products to Supabase? This merges them into your active cloud company tenant.')) {
-          showToast('Running database migration...');
-          const res = await migrateLocalStorageToSupabase();
-          if (res.success) {
-            showToast('Database migrated successfully! Refreshing dashboard...');
-            setTimeout(() => window.location.reload(), 1500);
-          } else {
-            showToast('Migration failed: ' + res.error, 'danger');
-          }
-        }
-      });
-    }
-  }
+
 
   // Profile Change Password Handler
   const updatePasswordBtn = document.getElementById('profile-change-password-btn');
