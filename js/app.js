@@ -18,12 +18,12 @@ import {
   switchUserCompany,
   uploadFileToStorage,
   rawDbWrite
-} from './db.js?v=38';
+} from './db.js?v=39';
 import { showToast, fileToBase64 } from './utils.js';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=38';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=38';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=38';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=38';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=39';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=39';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=39';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=39';
 
 let activeChallengeId = null;
 let activeFactorId = null;
@@ -769,8 +769,20 @@ export async function updateBrandHeader() {
           const success = await switchUserCompany(newCompanyId);
           if (success) {
             showToast(`Switched to ${companyName}!`, 'success');
-            // Hard reload to refresh all in-memory data tables, categories, quotes, and settings cleanly
-            window.location.reload();
+            
+            // Retrigger same initialization pipeline as login, using the active session
+            const profile = await loadUserSession(currentUserSession);
+            if (profile) {
+              applyUserRoleRestrictions(profile);
+              await loadDefaultSettingsToUI();
+              updateBrandHeader();
+              await loadTeamManagementUI();
+              
+              // Refresh and re-render current view dynamically
+              const activeViewEl = document.querySelector('.view-section.active');
+              const activeViewId = activeViewEl ? activeViewEl.id : 'dashboard-view';
+              await navigateToView(activeViewId);
+            }
           } else {
             showToast('Failed to switch company.', 'danger');
           }
