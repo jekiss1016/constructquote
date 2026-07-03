@@ -18,12 +18,12 @@ import {
   switchUserCompany,
   uploadFileToStorage,
   rawDbWrite
-} from './db.js?v=33';
+} from './db.js?v=35';
 import { showToast, fileToBase64 } from './utils.js';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=33';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=33';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=33';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=33';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=35';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=35';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=35';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=35';
 
 let activeChallengeId = null;
 let activeFactorId = null;
@@ -40,6 +40,33 @@ let sessionCountdownInterval = null;
 let currentSessionExpiryTime = 0;
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // Bind global logout delegation immediately
+  document.addEventListener('click', async (e) => {
+    const logoutBtn = e.target.closest('#auth-logout-btn, .settings-logout-btn, #session-logout-btn');
+    if (logoutBtn) {
+      console.log('Global click listener -> Logout button clicked!');
+      e.preventDefault();
+      try {
+        const sb = getSupabase();
+        if (sb) {
+          await sb.auth.signOut();
+        }
+      } catch (err) {
+        console.error('Error during signOut:', err);
+      } finally {
+        // Manually clean up any local storage auth keys to ensure they are redirected
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const key = localStorage.key(i);
+          if (key && (key.includes('supabase.auth') || key.includes('auth-token') || key.includes('supabase-key'))) {
+            localStorage.removeItem(key);
+          }
+        }
+        showToast('Logged out.');
+        window.location.reload();
+      }
+    }
+  });
+
   // 1. Check for Supabase configuration keys
   await initSupabaseClient();
   if (!isSupabaseConnected()) {
@@ -602,34 +629,7 @@ async function initAppViews() {
     console.error('Failed to draw initial settings UI:', e);
   }
   
-  // Wire logout buttons
-  try {
-    const logoutBtns = document.querySelectorAll('#auth-logout-btn, .settings-logout-btn');
-    logoutBtns.forEach(btn => {
-      btn.addEventListener('click', async () => {
-        try {
-          const sb = getSupabase();
-          if (sb) {
-            await sb.auth.signOut();
-          }
-        } catch (err) {
-          console.error('Error during signOut:', err);
-        } finally {
-          // Manually clean up any local storage auth keys to ensure they are redirected
-          for (let i = localStorage.length - 1; i >= 0; i--) {
-            const key = localStorage.key(i);
-            if (key && (key.includes('supabase.auth') || key.includes('auth-token') || key.includes('supabase-key'))) {
-              localStorage.removeItem(key);
-            }
-          }
-          showToast('Logged out.');
-          window.location.reload();
-        }
-      });
-    });
-  } catch (e) {
-    console.error('Failed to bind logout buttons:', e);
-  }
+  // Logout buttons handled globally in DOMContentLoaded
 
   // Load team users and MFA status panels in settings
   try {
