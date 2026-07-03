@@ -1235,8 +1235,31 @@
         <button type="button" class="btn btn-secondary" id="reactivate-modal-cancel-btn">Cancel</button>
         <button type="button" class="btn btn-primary" id="reactivate-modal-submit-btn">Reactivate & Edit</button>
       </div>
+  <!-- ==================== STATUS CONFIRM MODAL ==================== -->
+  <div class="modal-overlay" id="status-confirm-modal">
+    <div class="modal-container" style="max-width: 420px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Confirm Status Change</h3>
+        <button type="button" class="modal-close" id="status-confirm-close-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="status-confirm-target-status">
+        <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1.25rem;" id="status-confirm-message">
+          Are you sure you want to change the status of this quote?
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="status-confirm-cancel-btn">Cancel</button>
+        <button type="button" class="btn btn-primary" id="status-confirm-submit-btn">Yes, Change Status</button>
+      </div>
     </div>
   </div>
+
+
 
   <!-- ==================== CUSTOMER ADD/EDIT MODAL ==================== -->
   <div class="modal-overlay" id="customer-modal">
@@ -1604,7 +1627,7 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Javascript Modules -->
-  <script type="module" src="js/app.js?v=9"></script>
+  <script type="module" src="js/app.js?v=10"></script>
 
 </body>
 </html>

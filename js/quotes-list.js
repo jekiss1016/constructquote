@@ -319,29 +319,41 @@ export async function renderQuoteDetails(id) {
           <button type="button" class="btn btn-secondary" id="detail-edit-btn">Edit Quote</button>
           <button type="button" class="btn btn-success" id="detail-won-btn">Mark Won</button>
           <button type="button" class="btn btn-danger" id="detail-lost-btn">Mark Lost</button>
+          <button type="button" class="btn btn-secondary" id="detail-completed-btn" style="color: var(--text-secondary);">Mark Completed</button>
           <button type="button" class="btn btn-secondary" id="detail-inactive-btn" style="color: var(--text-secondary);">Mark Inactive</button>
         ` : `
           ${isWon ? `
-            <button type="button" class="btn btn-success" id="detail-completed-btn">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0110 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.746 3.746 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0114 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" /></svg>
-              Mark Completed
-            </button>
             <div style="background-color: var(--success-light); color: var(--success-hover); padding: 0.5rem 1rem; border-radius: var(--radius-md); font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; margin-right: 0.5rem;">QUOTE WON (ACTIVE PROJECT)</div>
+            <button type="button" class="btn btn-secondary" id="detail-pending-btn">Mark Pending</button>
+            <button type="button" class="btn btn-danger" id="detail-lost-btn">Mark Lost</button>
+            <button type="button" class="btn btn-secondary" id="detail-completed-btn" style="color: var(--text-secondary);">Mark Completed</button>
+            <button type="button" class="btn btn-secondary" id="detail-inactive-btn" style="color: var(--text-secondary);">Mark Inactive</button>
           ` : `
             ${isCompleted ? `
               <div style="background-color: var(--info-light); color: var(--info-hover); padding: 0.5rem 1rem; border-radius: var(--radius-md); font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem; margin-right: 0.5rem;">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0110 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.746 3.746 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0114 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" /></svg>
                 PROJECT COMPLETED (ARCHIVED)
               </div>
+              <button type="button" class="btn btn-secondary" id="detail-pending-btn">Mark Pending</button>
+              <button type="button" class="btn btn-success" id="detail-won-btn">Mark Won</button>
+              <button type="button" class="btn btn-danger" id="detail-lost-btn">Mark Lost</button>
+              <button type="button" class="btn btn-secondary" id="detail-inactive-btn" style="color: var(--text-secondary);">Mark Inactive</button>
             ` : `
               ${isInactive ? `
                 <div style="background-color: rgba(226, 232, 240, 0.5); color: #475569; padding: 0.5rem 1rem; border-radius: var(--radius-md); font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; border: 1px solid var(--border-color); margin-right: 0.5rem;">QUOTE INACTIVE (ARCHIVED)</div>
+                <button type="button" class="btn btn-secondary" id="detail-pending-btn">Mark Pending</button>
+                <button type="button" class="btn btn-success" id="detail-won-btn">Mark Won</button>
+                <button type="button" class="btn btn-danger" id="detail-lost-btn">Mark Lost</button>
+                <button type="button" class="btn btn-secondary" id="detail-completed-btn" style="color: var(--text-secondary);">Mark Completed</button>
               ` : `
                 <div style="background-color: var(--danger-light); color: var(--danger-hover); padding: 0.5rem 1rem; border-radius: var(--radius-md); font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; margin-right: 0.5rem;">QUOTE LOST (ARCHIVED)</div>
+                <button type="button" class="btn btn-secondary" id="detail-pending-btn">Mark Pending</button>
+                <button type="button" class="btn btn-success" id="detail-won-btn">Mark Won</button>
+                <button type="button" class="btn btn-secondary" id="detail-completed-btn" style="color: var(--text-secondary);">Mark Completed</button>
+                <button type="button" class="btn btn-secondary" id="detail-inactive-btn" style="color: var(--text-secondary);">Mark Inactive</button>
               `}
             `}
           `}
-          <button type="button" class="btn btn-secondary" id="detail-reactivate-btn">Reactivate & Open</button>
         `}
       `}
     `;
@@ -876,6 +888,25 @@ async function handleUpdateQuoteStatus(status) {
   }
 }
 
+async function promptStatusChange(targetStatus) {
+  if (!selectedQuoteId) return;
+  const quote = await getQuoteById(selectedQuoteId);
+  if (!quote) return;
+
+  const currentStatus = quote.status;
+  if (currentStatus === 'Won' || currentStatus === 'Lost' || currentStatus === 'Completed') {
+    // Show confirmation modal
+    document.getElementById('status-confirm-target-status').value = targetStatus;
+    document.getElementById('status-confirm-message').innerHTML = `
+      Are you sure you want to change the status of this quote from <strong>${currentStatus}</strong> to <strong>${targetStatus}</strong>?
+    `;
+    document.getElementById('status-confirm-modal').classList.add('active');
+  } else {
+    // Immediate update
+    await handleUpdateQuoteStatus(targetStatus);
+  }
+}
+
 // Binds actions for Reactivating a legacy snapshot
 async function handleOpenReactivateModal() {
   if (!selectedQuoteId) return;
@@ -1042,6 +1073,7 @@ function setupListListeners() {
       const printBtn = e.target.closest('#detail-print-btn');
       const dupBtn = e.target.closest('#detail-duplicate-btn');
       const editBtn = e.target.closest('#detail-edit-btn');
+      const pendingBtn = e.target.closest('#detail-pending-btn');
       const wonBtn = e.target.closest('#detail-won-btn');
       const lostBtn = e.target.closest('#detail-lost-btn');
       const inactiveBtn = e.target.closest('#detail-inactive-btn');
@@ -1052,10 +1084,11 @@ function setupListListeners() {
       if (printBtn) window.print();
       if (dupBtn && !isViewer) duplicateQuoteAsTemplate(selectedQuoteId);
       if (editBtn && !isViewer) editQuote(selectedQuoteId);
-      if (wonBtn && !isViewer) await handleUpdateQuoteStatus('Won');
-      if (lostBtn && !isViewer) await handleUpdateQuoteStatus('Lost');
-      if (inactiveBtn && !isViewer) await handleUpdateQuoteStatus('Inactive');
-      if (compBtn && !isViewer) await handleUpdateQuoteStatus('Completed');
+      if (pendingBtn && !isViewer) await promptStatusChange('Pending');
+      if (wonBtn && !isViewer) await promptStatusChange('Won');
+      if (lostBtn && !isViewer) await promptStatusChange('Lost');
+      if (inactiveBtn && !isViewer) await promptStatusChange('Inactive');
+      if (compBtn && !isViewer) await promptStatusChange('Completed');
       if (reactivateBtn && !isViewer) await handleOpenReactivateModal();
     });
   }
@@ -1080,6 +1113,24 @@ function setupListListeners() {
   if (reactivateCancel) reactivateCancel.addEventListener('click', closeReactivateModal);
   if (reactivateClose) reactivateClose.addEventListener('click', closeReactivateModal);
   if (reactivateSubmit) reactivateSubmit.addEventListener('click', handleReactivateSubmit);
+
+  // Status Change Confirmation Modal Listeners
+  const statusConfirmCancel = document.getElementById('status-confirm-cancel-btn');
+  const statusConfirmClose = document.getElementById('status-confirm-close-btn');
+  const statusConfirmSubmit = document.getElementById('status-confirm-submit-btn');
+
+  const closeStatusConfirmModal = () => {
+    document.getElementById('status-confirm-modal').classList.remove('active');
+  };
+  if (statusConfirmCancel) statusConfirmCancel.addEventListener('click', closeStatusConfirmModal);
+  if (statusConfirmClose) statusConfirmClose.addEventListener('click', closeStatusConfirmModal);
+  if (statusConfirmSubmit) {
+    statusConfirmSubmit.addEventListener('click', async () => {
+      const targetStatus = document.getElementById('status-confirm-target-status').value;
+      closeStatusConfirmModal();
+      await handleUpdateQuoteStatus(targetStatus);
+    });
+  }
 
   // Inline notes editor listeners
   const editNotesBtn = document.getElementById('detail-edit-notes-btn');
