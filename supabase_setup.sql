@@ -456,10 +456,10 @@ CREATE POLICY "Owners/sysadmins can delete profiles in same company" ON public.p
   );
 
 -- =====================================================================
--- Custom Claims Sync & Recursion-Free RLS Helpers (v26)
+-- Claims Sync, Dynamic Security Definer Helpers & RLS (v27)
 -- =====================================================================
 
--- 1. Redefine trigger function handle_new_user to sync role & company_id to auth.users and auto-confirm emails
+-- 1. Redefine trigger function handle_new_user to auto-confirm emails and create profile
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -481,11 +481,9 @@ BEGIN
     -- Remove the invitation record
     DELETE FROM public.company_invitations WHERE LOWER(email) = LOWER(NEW.email);
 
-    -- Sync custom claims and confirm email
+    -- Auto-confirm email
     UPDATE auth.users
-    SET raw_app_meta_data = COALESCE(raw_app_meta_data, '{}'::jsonb) || 
-                            jsonb_build_object('role', invited_role, 'company_id', invited_company_id),
-        email_confirmed_at = now(),
+    SET email_confirmed_at = now(),
         confirmed_at = now()
     WHERE id = NEW.id;
   ELSE
@@ -506,11 +504,9 @@ BEGIN
     INSERT INTO public.profiles (id, company_id, role, email)
     VALUES (NEW.id, new_company_id, 'owner', NEW.email);
 
-    -- Sync custom claims and confirm email
+    -- Auto-confirm email
     UPDATE auth.users
-    SET raw_app_meta_data = COALESCE(raw_app_meta_data, '{}'::jsonb) || 
-                            jsonb_build_object('role', 'owner', 'company_id', new_company_id),
-        email_confirmed_at = now(),
+    SET email_confirmed_at = now(),
         confirmed_at = now()
     WHERE id = NEW.id;
   END IF;
@@ -519,17 +515,13 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 2. Retroactively sync custom claims for all existing profiles to auth.users
-UPDATE auth.users u
-SET raw_app_meta_data = COALESCE(u.raw_app_meta_data, '{}'::jsonb) || 
-                        jsonb_build_object('role', p.role, 'company_id', p.company_id)
-FROM public.profiles p
-WHERE u.id = p.id;
-
--- 3. Redefine security definer helper functions to read custom claims from JWT to prevent recursion
+-- 2. Redefine security definer helper functions to dynamically query tables (completely recursion-free as they bypass RLS internally)
 CREATE OR REPLACE FUNCTION public.is_sysadmin()
 RETURNS boolean AS $$
-  SELECT COALESCE(auth.jwt() -> 'app_metadata' ->> 'role' = 'sysadmin', false);
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'sysadmin'
+  );
 $$ LANGUAGE sql SECURITY DEFINER;
 
 CREATE OR REPLACE FUNCTION public.get_user_company_id()
@@ -537,15 +529,18 @@ RETURNS uuid
 LANGUAGE sql
 SECURITY DEFINER
 AS $$
-  SELECT (auth.jwt() -> 'app_metadata' ->> 'company_id')::uuid;
+  SELECT company_id FROM public.profiles WHERE id = auth.uid();
 $$;
 
 CREATE OR REPLACE FUNCTION public.has_write_access()
 RETURNS boolean AS $$
-  SELECT COALESCE(auth.jwt() -> 'app_metadata' ->> 'role' IN ('sysadmin', 'owner', 'editor'), false);
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role IN ('sysadmin', 'owner', 'editor')
+  );
 $$ LANGUAGE sql SECURITY DEFINER;
 
--- 4. Re-create the select policy for profiles using the claim-based helpers
+-- 3. Re-create RLS select/insert/update/delete policies for profiles
 DROP POLICY IF EXISTS "Users can view profiles in same company" ON public.profiles;
 CREATE POLICY "Users can view profiles in same company" ON public.profiles
   FOR SELECT USING (
@@ -577,5 +572,6 @@ CREATE POLICY "Owners/sysadmins can delete profiles in same company" ON public.p
     OR public.is_sysadmin()
     OR (company_id = public.get_user_company_id() AND public.has_write_access())
   );
+
 
 
