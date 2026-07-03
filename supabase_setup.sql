@@ -402,3 +402,56 @@ ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS default_markup_percent NUM
 ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS default_tax_plus_applicable BOOLEAN DEFAULT FALSE;
 
 ALTER TABLE public.quotes ADD COLUMN IF NOT EXISTS tax_plus_applicable BOOLEAN DEFAULT FALSE;
+
+-- =====================================================================
+-- Update profiles constraint and RLS policies (v25)
+-- =====================================================================
+
+-- Recreate profiles role check constraint to include all roles
+ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_role_check;
+ALTER TABLE public.profiles ADD CONSTRAINT profiles_role_check CHECK (role IN ('sysadmin', 'owner', 'editor', 'viewer'));
+
+-- Recreate company invitations role check constraint to include all roles
+ALTER TABLE public.company_invitations DROP CONSTRAINT IF EXISTS company_invitations_role_check;
+ALTER TABLE public.company_invitations ADD CONSTRAINT company_invitations_role_check CHECK (role IN ('editor', 'viewer'));
+
+-- Re-create RLS select policy for profiles to support owners, editors, and sysadmins
+DROP POLICY IF EXISTS "User can view own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can view profiles in same company" ON public.profiles;
+CREATE POLICY "Users can view profiles in same company" ON public.profiles
+  FOR SELECT USING (
+    id = auth.uid()
+    OR public.is_sysadmin()
+    OR (company_id = public.get_user_company_id() AND public.has_write_access())
+  );
+
+-- Re-create RLS insert policy for profiles
+DROP POLICY IF EXISTS "User can insert own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Owners/sysadmins can insert profiles in same company" ON public.profiles;
+CREATE POLICY "Owners/sysadmins can insert profiles in same company" ON public.profiles
+  FOR INSERT WITH CHECK (
+    id = auth.uid()
+    OR public.is_sysadmin()
+    OR (company_id = public.get_user_company_id() AND public.has_write_access())
+  );
+
+-- Re-create RLS update policy for profiles
+DROP POLICY IF EXISTS "User can update own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Owners/sysadmins can update profiles in same company" ON public.profiles;
+CREATE POLICY "Owners/sysadmins can update profiles in same company" ON public.profiles
+  FOR UPDATE USING (
+    id = auth.uid()
+    OR public.is_sysadmin()
+    OR (company_id = public.get_user_company_id() AND public.has_write_access())
+  );
+
+-- Re-create RLS delete policy for profiles
+DROP POLICY IF EXISTS "User can delete own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Owners/sysadmins can delete profiles in same company" ON public.profiles;
+CREATE POLICY "Owners/sysadmins can delete profiles in same company" ON public.profiles
+  FOR DELETE USING (
+    id = auth.uid()
+    OR public.is_sysadmin()
+    OR (company_id = public.get_user_company_id() AND public.has_write_access())
+  );
+

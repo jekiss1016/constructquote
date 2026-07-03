@@ -1211,19 +1211,20 @@ async function loadTeamManagementUI() {
   const sb = getSupabase();
   if (!sb) return;
 
-  // Retrieve active company users
-  const { data: members, error: mErr } = await sb
-    .from('profiles')
-    .select('*')
-    .eq('company_id', profile.company_id)
-    .order('email');
+  // Retrieve active company users and pending invitations
+  let membersQuery = sb.from('profiles').select('*').order('email');
+  let invitesQuery = sb.from('company_invitations').select('*').order('email');
 
-  // Retrieve pending invitations
-  const { data: invites, error: iErr } = await sb
-    .from('company_invitations')
-    .select('*')
-    .eq('company_id', profile.company_id)
-    .order('email');
+  if (profile.role !== 'sysadmin') {
+    membersQuery = membersQuery.eq('company_id', profile.company_id);
+    invitesQuery = invitesQuery.eq('company_id', profile.company_id);
+  } else if (profile.company_id) {
+    membersQuery = membersQuery.eq('company_id', profile.company_id);
+    invitesQuery = invitesQuery.eq('company_id', profile.company_id);
+  }
+
+  const { data: members, error: mErr } = await membersQuery;
+  const { data: invites, error: iErr } = await invitesQuery;
 
   let rowsHtml = '';
 
@@ -1328,6 +1329,11 @@ async function loadTeamManagementUI() {
       const role = document.getElementById('team-invite-role').value;
 
       if (!email) return;
+
+      if (profile.role === 'sysadmin' && !profile.company_id) {
+        showToast('Please select a company in the header before inviting team members.', 'warning');
+        return;
+      }
 
       showToast('Sending invitation...');
       const { error } = await rawDbWrite('company_invitations', 'POST', {
