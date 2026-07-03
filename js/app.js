@@ -1232,7 +1232,8 @@ async function loadTeamManagementUI() {
   let rowsHtml = '';
 
   if (members) {
-    rowsHtml += members.map(m => `
+    const activeMembers = members.filter(m => m.role !== 'sysadmin');
+    rowsHtml += activeMembers.map(m => `
       <tr>
         <td style="font-weight: 600;">${escapeHtml(m.email)}</td>
         <td><span class="badge badge-legacy" style="text-transform: uppercase;">${m.role}</span></td>
@@ -1251,7 +1252,8 @@ async function loadTeamManagementUI() {
   }
 
   if (invites) {
-    rowsHtml += invites.map(i => `
+    const activeInvites = invites.filter(i => i.role !== 'sysadmin');
+    rowsHtml += activeInvites.map(i => `
       <tr>
         <td style="font-weight: 600; color: var(--text-secondary);">${escapeHtml(i.email)}</td>
         <td><span class="badge badge-legacy" style="text-transform: uppercase;">${i.role}</span></td>

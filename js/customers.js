@@ -206,6 +206,17 @@ function addContactRow(contact = { name: '', role: '', email: '', phone: '' }) {
   const container = document.getElementById('customer-contacts-list');
   if (!container) return;
 
+  const profile = getCurrentUserProfile();
+  const isViewer = profile && profile.role === 'viewer';
+
+  const deleteBtnHtml = isViewer ? '' : `
+    <button type="button" class="item-delete-btn contact-row-remove" title="Remove Contact" style="padding: 0.25rem;">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="16" height="16">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+      </svg>
+    </button>
+  `;
+
   const row = document.createElement('div');
   row.className = 'contact-entry-row';
   row.innerHTML = `
@@ -213,11 +224,7 @@ function addContactRow(contact = { name: '', role: '', email: '', phone: '' }) {
     <input type="text" class="contact-row-input contact-role" value="${escapeHtml(contact.role)}" placeholder="Role (e.g. Architect)">
     <input type="email" class="contact-row-input contact-email" value="${escapeHtml(contact.email)}" placeholder="Email">
     <input type="tel" class="contact-row-input contact-phone" value="${escapeHtml(formatPhoneNumber(contact.phone))}" placeholder="Phone" maxlength="14">
-    <button type="button" class="item-delete-btn contact-row-remove" title="Remove Contact" style="padding: 0.25rem;">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="16" height="16">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-      </svg>
-    </button>
+    ${deleteBtnHtml}
   `;
   container.appendChild(row);
 
@@ -521,6 +528,17 @@ function setupCustomerListeners() {
           formInputs.forEach(input => {
             input.disabled = isViewer;
           });
+
+          // Toggle visibility of management elements for viewers
+          const submitBtn = document.getElementById('customer-modal-submit-btn');
+          const addContactBtn = document.getElementById('customer-add-contact-btn');
+          const docUploadLabel = document.querySelector('label[for="customer-doc-upload"]');
+          const defaultsSection = document.getElementById('customer-form-defaults-section');
+
+          if (submitBtn) submitBtn.style.display = isViewer ? 'none' : '';
+          if (addContactBtn) addContactBtn.style.display = isViewer ? 'none' : '';
+          if (docUploadLabel) docUploadLabel.style.display = isViewer ? 'none' : '';
+          if (defaultsSection) defaultsSection.style.display = isViewer ? 'none' : '';
 
           activeCustomerDocs = c.documents || [];
           renderCustomerDocuments(activeCustomerDocs);

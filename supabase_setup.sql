@@ -566,6 +566,34 @@ CREATE POLICY "Owners/sysadmins can delete profiles in same company" ON public.p
     OR (company_id = public.get_user_company_id() AND public.has_write_access())
   );
 
+-- --- Policies for public.companies ---
+DROP POLICY IF EXISTS "Select companies based on company membership" ON public.companies;
+CREATE POLICY "Select companies based on company membership" ON public.companies
+  FOR SELECT USING (
+    id = public.get_user_company_id()
+    OR public.is_sysadmin()
+  );
+
+DROP POLICY IF EXISTS "Insert companies for sysadmin" ON public.companies;
+CREATE POLICY "Insert companies for sysadmin" ON public.companies
+  FOR INSERT WITH CHECK (
+    public.is_sysadmin()
+    OR auth.uid() IS NOT NULL
+  );
+
+DROP POLICY IF EXISTS "Update companies for owners/sysadmins" ON public.companies;
+CREATE POLICY "Update companies for owners/sysadmins" ON public.companies
+  FOR UPDATE USING (
+    (id = public.get_user_company_id() AND public.has_write_access())
+    OR public.is_sysadmin()
+  );
+
+DROP POLICY IF EXISTS "Delete companies for sysadmin" ON public.companies;
+CREATE POLICY "Delete companies for sysadmin" ON public.companies
+  FOR DELETE USING (
+    public.is_sysadmin()
+  );
+
 
 
 
