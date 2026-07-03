@@ -610,47 +610,7 @@ export async function renderQuoteDetails(id) {
   }
 
   /* ==================== PRINT PHOTO GALLERY DRAW ==================== */
-  const photosArea = document.getElementById('paper-photos-area');
-  const beforeContainer = document.getElementById('paper-photos-before-container');
-  const duringContainer = document.getElementById('paper-photos-during-container');
-  const afterContainer = document.getElementById('paper-photos-after-container');
-
-  const beforeGrid = document.getElementById('paper-photos-before-grid');
-  const duringGrid = document.getElementById('paper-photos-during-grid');
-  const afterGrid = document.getElementById('paper-photos-after-grid');
-
-  if (photosArea) {
-    const photos = quote.photos || [];
-
-    if (photos.length > 0) {
-      photosArea.style.display = 'block';
-
-      const beforePhotos = photos.filter(p => p.category === 'before');
-      const duringPhotos = photos.filter(p => p.category === 'during');
-      const afterPhotos = photos.filter(p => p.category === 'after');
-
-      const drawGrid = (list, gridEl, containerEl) => {
-        if (list.length > 0) {
-          containerEl.style.display = 'block';
-          gridEl.innerHTML = list.map(p => `
-            <div class="paper-photo-item">
-              <img src="${p.url}" class="paper-photo-img" alt="Proposal attachment photo">
-              <div class="paper-photo-caption">${escapeHtml(p.label)}</div>
-            </div>
-          `).join('');
-        } else {
-          containerEl.style.display = 'none';
-          gridEl.innerHTML = '';
-        }
-      };
-
-      drawGrid(beforePhotos, beforeGrid, beforeContainer);
-      drawGrid(duringPhotos, duringGrid, duringContainer);
-      drawGrid(afterPhotos, afterGrid, afterContainer);
-    } else {
-      photosArea.style.display = 'none';
-    }
-  }
+  // Excluded from print view paper by request. Gallery photos are internal documentation only.
 
   // Draw Sidebar Project Gallery Manager
   const detailGalleryList = document.getElementById('detail-gallery-list');
