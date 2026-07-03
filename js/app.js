@@ -18,7 +18,7 @@ import {
   switchUserCompany,
   uploadFileToStorage,
   rawDbWrite
-} from './db.js?v=5';
+} from './db.js';
 import { showToast, fileToBase64 } from './utils.js';
 import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js';
 import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js';
