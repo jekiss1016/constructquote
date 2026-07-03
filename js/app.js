@@ -17,12 +17,12 @@ import {
   switchUserCompany,
   uploadFileToStorage,
   rawDbWrite
-} from './db.js?v=42';
+} from './db.js?v=43';
 import { showToast, fileToBase64 } from './utils.js';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=42';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=42';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=42';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=42';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=43';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=43';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=43';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=43';
 
 let activeChallengeId = null;
 let activeFactorId = null;
@@ -405,6 +405,11 @@ function showAuthModal() {
 
   let mode = 'login'; // 'login' or 'signup'
 
+  // Parse invite details from URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const isInvite = urlParams.get('invite') === 'true';
+  const inviteEmail = urlParams.get('email');
+
   const setTab = (newMode) => {
     mode = newMode;
     if (mode === 'login') {
@@ -415,13 +420,33 @@ function showAuthModal() {
     } else {
       tabLogin.classList.remove('active');
       tabSignup.classList.add('active');
-      title.textContent = 'Create Contractor Tenant';
-      submitBtn.textContent = 'Register & Create Company';
+      if (isInvite && inviteEmail) {
+        title.textContent = 'Accept Invitation & Sign Up';
+        submitBtn.textContent = 'Register & Join Company';
+      } else {
+        title.textContent = 'Create Contractor Tenant';
+        submitBtn.textContent = 'Register & Create Company';
+      }
     }
   };
 
   if (tabLogin) tabLogin.addEventListener('click', () => setTab('login'));
   if (tabSignup) tabSignup.addEventListener('click', () => setTab('signup'));
+
+  if (isInvite && inviteEmail) {
+    const emailInput = document.getElementById('auth-email');
+    if (emailInput) {
+      emailInput.value = inviteEmail;
+      emailInput.disabled = true; // Lock email field
+    }
+    if (tabLogin) tabLogin.style.display = 'none'; // Hide sign in tab
+    setTab('signup');
+  } else {
+    const emailInput = document.getElementById('auth-email');
+    if (emailInput) emailInput.disabled = false;
+    if (tabLogin) tabLogin.style.display = 'inline-block';
+    setTab('login');
+  }
 
   if (form) {
     // Remove clone listener if already bound
@@ -1349,7 +1374,8 @@ async function loadTeamManagementUI() {
       const { error } = await rawDbWrite('company_invitations', 'POST', {
         company_id: profile.company_id,
         email,
-        role
+        role,
+        invited_by: profile.email
       });
 
       if (error) {

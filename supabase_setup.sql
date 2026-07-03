@@ -29,6 +29,7 @@ create table if not exists public.company_invitations (
   company_id uuid references public.companies on delete cascade not null,
   email text not null,
   role text default 'editor'::text check (role in ('editor', 'viewer')) not null,
+  invited_by text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   primary key (company_id, email)
 );
@@ -643,7 +644,85 @@ SET raw_app_meta_data = COALESCE(u.raw_app_meta_data, '{}'::jsonb) ||
 FROM public.profiles p
 WHERE u.id = p.id;
 
+-- 5. Enable pg_net extension and define branded email invitation trigger
+CREATE EXTENSION IF NOT EXISTS pg_net;
 
+CREATE TABLE IF NOT EXISTS public.system_config (
+  key text PRIMARY KEY,
+  value text NOT NULL
+);
 
+-- Enable RLS on config (no policies = only superuser/postgres can access)
+ALTER TABLE public.system_config ENABLE ROW LEVEL SECURITY;
 
+CREATE OR REPLACE FUNCTION public.on_invitation_created()
+RETURNS TRIGGER AS $$
+DECLARE
+  resend_key text;
+  co_name text;
+  co_logo text;
+  email_html text;
+  signup_url text;
+BEGIN
+  -- Fetch Resend API Key
+  SELECT value INTO resend_key FROM public.system_config WHERE key = 'resend_api_key';
+  
+  -- Failsafe: if key is not configured, skip email delivery
+  IF resend_key IS NULL THEN
+    RETURN NEW;
+  END IF;
 
+  -- Fetch company details
+  SELECT company_name, company_logo INTO co_name, co_logo
+  FROM public.settings
+  WHERE company_id = NEW.company_id;
+
+  IF co_name IS NULL THEN
+    co_name := 'Your Inviting Company';
+  END IF;
+
+  -- Construct signup URL (direct invite acceptance)
+  signup_url := 'https://jekiss1016.github.io/constructquote/index.html?invite=true&email=' || NEW.email || '&company_id=' || NEW.company_id::text;
+
+  -- Build branded email body
+  email_html := '<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">';
+  IF co_logo IS NOT NULL AND co_logo <> '' THEN
+    email_html := email_html || '<div style="text-align: center; margin-bottom: 20px;"><img src="' || co_logo || '" style="max-height: 80px; max-width: 200px; object-fit: contain;" /></div>';
+  END IF;
+  email_html := email_html || '<h2 style="color: #1e293b; text-align: center; margin-bottom: 10px;">You are invited to join ' || co_name || '</h2>';
+  email_html := email_html || '<p style="color: #475569; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">';
+  IF NEW.invited_by IS NOT NULL THEN
+    email_html := email_html || '<strong>' || NEW.invited_by || '</strong> has invited you to join ';
+  ELSE
+    email_html := email_html || 'You have been invited to join ';
+  END IF;
+  email_html := email_html || '<strong>' || co_name || '</strong> as a <strong>' || NEW.role || '</strong> on ConstructQuote.</p>';
+  email_html := email_html || '<div style="text-align: center; margin: 30px 0;"><a href="' || signup_url || '" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Accept Invitation & Create Account</a></div>';
+  email_html := email_html || '<hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;" />';
+  email_html := email_html || '<p style="color: #94a3b8; font-size: 12px; text-align: center;">If you did not expect this invitation, you can safely ignore this email.</p>';
+  email_html := email_html || '</div>';
+
+  -- Trigger HTTP POST request to Resend
+  PERFORM net.http_post(
+    url := 'https://api.resend.com/emails',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || resend_key
+    ),
+    body := jsonb_build_object(
+      'from', 'ConstructQuote <onboarding@resend.dev>',
+      'to', ARRAY[NEW.email],
+      'subject', 'Invitation to join ' || co_name,
+      'html', email_html
+    )
+  );
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS tr_on_invitation_created ON public.company_invitations;
+CREATE TRIGGER tr_on_invitation_created
+AFTER INSERT ON public.company_invitations
+FOR EACH ROW
+EXECUTE FUNCTION public.on_invitation_created();
