@@ -18,12 +18,12 @@ import {
   switchUserCompany,
   uploadFileToStorage,
   rawDbWrite
-} from './db.js?v=37';
+} from './db.js?v=38';
 import { showToast, fileToBase64 } from './utils.js';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=37';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=37';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=37';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=37';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=38';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=38';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=38';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=38';
 
 let activeChallengeId = null;
 let activeFactorId = null;
@@ -1226,20 +1226,9 @@ async function loadTeamManagementUI() {
   const sb = getSupabase();
   if (!sb) return;
 
-  // Retrieve active company users and pending invitations
-  let membersQuery = sb.from('profiles').select('*').order('email');
-  let invitesQuery = sb.from('company_invitations').select('*').order('email');
-
-  if (profile.role !== 'sysadmin') {
-    membersQuery = membersQuery.eq('company_id', profile.company_id);
-    invitesQuery = invitesQuery.eq('company_id', profile.company_id);
-  } else if (profile.company_id) {
-    membersQuery = membersQuery.eq('company_id', profile.company_id);
-    invitesQuery = invitesQuery.eq('company_id', profile.company_id);
-  }
-
-  const { data: members, error: mErr } = await membersQuery;
-  const { data: invites, error: iErr } = await invitesQuery;
+  // Retrieve active company users and pending invitations via secure RPC functions to bypass RLS mapping issues
+  const { data: members, error: mErr } = await sb.rpc('get_company_users', { co_id: profile.company_id });
+  const { data: invites, error: iErr } = await sb.rpc('get_company_invitations', { co_id: profile.company_id });
 
   if (mErr) console.error('loadTeamManagementUI -> Error fetching members:', mErr);
   if (iErr) console.error('loadTeamManagementUI -> Error fetching invites:', iErr);

@@ -503,29 +503,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 2. Define profile-to-auth.users sync trigger and dynamic RLS helper functions (recursion-free)
-CREATE OR REPLACE FUNCTION public.sync_profile_to_auth_users()
-RETURNS TRIGGER AS $$
-BEGIN
-  UPDATE auth.users
-  SET raw_app_meta_data = COALESCE(raw_app_meta_data, '{}'::jsonb) || 
-                          jsonb_build_object('role', NEW.role, 'company_id', NEW.company_id)
-  WHERE id = NEW.id;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-DROP TRIGGER IF EXISTS tr_sync_profile_to_auth_users ON public.profiles;
-CREATE TRIGGER tr_sync_profile_to_auth_users
-AFTER UPDATE OF role, company_id ON public.profiles
-FOR EACH ROW
-EXECUTE FUNCTION public.sync_profile_to_auth_users();
-
+-- 2. Define dynamic RLS helper functions and secure RPC data fetchers (recursion-free)
 CREATE OR REPLACE FUNCTION public.is_sysadmin()
 RETURNS boolean AS $$
-  SELECT COALESCE(
-    (SELECT raw_app_meta_data ->> 'role' = 'sysadmin' FROM auth.users WHERE id = auth.uid()),
-    false
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'sysadmin'
   );
 $$ LANGUAGE sql SECURITY DEFINER;
 
@@ -534,16 +517,63 @@ RETURNS uuid
 LANGUAGE sql
 SECURITY DEFINER
 AS $$
-  SELECT (raw_app_meta_data ->> 'company_id')::uuid FROM auth.users WHERE id = auth.uid();
+  SELECT company_id FROM public.profiles WHERE id = auth.uid();
 $$;
 
 CREATE OR REPLACE FUNCTION public.has_write_access()
 RETURNS boolean AS $$
-  SELECT COALESCE(
-    (SELECT raw_app_meta_data ->> 'role' IN ('sysadmin', 'owner', 'editor') FROM auth.users WHERE id = auth.uid()),
-    false
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role IN ('sysadmin', 'owner', 'editor')
   );
 $$ LANGUAGE sql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION public.get_company_users(co_id uuid)
+RETURNS TABLE (
+  id uuid,
+  company_id uuid,
+  role text,
+  email text,
+  created_at timestamp with time zone
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  IF public.is_sysadmin() OR (SELECT p.company_id FROM public.profiles p WHERE p.id = auth.uid()) = co_id THEN
+    RETURN QUERY
+    SELECT p.id, p.company_id, p.role, p.email, p.created_at
+    FROM public.profiles p
+    WHERE (co_id IS NULL AND public.is_sysadmin()) OR p.company_id = co_id
+    ORDER BY p.email;
+  ELSE
+    RETURN;
+  END IF;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_company_invitations(co_id uuid)
+RETURNS TABLE (
+  company_id uuid,
+  email text,
+  role text,
+  created_at timestamp with time zone
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  IF public.is_sysadmin() OR (SELECT p.company_id FROM public.profiles p WHERE p.id = auth.uid()) = co_id THEN
+    RETURN QUERY
+    SELECT i.company_id, i.email, i.role, i.created_at
+    FROM public.company_invitations i
+    WHERE (co_id IS NULL AND public.is_sysadmin()) OR i.company_id = co_id
+    ORDER BY i.email;
+  ELSE
+    RETURN;
+  END IF;
+END;
+$$;
 
 -- 3. Re-create RLS select/insert/update/delete policies for profiles
 DROP POLICY IF EXISTS "Users can view profiles in same company" ON public.profiles;
