@@ -658,17 +658,19 @@ ALTER TABLE public.system_config ENABLE ROW LEVEL SECURITY;
 CREATE OR REPLACE FUNCTION public.on_invitation_created()
 RETURNS TRIGGER AS $$
 DECLARE
+  brevo_key text;
   resend_key text;
   co_name text;
   co_logo text;
   email_html text;
   signup_url text;
 BEGIN
-  -- Fetch Resend API Key
+  -- Fetch API Keys
+  SELECT value INTO brevo_key FROM public.system_config WHERE key = 'brevo_api_key';
   SELECT value INTO resend_key FROM public.system_config WHERE key = 'resend_api_key';
   
-  -- Failsafe: if key is not configured, skip email delivery
-  IF resend_key IS NULL THEN
+  -- Failsafe: if no key is configured, skip email delivery
+  IF brevo_key IS NULL AND resend_key IS NULL THEN
     RETURN NEW;
   END IF;
 
@@ -681,8 +683,8 @@ BEGIN
     co_name := 'Your Inviting Company';
   END IF;
 
-  -- Construct signup URL (direct invite acceptance)
-  signup_url := 'https://jekiss1016.github.io/constructquote/index.html?invite=true&email=' || NEW.email || '&company_id=' || NEW.company_id::text;
+  -- Construct signup URL (pointing to new custom domain)
+  signup_url := 'https://mybidbook.com/index.html?invite=true&email=' || NEW.email || '&company_id=' || NEW.company_id::text;
 
   -- Build branded email body
   email_html := '<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">';
@@ -702,22 +704,41 @@ BEGIN
   email_html := email_html || '<p style="color: #94a3b8; font-size: 12px; text-align: center;">If you did not expect this invitation, you can safely ignore this email.</p>';
   email_html := email_html || '</div>';
 
-  -- Trigger HTTP POST request to Resend securely, catching any network/CORS or structure errors
+  -- Trigger HTTP POST request securely
   BEGIN
-    PERFORM net.http_post(
-      'https://api.resend.com/emails',
-      jsonb_build_object(
-        'from', 'ConstructQuote <onboarding@resend.dev>',
-        'to', NEW.email,
-        'subject', 'Invitation to join ' || co_name,
-        'html', email_html
-      ),
-      '{}'::jsonb,
-      jsonb_build_object(
-        'Content-Type', 'application/json',
-        'Authorization', 'Bearer ' || resend_key
-      )
-    );
+    IF brevo_key IS NOT NULL THEN
+      -- Send via Brevo API
+      PERFORM net.http_post(
+        'https://api.brevo.com/v3/smtp/email',
+        jsonb_build_object(
+          'sender', jsonb_build_object('name', 'MyBidBook', 'email', 'no-reply@mybidbook.com'),
+          'to', jsonb_build_array(jsonb_build_object('email', NEW.email)),
+          'subject', 'Invitation to join ' || co_name,
+          'htmlContent', email_html
+        ),
+        '{}'::jsonb,
+        jsonb_build_object(
+          'Content-Type', 'application/json',
+          'api-key', brevo_key
+        )
+      );
+    ELSE
+      -- Fallback to Resend API
+      PERFORM net.http_post(
+        'https://api.resend.com/emails',
+        jsonb_build_object(
+          'from', 'ConstructQuote <onboarding@resend.dev>',
+          'to', NEW.email,
+          'subject', 'Invitation to join ' || co_name,
+          'html', email_html
+        ),
+        '{}'::jsonb,
+        jsonb_build_object(
+          'Content-Type', 'application/json',
+          'Authorization', 'Bearer ' || resend_key
+        )
+      );
+    END IF;
   EXCEPTION WHEN OTHERS THEN
     RAISE WARNING 'Failed to send invitation email via pg_net: %', SQLERRM;
   END;
