@@ -17,12 +17,12 @@ import {
   switchUserCompany,
   uploadFileToStorage,
   rawDbWrite
-} from './db.js?v=47';
+} from './db.js?v=48';
 import { showToast, fileToBase64 } from './utils.js';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=47';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=47';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=47';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=47';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=48';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=48';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=48';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=48';
 
 let activeChallengeId = null;
 let activeFactorId = null;
@@ -415,6 +415,7 @@ function showAuthModal() {
     const confirmGroup = document.getElementById('auth-confirm-password-group');
     const confirmInput = document.getElementById('auth-confirm-password');
     const liveSubmitBtn = document.getElementById('auth-submit-btn');
+    const forgotLink = document.getElementById('auth-forgot-password-link');
 
     if (mode === 'login') {
       tabLogin.classList.add('active');
@@ -426,6 +427,7 @@ function showAuthModal() {
         confirmInput.removeAttribute('required');
         confirmInput.value = '';
       }
+      if (forgotLink) forgotLink.style.display = 'inline';
     } else {
       tabLogin.classList.remove('active');
       tabSignup.classList.add('active');
@@ -437,6 +439,7 @@ function showAuthModal() {
       if (liveSubmitBtn) liveSubmitBtn.textContent = 'Register';
       if (confirmGroup) confirmGroup.style.display = 'block';
       if (confirmInput) confirmInput.setAttribute('required', 'required');
+      if (forgotLink) forgotLink.style.display = 'none';
     }
   };
 
