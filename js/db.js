@@ -682,6 +682,17 @@ export async function checkJobIdUnique(jobId, ignoreQuoteId = null) {
 export async function saveQuote(quote) {
   if (!currentUserProfile) return { success: false, error: 'Not authenticated' };
   
+  // Enforce Trial account limits (max 10 quotes)
+  if (!quote.id && getSubscriptionLevel() === 'trial') {
+    const existingQuotes = await getQuotes();
+    if (existingQuotes && existingQuotes.length >= 10) {
+      return {
+        success: false,
+        error: 'Trial limit reached: You can have a maximum of 10 quotes on the Contractor Trial plan. Please upgrade to Contractor Pro to create more.'
+      };
+    }
+  }
+  
   if (!(await checkJobIdUnique(quote.jobId, quote.id))) {
     return { success: false, error: `Job ID "${quote.jobId}" is already assigned to another active quote. Job IDs must be unique.` };
   }
