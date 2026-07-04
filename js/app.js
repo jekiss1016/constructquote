@@ -17,12 +17,12 @@ import {
   switchUserCompany,
   uploadFileToStorage,
   rawDbWrite
-} from './db.js?v=52';
+} from './db.js?v=53';
 import { showToast, fileToBase64 } from './utils.js';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=52';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=52';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=52';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=52';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=53';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=53';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=53';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=53';
 
 let activeChallengeId = null;
 let activeFactorId = null;
@@ -856,8 +856,8 @@ export async function updateBrandHeader() {
       logoContainer.innerHTML = `<img src="${settings.companyLogo}" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">`;
       logoContainer.style.background = 'transparent';
     } else {
-      logoContainer.innerHTML = 'MB';
-      logoContainer.style.background = '';
+      logoContainer.innerHTML = `<img src="logo.jpg" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">`;
+      logoContainer.style.background = 'transparent';
     }
   }
 }
