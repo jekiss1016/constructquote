@@ -17,12 +17,12 @@ import {
   switchUserCompany,
   uploadFileToStorage,
   rawDbWrite
-} from './db.js?v=50';
+} from './db.js?v=51';
 import { showToast, fileToBase64 } from './utils.js';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=50';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=50';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=50';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=50';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=51';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=51';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=51';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=51';
 
 let activeChallengeId = null;
 let activeFactorId = null;
@@ -1342,13 +1342,7 @@ async function loadTeamManagementUI() {
       const memberId = removeBtn.getAttribute('data-id');
       if (confirm('Are you sure you want to remove this member? they will lose access to company data.')) {
         showToast('Removing user...');
-        // Set member company_id to null or delete profile depending on model
-        const { error } = await rawDbWrite(
-          'profiles', 
-          'PATCH', 
-          { company_id: null, role: 'viewer' }, 
-          `id=eq.${memberId}`
-        );
+        const { error } = await sb.rpc('delete_user_by_id', { user_id: memberId });
         if (error) {
           showToast(error.message, 'danger');
         } else {

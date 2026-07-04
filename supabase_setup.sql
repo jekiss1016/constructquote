@@ -752,3 +752,32 @@ CREATE TRIGGER tr_on_invitation_created
 AFTER INSERT ON public.company_invitations
 FOR EACH ROW
 EXECUTE FUNCTION public.on_invitation_created();
+
+-- Delete User by ID (owner/sysadmin privilege)
+CREATE OR REPLACE FUNCTION public.delete_user_by_id(user_id uuid)
+RETURNS void AS $$
+DECLARE
+  caller_role text;
+  caller_co_id uuid;
+  target_co_id uuid;
+BEGIN
+  -- Get caller details
+  SELECT role, company_id INTO caller_role, caller_co_id 
+  FROM public.profiles 
+  WHERE id = auth.uid();
+
+  -- Get target details
+  SELECT company_id INTO target_co_id 
+  FROM public.profiles 
+  WHERE id = user_id;
+
+  -- Verify permissions:
+  -- Caller must be sysadmin, OR (caller must be owner of the same company as target)
+  IF caller_role = 'sysadmin' OR (caller_role = 'owner' AND caller_co_id = target_co_id) THEN
+    -- Delete from auth.users (which cascades to public.profiles)
+    DELETE FROM auth.users WHERE id = user_id;
+  ELSE
+    RAISE EXCEPTION 'Unauthorized to delete user. You must be an owner of the company or a sysadmin.';
+  END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
