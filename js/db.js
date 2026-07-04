@@ -999,10 +999,22 @@ export async function getAllCompanies() {
 }
 
 export async function switchUserCompany(companyId) {
+  console.log('switchUserCompany -> Entering with companyId:', companyId);
   const config = await getSupabaseConfig();
-  if (!config || !currentUserProfile) return false;
+  if (!config) {
+    console.error('switchUserCompany -> Supabase config is missing.');
+    return false;
+  }
+  if (!currentUserProfile) {
+    console.error('switchUserCompany -> currentUserProfile is null/missing.');
+    return false;
+  }
+  console.log('switchUserCompany -> Current User Profile ID:', currentUserProfile.id);
   const token = await getAccessToken();
-  if (!token) return false;
+  if (!token) {
+    console.error('switchUserCompany -> Access token is missing.');
+    return false;
+  }
   
   console.log('switchUserCompany -> Triggering raw PATCH update for profiles table. Company ID:', companyId, 'User ID:', currentUserProfile.id);
   const url = `${config.url}/rest/v1/profiles?id=eq.${currentUserProfile.id}`;

@@ -17,12 +17,12 @@ import {
   switchUserCompany,
   uploadFileToStorage,
   rawDbWrite
-} from './db.js?v=49';
+} from './db.js?v=50';
 import { showToast, fileToBase64 } from './utils.js';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=49';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=49';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=49';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=49';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=50';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=50';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=50';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=50';
 
 let activeChallengeId = null;
 let activeFactorId = null;
@@ -805,14 +805,21 @@ export async function updateBrandHeader() {
 
       const selectEl = document.getElementById('brand-company-select');
       if (selectEl) {
+        console.log('updateBrandHeader -> Successfully bound change listener to brand-company-select');
         selectEl.addEventListener('change', async (e) => {
-          if (isSwitchingCompany) return;
+          const newCompanyId = e.target.value;
+          const companyName = e.target.options[e.target.selectedIndex].text;
+          console.log('brand-company-select -> change event fired. Selected company:', companyName, 'ID:', newCompanyId, 'isSwitchingCompany:', isSwitchingCompany);
+          if (isSwitchingCompany) {
+            console.warn('brand-company-select -> switch already in progress, aborting.');
+            return;
+          }
           isSwitchingCompany = true;
           
           try {
-            const newCompanyId = e.target.value;
-            const companyName = e.target.options[e.target.selectedIndex].text;
+            console.log('brand-company-select -> Triggering switchUserCompany...');
             const success = await switchUserCompany(newCompanyId);
+            console.log('brand-company-select -> switchUserCompany success result:', success);
             if (success) {
               showToast(`Switched to ${companyName}!`, 'success');
               
