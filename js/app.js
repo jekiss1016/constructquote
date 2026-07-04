@@ -17,12 +17,12 @@ import {
   switchUserCompany,
   uploadFileToStorage,
   rawDbWrite
-} from './db.js?v=46';
+} from './db.js?v=47';
 import { showToast, fileToBase64 } from './utils.js';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=46';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=46';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=46';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=46';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=47';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=47';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=47';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=47';
 
 let activeChallengeId = null;
 let activeFactorId = null;
@@ -414,12 +414,13 @@ function showAuthModal() {
     mode = newMode;
     const confirmGroup = document.getElementById('auth-confirm-password-group');
     const confirmInput = document.getElementById('auth-confirm-password');
+    const liveSubmitBtn = document.getElementById('auth-submit-btn');
 
     if (mode === 'login') {
       tabLogin.classList.add('active');
       tabSignup.classList.remove('active');
       title.textContent = 'ConstructQuote Cloud';
-      submitBtn.textContent = 'Sign In';
+      if (liveSubmitBtn) liveSubmitBtn.textContent = 'Sign In';
       if (confirmGroup) confirmGroup.style.display = 'none';
       if (confirmInput) {
         confirmInput.removeAttribute('required');
@@ -433,7 +434,7 @@ function showAuthModal() {
       } else {
         title.textContent = 'Create Contractor Tenant';
       }
-      submitBtn.textContent = 'Register'; // Always 'Register' for signup/registration
+      if (liveSubmitBtn) liveSubmitBtn.textContent = 'Register';
       if (confirmGroup) confirmGroup.style.display = 'block';
       if (confirmInput) confirmInput.setAttribute('required', 'required');
     }
