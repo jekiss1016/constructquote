@@ -4,9 +4,9 @@
   <script>
     // Self-healing module cache-clearing routine
     try {
-      if (!localStorage.getItem('cq-cache-cleared-v48')) {
+      if (!localStorage.getItem('cq-cache-cleared-v49')) {
         localStorage.clear();
-        localStorage.setItem('cq-cache-cleared-v48', 'true');
+        localStorage.setItem('cq-cache-cleared-v49', 'true');
         window.location.reload(true);
       }
     } catch (e) {}
@@ -1143,7 +1143,7 @@
 
       <!-- Global Footer -->
       <footer class="hide-in-print" style="margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); text-align: center; font-size: 0.8rem; color: var(--text-muted); padding-bottom: 1.5rem;">
-        © 2026 ContructionQuote | v1.23.0
+        © 2026 ConstructQuote | v1.49
       </footer>
     </main>
   </div>
@@ -1655,7 +1655,7 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Javascript Modules -->
-  <script type="module" src="js/app.js?v=48"></script>
+  <script type="module" src="js/app.js?v=49"></script>
 
 </body>
 </html>
