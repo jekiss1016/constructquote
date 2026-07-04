@@ -12,6 +12,9 @@ create extension if not exists "uuid-ossp";
 create table if not exists public.companies (
   id uuid primary key default gen_random_uuid(),
   name text not null,
+  subscription_level text default 'trial'::text check (subscription_level in ('trial', 'pro', 'pro_perpetual')),
+  subscription_status text default 'active'::text,
+  subscription_period_end timestamp with time zone,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 

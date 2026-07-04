@@ -256,7 +256,7 @@ export async function loadUserSession(passedSession = null) {
 
   console.log('loadUserSession -> Initiating raw fetch to profiles endpoint for user ID:', user.id);
   const config = await getSupabaseConfig();
-  const url = `${config.url}/rest/v1/profiles?id=eq.${user.id}&select=*`;
+  const url = `${config.url}/rest/v1/profiles?id=eq.${user.id}&select=*,companies(subscription_level,subscription_status)`;
   
   let profile = null;
   let pError = null;
@@ -1081,4 +1081,18 @@ export async function uploadFileToStorage(bucket, filePath, file) {
     console.error('db: uploadFileToStorage -> Catch error:', err);
     return { data: null, error: { message: err.message } };
   }
+}
+
+export function getSubscriptionLevel() {
+  if (currentUserProfile && currentUserProfile.companies) {
+    return currentUserProfile.companies.subscription_level || 'trial';
+  }
+  return 'trial';
+}
+
+export function getSubscriptionStatus() {
+  if (currentUserProfile && currentUserProfile.companies) {
+    return currentUserProfile.companies.subscription_status || 'active';
+  }
+  return 'active';
 }

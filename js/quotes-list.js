@@ -1,7 +1,7 @@
 // Quotes List & Dashboard management controller
-import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage } from './db.js?v=54';
+import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel } from './db.js?v=55';
 import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage } from './utils.js';
-import { navigateToView, editQuote, duplicateQuoteAsTemplate } from './app.js?v=54';
+import { navigateToView, editQuote, duplicateQuoteAsTemplate } from './app.js?v=55';
 
 let activeStatusFilter = 'pending';
 let activeSearchQuery = '';
@@ -361,6 +361,26 @@ export async function renderQuoteDetails(id) {
         `}
       `}
     `;
+  }
+
+  // Handle watermark for Trial accounts
+  const quotePaper = document.getElementById('quote-paper');
+  if (quotePaper) {
+    const existingWatermark = quotePaper.querySelector('.watermark-container');
+    if (existingWatermark) existingWatermark.remove();
+
+    const subLevel = getSubscriptionLevel();
+    if (subLevel === 'trial') {
+      const watermark = document.createElement('div');
+      watermark.className = 'watermark-container';
+      watermark.innerHTML = `
+        <div class="watermark-text">Trial Version of MyBidBook.com Please Subscribe to Remove This</div>
+        <div class="watermark-text">Trial Version of MyBidBook.com Please Subscribe to Remove This</div>
+        <div class="watermark-text">Trial Version of MyBidBook.com Please Subscribe to Remove This</div>
+        <div class="watermark-text">Trial Version of MyBidBook.com Please Subscribe to Remove This</div>
+      `;
+      quotePaper.appendChild(watermark);
+    }
   }
 
   // Draw printable invoice company logo
