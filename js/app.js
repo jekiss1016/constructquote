@@ -17,12 +17,12 @@ import {
   switchUserCompany,
   uploadFileToStorage,
   rawDbWrite
-} from './db.js?v=45';
+} from './db.js?v=46';
 import { showToast, fileToBase64 } from './utils.js';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=45';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=45';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=45';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=45';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=46';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=46';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=46';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=46';
 
 let activeChallengeId = null;
 let activeFactorId = null;
@@ -412,21 +412,30 @@ function showAuthModal() {
 
   const setTab = (newMode) => {
     mode = newMode;
+    const confirmGroup = document.getElementById('auth-confirm-password-group');
+    const confirmInput = document.getElementById('auth-confirm-password');
+
     if (mode === 'login') {
       tabLogin.classList.add('active');
       tabSignup.classList.remove('active');
       title.textContent = 'ConstructQuote Cloud';
       submitBtn.textContent = 'Sign In';
+      if (confirmGroup) confirmGroup.style.display = 'none';
+      if (confirmInput) {
+        confirmInput.removeAttribute('required');
+        confirmInput.value = '';
+      }
     } else {
       tabLogin.classList.remove('active');
       tabSignup.classList.add('active');
       if (isInvite && inviteEmail) {
         title.textContent = 'Accept Invitation & Sign Up';
-        submitBtn.textContent = 'Register & Join Company';
       } else {
         title.textContent = 'Create Contractor Tenant';
-        submitBtn.textContent = 'Register & Create Company';
       }
+      submitBtn.textContent = 'Register'; // Always 'Register' for signup/registration
+      if (confirmGroup) confirmGroup.style.display = 'block';
+      if (confirmInput) confirmInput.setAttribute('required', 'required');
     }
   };
 
@@ -481,6 +490,11 @@ function showAuthModal() {
           await handleAuthSuccess(data);
         }
       } else {
+        const confirmPassword = document.getElementById('auth-confirm-password').value;
+        if (password !== confirmPassword) {
+          showToast('Passwords do not match.', 'danger');
+          return;
+        }
         showToast('Provisioning tenant environment...');
         const redirectUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '') + '/verified.html';
         const { data, error } = await sb.auth.signUp({ 

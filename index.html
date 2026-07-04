@@ -4,9 +4,9 @@
   <script>
     // Self-healing module cache-clearing routine
     try {
-      if (!localStorage.getItem('cq-cache-cleared-v45')) {
+      if (!localStorage.getItem('cq-cache-cleared-v46')) {
         localStorage.clear();
-        localStorage.setItem('cq-cache-cleared-v45', 'true');
+        localStorage.setItem('cq-cache-cleared-v46', 'true');
         window.location.reload(true);
       }
     } catch (e) {}
@@ -1501,6 +1501,10 @@
               <input type="password" class="form-input" id="auth-password" placeholder="••••••••" required minlength="6">
               <a href="#" id="auth-forgot-password-link" style="position: absolute; right: 0; top: 0; font-size: 0.75rem; color: var(--primary); font-weight: 600; text-decoration: none;">Forgot Password?</a>
             </div>
+            <div class="form-group" id="auth-confirm-password-group" style="display: none;">
+              <label class="form-label" for="auth-confirm-password">Confirm Password</label>
+              <input type="password" class="form-input" id="auth-confirm-password" placeholder="••••••••" minlength="6">
+            </div>
             
             <button type="submit" class="btn btn-primary" id="auth-submit-btn" style="width: 100%; margin-top: 0.5rem; justify-content: center; font-size: 0.95rem; padding: 0.75rem;">Sign In</button>
           </form>
@@ -1651,7 +1655,7 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Javascript Modules -->
-  <script type="module" src="js/app.js?v=45"></script>
+  <script type="module" src="js/app.js?v=46"></script>
 
 </body>
 </html>
