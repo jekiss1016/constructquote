@@ -698,7 +698,7 @@ BEGIN
   ELSE
     email_html := email_html || 'You have been invited to join ';
   END IF;
-  email_html := email_html || '<strong>' || co_name || '</strong> as a <strong>' || NEW.role || '</strong> on ConstructQuote.</p>';
+  email_html := email_html || '<strong>' || co_name || '</strong> as a <strong>' || NEW.role || '</strong> on MyBidBook.</p>';
   email_html := email_html || '<div style="text-align: center; margin: 30px 0;"><a href="' || signup_url || '" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Accept Invitation & Create Account</a></div>';
   email_html := email_html || '<hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;" />';
   email_html := email_html || '<p style="color: #94a3b8; font-size: 12px; text-align: center;">If you did not expect this invitation, you can safely ignore this email.</p>';
@@ -727,7 +727,7 @@ BEGIN
       PERFORM net.http_post(
         'https://api.resend.com/emails',
         jsonb_build_object(
-          'from', 'ConstructQuote <onboarding@resend.dev>',
+          'from', 'MyBidBook <onboarding@resend.dev>',
           'to', NEW.email,
           'subject', 'Invitation to join ' || co_name,
           'html', email_html

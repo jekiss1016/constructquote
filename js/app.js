@@ -17,12 +17,12 @@ import {
   switchUserCompany,
   uploadFileToStorage,
   rawDbWrite
-} from './db.js?v=51';
+} from './db.js?v=52';
 import { showToast, fileToBase64 } from './utils.js';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=51';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=51';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=51';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=51';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=52';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=52';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=52';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=52';
 
 let activeChallengeId = null;
 let activeFactorId = null;
@@ -420,7 +420,7 @@ function showAuthModal() {
     if (mode === 'login') {
       tabLogin.classList.add('active');
       tabSignup.classList.remove('active');
-      title.textContent = 'ConstructQuote Cloud';
+      title.textContent = 'MyBidBook';
       if (liveSubmitBtn) liveSubmitBtn.textContent = 'Sign In';
       if (confirmGroup) confirmGroup.style.display = 'none';
       if (confirmInput) {
@@ -847,7 +847,7 @@ export async function updateBrandHeader() {
         });
       }
     } else {
-      nameEl.textContent = settings.companyName || 'ConstructQuote';
+      nameEl.textContent = settings.companyName || 'MyBidBook';
     }
   }
 
@@ -856,7 +856,7 @@ export async function updateBrandHeader() {
       logoContainer.innerHTML = `<img src="${settings.companyLogo}" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">`;
       logoContainer.style.background = 'transparent';
     } else {
-      logoContainer.innerHTML = 'CQ';
+      logoContainer.innerHTML = 'MB';
       logoContainer.style.background = '';
     }
   }
@@ -1454,7 +1454,7 @@ async function loadMfaSettingsUI() {
 
     enrollBtn.onclick = async () => {
       showToast('Generating security keys...');
-      const { data, error: enrollErr } = await sb.auth.mfa.enroll({ factorType: 'totp', issuer: 'ConstructQuote' });
+      const { data, error: enrollErr } = await sb.auth.mfa.enroll({ factorType: 'totp', issuer: 'MyBidBook' });
       if (enrollErr) {
         showToast(enrollErr.message, 'danger');
         return;

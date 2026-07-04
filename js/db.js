@@ -10,10 +10,10 @@ const KEYS = {
 const DEFAULT_CATEGORIES = ['Category 1'];
 
 const DEFAULT_SETTINGS = {
-  companyName: 'ConstructQuote Pro Ltd.',
+  companyName: 'MyBidBook Pro Ltd.',
   companyAddress: '100 Contractor Plaza, Suite A, Seattle, WA 98101',
   companyPhone: '(206) 555-0199',
-  companyEmail: 'billing@constructquotepro.com',
+  companyEmail: 'billing@mybidbook.com',
   defaultTaxRate: 8.8,
   defaultMarkupPercent: 15,
   companyLogo: ''

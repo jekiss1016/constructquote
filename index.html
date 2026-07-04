@@ -4,9 +4,9 @@
   <script>
     // Self-healing module cache-clearing routine
     try {
-      if (!localStorage.getItem('cq-cache-cleared-v51')) {
+      if (!localStorage.getItem('cq-cache-cleared-v52')) {
         localStorage.clear();
-        localStorage.setItem('cq-cache-cleared-v51', 'true');
+        localStorage.setItem('cq-cache-cleared-v52', 'true');
         window.location.reload(true);
       }
     } catch (e) {}
@@ -43,7 +43,7 @@
   </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ConstructQuote Pro | Smart Construction Estimation</title>
+  <title>MyBidBook | Smart Construction Estimation</title>
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/print.css">
 </head>
@@ -53,9 +53,9 @@
     <!-- Sidebar Navigation -->
     <aside class="sidebar">
       <div class="brand-section" style="flex-direction: column; align-items: center; text-align: center; gap: 0.75rem; margin-bottom: 2rem;">
-        <div id="brand-logo-container" class="brand-logo-icon" style="width: 140px; height: 140px; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); display: flex; align-items: center; justify-content: center; overflow: hidden; background: linear-gradient(135deg, var(--primary), var(--info)); color: white; font-weight: 800; font-size: 2.75rem; margin: 0 auto;">CQ</div>
+        <div id="brand-logo-container" class="brand-logo-icon" style="width: 140px; height: 140px; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); display: flex; align-items: center; justify-content: center; overflow: hidden; background: linear-gradient(135deg, var(--primary), var(--info)); color: white; font-weight: 800; font-size: 2.75rem; margin: 0 auto;">MB</div>
         <div style="display: flex; flex-direction: column; align-items: center;">
-          <h1 class="brand-name" id="brand-company-name" style="font-size: 1.15rem; font-weight: 800; margin: 0; line-height: 1.25;">ConstructQuote</h1>
+          <h1 class="brand-name" id="brand-company-name" style="font-size: 1.15rem; font-weight: 800; margin: 0; line-height: 1.25;">MyBidBook</h1>
           <span class="brand-sub" style="margin-top: 0.15rem;">Builder Edition</span>
         </div>
       </div>
@@ -1143,7 +1143,7 @@
 
       <!-- Global Footer -->
       <footer class="hide-in-print" style="margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); text-align: center; font-size: 0.8rem; color: var(--text-muted); padding-bottom: 1.5rem;">
-        © 2026 ConstructQuote | v1.51
+        © 2026 MyBidBook | v1.52
       </footer>
     </main>
   </div>
@@ -1480,7 +1480,7 @@
   <div class="modal-overlay" id="auth-modal" style="z-index: 150;">
     <div class="modal-container" style="max-width: 420px; background: var(--bg-secondary); border: 1px solid var(--border-color);">
       <div class="modal-header" style="border-bottom: none; justify-content: center; padding-top: 1.5rem; padding-bottom: 0.5rem;">
-        <h3 class="modal-title" style="font-size: 1.5rem; font-weight: 800; color: var(--primary);" id="auth-modal-title">ConstructQuote Cloud</h3>
+        <h3 class="modal-title" style="font-size: 1.5rem; font-weight: 800; color: var(--primary);" id="auth-modal-title">MyBidBook</h3>
       </div>
       <div class="modal-body" style="padding-top: 0;">
         <!-- Main Auth Container -->
@@ -1655,7 +1655,7 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Javascript Modules -->
-  <script type="module" src="js/app.js?v=51"></script>
+  <script type="module" src="js/app.js?v=52"></script>
 
 </body>
 </html>

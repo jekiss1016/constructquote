@@ -57,9 +57,9 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log('==================================================');
-  console.log(` ConstructQuote Pro Server running successfully`);
-  console.log(` Address: http://localhost:${PORT}/`);
+  console.log(`==================================================`);
+  console.log(` MyBidBook Pro Server running successfully`);
+  console.log(` Local access: http://localhost:${PORT}`);
   console.log(' Use Ctrl+C to stop the server.');
   console.log('==================================================');
 });

@@ -1,7 +1,7 @@
 @echo off
-title ConstructQuote Pro - Estimator Server
+title MyBidBook Pro - Estimator Server
 echo ==================================================
-echo  Starting ConstructQuote Pro Estimator Server...
+echo  Starting MyBidBook Pro Estimator Server...
 echo ==================================================
 echo.
 
