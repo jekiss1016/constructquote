@@ -16,13 +16,14 @@ import {
   getAllCompanies,
   switchUserCompany,
   uploadFileToStorage,
-  rawDbWrite
-} from './db.js?v=56';
+  rawDbWrite,
+  getSubscriptionLevel
+} from './db.js?v=57';
 import { showToast, fileToBase64 } from './utils.js';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=56';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=56';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=56';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=56';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=57';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=57';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=57';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=57';
 
 let activeChallengeId = null;
 let activeFactorId = null;
@@ -848,6 +849,18 @@ export async function updateBrandHeader() {
       }
     } else {
       nameEl.textContent = settings.companyName || 'MyBidBook';
+    }
+  }
+
+  const subLabelEl = document.getElementById('brand-subscription-label');
+  if (subLabelEl) {
+    const subLevel = getSubscriptionLevel();
+    if (subLevel === 'pro_perpetual') {
+      subLabelEl.textContent = 'Pro Perpetual';
+    } else if (subLevel === 'pro') {
+      subLabelEl.textContent = 'Pro';
+    } else {
+      subLabelEl.textContent = 'Trial';
     }
   }
 
