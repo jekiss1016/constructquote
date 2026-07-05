@@ -1,9 +1,9 @@
 // Quote Builder view controller
-import { getProducts, getSettings, saveQuote, checkJobIdUnique, saveSettings, getCustomers, getSupabase, getCurrentUserProfile, uploadFileToStorage } from './db.js?v=68';
+import { getProducts, getSettings, saveQuote, checkJobIdUnique, saveSettings, getCustomers, getSupabase, getCurrentUserProfile, uploadFileToStorage } from './db.js?v=69';
 import { formatCurrency, showToast, fileToBase64, generateJobIdSuggestion, compressImage } from './utils.js';
-import { navigateToView, viewQuoteDetails } from './app.js?v=68';
-import { renderQuoteDetails } from './quotes-list.js?v=68';
-import { openCustomerModalInline } from './customers.js?v=68';
+import { navigateToView, viewQuoteDetails } from './app.js?v=69';
+import { renderQuoteDetails } from './quotes-list.js?v=69';
+import { openCustomerModalInline } from './customers.js?v=69';
 
 let currentQuote = {
   id: null,
@@ -317,7 +317,7 @@ export async function renderBuilderSections() {
               <input type="number" class="item-row-input item-labor-input" value="${item.laborRate.toFixed(2)}" min="0" step="0.01" style="width: 80px;">
             </td>
             <td>
-              <input type="number" class="item-row-input item-markup-input" value="${item.markupPercent !== undefined ? item.markupPercent : ''}" min="-100" step="1" style="width: 55px;" placeholder="${currentQuote.markupPercent || 0}%">
+              <input type="number" class="item-row-input item-markup-input" value="${item.markupPercent !== undefined ? item.markupPercent : ''}" min="-100" step="1" style="width: 72px;" placeholder="${currentQuote.markupPercent || 0}%">
             </td>
             <td class="builder-item-cost-total" style="font-weight: 500; color: var(--text-muted); text-align: right; font-size: 0.85rem; vertical-align: middle;">
               ${formatCurrency(itemTotal)}
@@ -357,13 +357,13 @@ export async function renderBuilderSections() {
           <table class="custom-table select-table" style="font-size: 0.85rem;">
             <thead>
               <tr>
-                <th style="width: 28%;">Item Detail</th>
+                <th style="width: 27%;">Item Detail</th>
                 <th style="width: 9%;">Category</th>
                 <th style="width: 6%;">UOM</th>
                 <th style="width: 6%;">Qty</th>
                 <th style="width: 9%;">Material ($)</th>
                 <th style="width: 9%;">Labor ($)</th>
-                <th style="width: 8%; text-align: center;">Markup %</th>
+                <th style="width: 9%; text-align: center;">Markup %</th>
                 <th style="width: 10%; text-align: right;">Cost Sub</th>
                 <th style="width: 11%; text-align: right;">Total w/ Markup</th>
                 <th style="width: 4%;"></th>
