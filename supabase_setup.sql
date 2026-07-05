@@ -869,10 +869,10 @@ BEGIN
   IF resp_status >= 200 AND resp_status < 300 THEN
     RETURN jsonb_build_object('success', true, 'message', 'Support request sent successfully!');
   ELSE
-    RETURN jsonb_build_object('success', false, 'message', 'Resend API returned status ' || resp_status || ': ' || resp_content);
+    RETURN jsonb_build_object('success', false, 'message', concat('Resend API returned status ', resp_status, ': ', COALESCE(resp_content, 'No response body')));
   END IF;
 EXCEPTION WHEN OTHERS THEN
-  RETURN jsonb_build_object('success', false, 'message', 'SQL Execution Error: ' || SQLERRM);
+  RETURN jsonb_build_object('success', false, 'message', concat('SQL Execution Error: ', SQLERRM));
 END;
 $$ LANGUAGE plpgsql;
 
