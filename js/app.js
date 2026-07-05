@@ -18,12 +18,12 @@ import {
   uploadFileToStorage,
   rawDbWrite,
   getSubscriptionLevel
-} from './db.js?v=72';
+} from './db.js?v=73';
 import { showToast, fileToBase64 } from './utils.js';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=72';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=72';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=72';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=72';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=73';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=73';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=73';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=73';
 
 let activeChallengeId = null;
 let activeFactorId = null;
@@ -886,58 +886,11 @@ function setupAppNavigation() {
     });
   });
 
-  // Support modal open
+  // Contact Support handler - immediately opens mail client
   const supportOpenBtn = document.getElementById('support-open-btn');
-  const supportModal = document.getElementById('support-modal');
-  const supportEmailInput = document.getElementById('support-email');
-  const supportSubjectInput = document.getElementById('support-subject');
-  const supportMessageInput = document.getElementById('support-message');
-  const supportForm = document.getElementById('support-form');
-  const supportCancelBtn = document.getElementById('support-modal-cancel-btn');
-  const supportCloseBtn = document.getElementById('support-modal-close-btn');
-
-  if (supportOpenBtn && supportModal) {
+  if (supportOpenBtn) {
     supportOpenBtn.addEventListener('click', () => {
-      const profile = getCurrentUserProfile();
-      if (supportEmailInput && profile && profile.email) {
-        supportEmailInput.value = profile.email;
-      }
-      if (supportSubjectInput) supportSubjectInput.value = '';
-      if (supportMessageInput) supportMessageInput.value = '';
-      supportModal.classList.add('active');
-    });
-  }
-
-  const closeSupportModal = () => {
-    if (supportModal) supportModal.classList.remove('active');
-  };
-
-  if (supportCancelBtn) supportCancelBtn.addEventListener('click', closeSupportModal);
-  if (supportCloseBtn) supportCloseBtn.addEventListener('click', closeSupportModal);
-
-  if (supportForm) {
-    supportForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      
-      const email = supportEmailInput ? supportEmailInput.value.trim() : '';
-      const subject = supportSubjectInput ? supportSubjectInput.value.trim() : '';
-      const msg = supportMessageInput ? supportMessageInput.value.trim() : '';
-      
-      if (!subject || !msg) {
-        showToast('Please fill out all required fields.', 'danger');
-        return;
-      }
-
-      // Build email mailto link
-      const to = 'contact@mybidbook.com';
-      const bodyText = `From User: ${email}\n\nIssue/Question Details:\n${msg}`;
-      const mailtoLink = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
-      
-      // Open mailto link
-      window.location.href = mailtoLink;
-      
-      closeSupportModal();
-      showToast('Support email draft opened in mail client.', 'success');
+      window.location.href = 'mailto:contact@mybidbook.com?subject=MyBidBook App Support';
     });
   }
 

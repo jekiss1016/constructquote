@@ -4,9 +4,9 @@
   <script>
     // Self-healing module cache-clearing routine
     try {
-      if (!localStorage.getItem('cq-cache-cleared-v72')) {
+      if (!localStorage.getItem('cq-cache-cleared-v73')) {
         localStorage.clear();
-        localStorage.setItem('cq-cache-cleared-v72', 'true');
+        localStorage.setItem('cq-cache-cleared-v73', 'true');
         window.location.reload(true);
       }
     } catch (e) {}
@@ -1147,7 +1147,7 @@
       <!-- Global Footer -->
       <footer class="hide-in-print" style="margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); text-align: center; font-size: 0.8rem; color: var(--text-muted); padding-bottom: 1.5rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem;">
         <img src="banner.png" style="max-height: 50px; max-width: 320px; object-fit: contain; width: auto; opacity: 0.85;" alt="MyBidBook Banner">
-        <span>© 2026 MyBidBook | v1.72</span>
+        <span>© 2026 MyBidBook | v1.73</span>
       </footer>
     </main>
   </div>
@@ -1453,40 +1453,6 @@
     </div>
   </div>
 
-  <!-- ==================== CONTACT SUPPORT MODAL ==================== -->
-  <div class="modal-overlay" id="support-modal">
-    <div class="modal-container" style="max-width: 500px;">
-      <div class="modal-header">
-        <h3 class="modal-title">Contact Support</h3>
-        <button type="button" class="modal-close" id="support-modal-close-btn">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-      <div class="modal-body">
-        <form id="support-form">
-          <div class="form-group">
-            <label class="form-label" for="support-email">Your Email Address <span style="color: var(--danger);">*</span></label>
-            <input type="email" class="form-input" id="support-email" required placeholder="name@company.com">
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="support-subject">Subject <span style="color: var(--danger);">*</span></label>
-            <input type="text" class="form-input" id="support-subject" required placeholder="How can we help you?">
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="support-message">Issue or Question <span style="color: var(--danger);">*</span></label>
-            <textarea class="form-input" id="support-message" rows="5" required placeholder="Please describe your issue or question in detail..."></textarea>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" id="support-modal-cancel-btn">Cancel</button>
-        <button type="submit" form="support-form" class="btn btn-primary" id="support-modal-submit-btn">Submit</button>
-      </div>
-    </div>
-  </div>
-
   <!-- ==================== SUPABASE SETUP MODAL ==================== -->
   <div class="modal-overlay" id="supabase-setup-modal" style="z-index: 200;">
     <div class="modal-container" style="max-width: 480px;">
@@ -1693,7 +1659,7 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Javascript Modules -->
-  <script type="module" src="js/app.js?v=72"></script>
+  <script type="module" src="js/app.js?v=73"></script>
 
 </body>
 </html>
