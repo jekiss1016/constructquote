@@ -853,17 +853,16 @@ BEGIN
     'html', '<p><strong>From:</strong> ' || user_email || '</p><p><strong>Message:</strong></p><p style="white-space: pre-wrap;">' || msg || '</p>'
   )::text;
 
-  -- Dispatch HTTP POST
+  -- Dispatch HTTP POST (correct parameter order: headers, content_type, content)
   SELECT status, content INTO resp_status, resp_content
   FROM http((
     'POST',
     'https://api.resend.com/emails',
     ARRAY[
-      http_header('Authorization', 'Bearer ' || resend_key),
-      http_header('Content-Type', 'application/json')
+      http_header('Authorization', 'Bearer ' || resend_key)
     ],
-    req_body,
-    NULL
+    'application/json',
+    req_body
   )::http_request);
 
   IF resp_status >= 200 AND resp_status < 300 THEN
