@@ -4,9 +4,9 @@
   <script>
     // Self-healing module cache-clearing routine
     try {
-      if (!localStorage.getItem('cq-cache-cleared-v73')) {
+      if (!localStorage.getItem('cq-cache-cleared-v74')) {
         localStorage.clear();
-        localStorage.setItem('cq-cache-cleared-v73', 'true');
+        localStorage.setItem('cq-cache-cleared-v74', 'true');
         window.location.reload(true);
       }
     } catch (e) {}
@@ -141,12 +141,20 @@
             <h2 class="page-title">Welcome Back</h2>
             <p class="page-description">Here is an overview of your active projects and quotes.</p>
           </div>
-          <button type="button" class="btn btn-primary" id="dashboard-new-quote-btn">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
-            Create New Quote
-          </button>
+          <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <a href="help.html#dashboard" target="_blank" class="btn btn-secondary help-btn" style="padding: 0.35rem 0.65rem; gap: 0.25rem; font-size: 0.8rem;" title="View Help Documentation">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14" style="stroke-width: 2.5;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5h.008v.008H12V17z" />
+              </svg>
+              Help
+            </a>
+            <button type="button" class="btn btn-primary" id="dashboard-new-quote-btn">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              Create New Quote
+            </button>
+          </div>
         </div>
 
         <!-- Quick Stats Grid -->
@@ -268,12 +276,20 @@
             <h2 class="page-title">Quotes Manager</h2>
             <p class="page-description">Find, monitor, and manage customer quotes.</p>
           </div>
-          <button type="button" class="btn btn-primary" id="list-new-quote-btn">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
-            Create New Quote
-          </button>
+          <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <a href="help.html#quotes" target="_blank" class="btn btn-secondary help-btn" style="padding: 0.35rem 0.65rem; gap: 0.25rem; font-size: 0.8rem;" title="View Help Documentation">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14" style="stroke-width: 2.5;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5h.008v.008H12V17z" />
+              </svg>
+              Help
+            </a>
+            <button type="button" class="btn btn-primary" id="list-new-quote-btn">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              Create New Quote
+            </button>
+          </div>
         </div>
 
         <!-- Filter / Search Controls -->
@@ -324,12 +340,20 @@
             <h2 class="page-title">Customer Manager</h2>
             <p class="page-description">Manage customers, project sites, and client contacts.</p>
           </div>
-          <button type="button" class="btn btn-primary" id="customers-new-btn">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
-            Add New Customer
-          </button>
+          <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <a href="help.html#customers" target="_blank" class="btn btn-secondary help-btn" style="padding: 0.35rem 0.65rem; gap: 0.25rem; font-size: 0.8rem;" title="View Help Documentation">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14" style="stroke-width: 2.5;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5h.008v.008H12V17z" />
+              </svg>
+              Help
+            </a>
+            <button type="button" class="btn btn-primary" id="customers-new-btn">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              Add New Customer
+            </button>
+          </div>
         </div>
 
         <div class="list-controls">
@@ -371,6 +395,12 @@
             <p class="page-description">Fill out the information below to compile your quote proposal.</p>
           </div>
           <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <a href="help.html#builder" target="_blank" class="btn btn-secondary help-btn" style="padding: 0.35rem 0.65rem; gap: 0.25rem; font-size: 0.8rem;" title="View Help Documentation">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14" style="stroke-width: 2.5;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5h.008v.008H12V17z" />
+              </svg>
+              Help
+            </a>
             <button type="button" class="btn btn-secondary" id="builder-update-costs-btn" style="display: none;" title="Updates All Quote Items to Current Catalog Costs">Update Product Costs</button>
             <button type="button" class="btn btn-secondary" id="builder-cancel-btn">Cancel</button>
             <button type="button" class="btn btn-success" id="builder-save-btn">Save Quote</button>
@@ -657,8 +687,16 @@
             <h2 class="page-title">Quote Preview</h2>
             <p class="page-description">Review, print, archive, or duplicate this quote proposal.</p>
           </div>
-          <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;" id="detail-actions-bar">
-            <!-- Dynamic action buttons will inject here (Print, Edit, Won/Lost, Duplicate, Back) -->
+          <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <a href="help.html#preview" target="_blank" class="btn btn-secondary help-btn" style="padding: 0.35rem 0.65rem; gap: 0.25rem; font-size: 0.8rem;" title="View Help Documentation">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14" style="stroke-width: 2.5;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5h.008v.008H12V17z" />
+              </svg>
+              Help
+            </a>
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;" id="detail-actions-bar">
+              <!-- Dynamic action buttons will inject here (Print, Edit, Won/Lost, Duplicate, Back) -->
+            </div>
           </div>
         </div>
 
@@ -880,12 +918,20 @@
             <h2 class="page-title">Product Catalog</h2>
             <p class="page-description">Maintain material prices, units of measure, and default labor rates.</p>
           </div>
-          <button type="button" class="btn btn-primary" id="catalog-new-product-btn">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
-            Add New Product
-          </button>
+          <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <a href="help.html#catalog" target="_blank" class="btn btn-secondary help-btn" style="padding: 0.35rem 0.65rem; gap: 0.25rem; font-size: 0.8rem;" title="View Help Documentation">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14" style="stroke-width: 2.5;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5h.008v.008H12V17z" />
+              </svg>
+              Help
+            </a>
+            <button type="button" class="btn btn-primary" id="catalog-new-product-btn">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              Add New Product
+            </button>
+          </div>
         </div>
 
         <div class="builder-layout">
@@ -946,6 +992,14 @@
           <div>
             <h2 class="page-title">Application Settings</h2>
             <p class="page-description">Configure your contractor company profile and defaults.</p>
+          </div>
+          <div>
+            <a href="help.html#settings" target="_blank" class="btn btn-secondary help-btn" style="padding: 0.35rem 0.65rem; gap: 0.25rem; font-size: 0.8rem;" title="View Help Documentation">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14" style="stroke-width: 2.5;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5h.008v.008H12V17z" />
+              </svg>
+              Help
+            </a>
           </div>
         </div>
 
@@ -1147,7 +1201,7 @@
       <!-- Global Footer -->
       <footer class="hide-in-print" style="margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); text-align: center; font-size: 0.8rem; color: var(--text-muted); padding-bottom: 1.5rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem;">
         <img src="banner.png" style="max-height: 50px; max-width: 320px; object-fit: contain; width: auto; opacity: 0.85;" alt="MyBidBook Banner">
-        <span>© 2026 MyBidBook | v1.73</span>
+        <span>© 2026 MyBidBook | v1.74</span>
       </footer>
     </main>
   </div>
@@ -1659,7 +1713,7 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Javascript Modules -->
-  <script type="module" src="js/app.js?v=73"></script>
+  <script type="module" src="js/app.js?v=74"></script>
 
 </body>
 </html>
