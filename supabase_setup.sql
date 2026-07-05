@@ -784,3 +784,36 @@ BEGIN
   END IF;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Update Quote Gallery & Receipts (viewer write access helper)
+CREATE OR REPLACE FUNCTION public.update_quote_gallery_and_receipts(
+  q_id uuid,
+  new_photos jsonb,
+  new_receipts jsonb
+)
+RETURNS void AS $$
+DECLARE
+  caller_co_id uuid;
+  target_co_id uuid;
+BEGIN
+  -- Get caller company_id
+  SELECT company_id INTO caller_co_id 
+  FROM public.profiles 
+  WHERE id = auth.uid();
+
+  -- Get target quote's company_id
+  SELECT company_id INTO target_co_id 
+  FROM public.quotes 
+  WHERE id = q_id;
+
+  -- Verify they belong to the same company
+  IF caller_co_id IS NOT NULL AND caller_co_id = target_co_id THEN
+    -- Update ONLY photos and receipts columns
+    UPDATE public.quotes 
+    SET photos = new_photos, receipts = new_receipts 
+    WHERE id = q_id;
+  ELSE
+    RAISE EXCEPTION 'Unauthorized to modify this quote.';
+  END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

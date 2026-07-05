@@ -681,6 +681,27 @@ export async function checkJobIdUnique(jobId, ignoreQuoteId = null) {
 
 export async function saveQuote(quote) {
   if (!currentUserProfile) return { success: false, error: 'Not authenticated' };
+
+  // Viewer role bypass for photos and receipts
+  if (currentUserProfile.role === 'viewer') {
+    if (!quote.id) {
+      return { success: false, error: 'Viewer accounts are not allowed to create new quotes.' };
+    }
+    const sb = getSupabase();
+    if (!sb) return { success: false, error: 'Database client not initialized.' };
+
+    const { error } = await sb.rpc('update_quote_gallery_and_receipts', {
+      q_id: quote.id,
+      new_photos: quote.photos || [],
+      new_receipts: quote.receipts || []
+    });
+
+    if (error) {
+      console.error('Viewer quote save RPC error:', error);
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  }
   
   // Enforce Trial account limits (max 10 quotes)
   if (!quote.id && getSubscriptionLevel() === 'trial') {
