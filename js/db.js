@@ -6,8 +6,6 @@ const KEYS = {
   SUPABASE_CONFIG: 'cq_supabase_config'
 };
 
-// Default setup values
-const DEFAULT_CATEGORIES = ['Category 1'];
 
 const DEFAULT_SETTINGS = {
   companyName: 'MyBidBook Pro Ltd.',
@@ -326,21 +324,14 @@ export async function getCategories() {
   // Ensure Supabase is ready – this guard also works if the user is not logged in
   if (!supabase) await initSupabaseClient();
   const sb = getSupabase();
-  if (!sb || !currentUserProfile || !currentUserProfile.company_id) return DEFAULT_CATEGORIES;
+  if (!sb || !currentUserProfile || !currentUserProfile.company_id) return [];
 
   console.log('getCategories -> Querying categories table via rawDbQuery...');
   const data = await rawDbQuery('categories', `company_id=eq.${currentUserProfile.company_id}&order=name.asc`);
   console.log('getCategories -> Categories fetched. Data length:', data ? data.length : 0);
-  if (!data) return DEFAULT_CATEGORIES;
+  if (!data) return [];
 
-  const custom = data.map(c => c.name);
-  const merged = [...DEFAULT_CATEGORIES];
-  custom.forEach(c => {
-    if (!merged.some(m => m.toLowerCase() === c.toLowerCase())) {
-      merged.push(c);
-    }
-  });
-  return merged;
+  return data.map(c => c.name);
 }
 
 export async function saveCategory(categoryName) {
