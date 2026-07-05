@@ -1,7 +1,7 @@
 // Quotes List & Dashboard management controller
-import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel } from './db.js?v=65';
+import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel } from './db.js?v=66';
 import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage } from './utils.js';
-import { navigateToView, editQuote, duplicateQuoteAsTemplate } from './app.js?v=65';
+import { navigateToView, editQuote, duplicateQuoteAsTemplate } from './app.js?v=66';
 
 let activeStatusFilter = 'pending';
 let activeSearchQuery = '';
@@ -445,7 +445,10 @@ export async function renderQuoteDetails(id) {
 
     if (!showDetails) {
       tbodyHtml = quote.sections.map(sec => {
-        const secSub = sec.items.reduce((sum, item) => sum + (item.qty * (item.price + item.laborRate)), 0);
+        const secSub = sec.items.reduce((sum, item) => {
+          const itemMarkup = item.markupPercent !== undefined ? item.markupPercent : (quote.markupPercent || 0);
+          return sum + (item.qty * (item.price + item.laborRate) * (1 + itemMarkup / 100));
+        }, 0);
         
         if (!showQuantities) {
           return `
@@ -473,7 +476,10 @@ export async function renderQuoteDetails(id) {
       const rows = [];
       
       quote.sections.forEach(sec => {
-        const secSub = sec.items.reduce((sum, item) => sum + (item.qty * (item.price + item.laborRate) * (1 + (quote.markupPercent || 0) / 100)), 0);
+        const secSub = sec.items.reduce((sum, item) => {
+          const itemMarkup = item.markupPercent !== undefined ? item.markupPercent : (quote.markupPercent || 0);
+          return sum + (item.qty * (item.price + item.laborRate) * (1 + itemMarkup / 100));
+        }, 0);
 
         if (!showQuantities) {
           rows.push(`
@@ -496,7 +502,8 @@ export async function renderQuoteDetails(id) {
         }
 
         sec.items.forEach(item => {
-          const itemUnitPrice = (item.price + item.laborRate) * (1 + (quote.markupPercent || 0) / 100);
+          const itemMarkup = item.markupPercent !== undefined ? item.markupPercent : (quote.markupPercent || 0);
+          const itemUnitPrice = (item.price + item.laborRate) * (1 + itemMarkup / 100);
           const itemTotal = item.qty * itemUnitPrice;
           
           let descLines = '';
@@ -577,7 +584,10 @@ export async function renderQuoteDetails(id) {
   }
 
   const subtotal = quote.sections.reduce((sum, sec) => {
-    const secSub = sec.items.reduce((sum, item) => sum + (item.qty * (item.price + item.laborRate) * (1 + (quote.markupPercent || 0) / 100)), 0);
+    const secSub = sec.items.reduce((sum, item) => {
+      const itemMarkup = item.markupPercent !== undefined ? item.markupPercent : (quote.markupPercent || 0);
+      return sum + (item.qty * (item.price + item.laborRate) * (1 + itemMarkup / 100));
+    }, 0);
     return sum + secSub;
   }, 0);
   const taxVal = quote.taxPlusApplicable ? 0 : subtotal * (quote.taxRate / 100);

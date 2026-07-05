@@ -1,9 +1,9 @@
 // Quote Builder view controller
-import { getProducts, getSettings, saveQuote, checkJobIdUnique, saveSettings, getCustomers, getSupabase, getCurrentUserProfile, uploadFileToStorage } from './db.js?v=65';
+import { getProducts, getSettings, saveQuote, checkJobIdUnique, saveSettings, getCustomers, getSupabase, getCurrentUserProfile, uploadFileToStorage } from './db.js?v=66';
 import { formatCurrency, showToast, fileToBase64, generateJobIdSuggestion, compressImage } from './utils.js';
-import { navigateToView, viewQuoteDetails } from './app.js?v=65';
-import { renderQuoteDetails } from './quotes-list.js?v=65';
-import { openCustomerModalInline } from './customers.js?v=65';
+import { navigateToView, viewQuoteDetails } from './app.js?v=66';
+import { renderQuoteDetails } from './quotes-list.js?v=66';
+import { openCustomerModalInline } from './customers.js?v=66';
 
 let currentQuote = {
   id: null,
@@ -279,7 +279,8 @@ export async function renderBuilderSections() {
       rowsHtml = section.items.map((item, itemIdx) => {
         const isLaborOnly = item.isLaborOnly === true;
         const itemTotal = item.qty * (item.price + item.laborRate);
-        const markedUpTotal = itemTotal * (1 + (currentQuote.markupPercent || 0) / 100);
+        const itemMarkup = item.markupPercent !== undefined ? item.markupPercent : (currentQuote.markupPercent || 0);
+        const markedUpTotal = itemTotal * (1 + itemMarkup / 100);
         
         return `
           <tr data-sec-idx="${secIdx}" data-item-idx="${itemIdx}">
@@ -314,6 +315,9 @@ export async function renderBuilderSections() {
             </td>
             <td>
               <input type="number" class="item-row-input item-labor-input" value="${item.laborRate.toFixed(2)}" min="0" step="0.01" style="width: 80px;">
+            </td>
+            <td>
+              <input type="number" class="item-row-input item-markup-input" value="${item.markupPercent !== undefined ? item.markupPercent : ''}" min="-100" step="1" style="width: 55px;" placeholder="${currentQuote.markupPercent || 0}%">
             </td>
             <td class="builder-item-cost-total" style="font-weight: 500; color: var(--text-muted); text-align: right; font-size: 0.85rem; vertical-align: middle;">
               ${formatCurrency(itemTotal)}
@@ -353,14 +357,15 @@ export async function renderBuilderSections() {
           <table class="custom-table select-table" style="font-size: 0.85rem;">
             <thead>
               <tr>
-                <th style="width: 30%;">Item Detail</th>
-                <th style="width: 10%;">Category</th>
-                <th style="width: 8%;">UOM</th>
-                <th style="width: 8%;">Qty</th>
-                <th style="width: 10%;">Material ($)</th>
-                <th style="width: 10%;">Labor ($)</th>
+                <th style="width: 28%;">Item Detail</th>
+                <th style="width: 9%;">Category</th>
+                <th style="width: 6%;">UOM</th>
+                <th style="width: 6%;">Qty</th>
+                <th style="width: 9%;">Material ($)</th>
+                <th style="width: 9%;">Labor ($)</th>
+                <th style="width: 8%; text-align: center;">Markup %</th>
                 <th style="width: 10%; text-align: right;">Cost Sub</th>
-                <th style="width: 10%; text-align: right;">Total w/ Markup</th>
+                <th style="width: 11%; text-align: right;">Total w/ Markup</th>
                 <th style="width: 4%;"></th>
               </tr>
             </thead>
@@ -381,7 +386,7 @@ export async function renderBuilderSections() {
           </div>
           <div style="font-weight: 700; font-size: 0.85rem; color: var(--text-secondary); display: flex; gap: 1.5rem;">
             <span>Cost Subtotal: <span class="section-subtotal-value" style="color: var(--text-muted); font-weight: 500;">${formatCurrency(calculateSectionSum(section))}</span></span>
-            <span>Subtotal w/ Markup: <span class="section-markedup-subtotal-value" style="color: var(--primary);">${formatCurrency(calculateSectionSum(section) * (1 + (currentQuote.markupPercent || 0) / 100))}</span></span>
+            <span>Subtotal w/ Markup: <span class="section-markedup-subtotal-value" style="color: var(--primary);">${formatCurrency(section.items.reduce((sum, item) => sum + (item.qty * (item.price + item.laborRate) * (1 + (item.markupPercent !== undefined ? item.markupPercent : (currentQuote.markupPercent || 0)) / 100)), 0))}</span> <span class="section-markup-percentage-value" style="font-size: 0.8rem; font-weight: 500; color: var(--text-secondary);">(${(calculateSectionSum(section) > 0 ? ((section.items.reduce((sum, item) => sum + (item.qty * (item.price + item.laborRate) * (1 + (item.markupPercent !== undefined ? item.markupPercent : (currentQuote.markupPercent || 0)) / 100)), 0) - calculateSectionSum(section)) / calculateSectionSum(section)) * 100 : (currentQuote.markupPercent || 0)).toFixed(1)}%)</span></span>
           </div>
         </div>
       </div>
@@ -394,13 +399,17 @@ function calculateSectionSum(section) {
 }
 
 function updateBuilderMarkedUpTotals() {
-  const markup = currentQuote.markupPercent || 0;
+  const globalMarkup = currentQuote.markupPercent || 0;
   currentQuote.sections.forEach((section, secIdx) => {
-    let secSum = 0;
+    let secCostSum = 0;
+    let secMarkedUpSum = 0;
+    
     section.items.forEach((item, itemIdx) => {
       const itemTotal = item.qty * (item.price + item.laborRate);
-      const markedUpTotal = itemTotal * (1 + markup / 100);
-      secSum += itemTotal;
+      const itemMarkup = item.markupPercent !== undefined ? item.markupPercent : globalMarkup;
+      const markedUpTotal = itemTotal * (1 + itemMarkup / 100);
+      secCostSum += itemTotal;
+      secMarkedUpSum += markedUpTotal;
       
       const row = document.querySelector(`tr[data-sec-idx="${secIdx}"][data-item-idx="${itemIdx}"]`);
       if (row) {
@@ -414,10 +423,15 @@ function updateBuilderMarkedUpTotals() {
     const secCard = document.querySelector(`.section-card[data-sec-idx="${secIdx}"]`);
     if (secCard) {
       const subtotalEl = secCard.querySelector('.section-subtotal-value');
-      if (subtotalEl) subtotalEl.textContent = formatCurrency(secSum);
+      if (subtotalEl) subtotalEl.textContent = formatCurrency(secCostSum);
       const markedUpSpan = secCard.querySelector('.section-markedup-subtotal-value');
       if (markedUpSpan) {
-        markedUpSpan.textContent = formatCurrency(secSum * (1 + markup / 100));
+        markedUpSpan.textContent = formatCurrency(secMarkedUpSum);
+      }
+      const pctSpan = secCard.querySelector('.section-markup-percentage-value');
+      if (pctSpan) {
+        const effectiveMarkup = secCostSum > 0 ? ((secMarkedUpSum - secCostSum) / secCostSum) * 100 : globalMarkup;
+        pctSpan.textContent = `(${effectiveMarkup.toFixed(1)}%)`;
       }
     }
   });
@@ -458,13 +472,26 @@ function renderBuilderGallery() {
 function calculateTotals() {
   const subtotal = currentQuote.sections.reduce((sum, sec) => sum + calculateSectionSum(sec), 0);
   
-  const markupVal = subtotal * (currentQuote.markupPercent / 100);
+  const markupVal = currentQuote.sections.reduce((sum, sec) => {
+    return sum + sec.items.reduce((itemSum, item) => {
+      const itemTotal = item.qty * (item.price + item.laborRate);
+      const itemMarkup = item.markupPercent !== undefined ? item.markupPercent : (currentQuote.markupPercent || 0);
+      return itemSum + (itemTotal * (itemMarkup / 100));
+    }, 0);
+  }, 0);
+
   const isPlusTaxes = currentQuote.taxPlusApplicable || false;
   const taxVal = isPlusTaxes ? 0 : (subtotal + markupVal) * (currentQuote.taxRate / 100);
   const grandTotal = subtotal + markupVal + taxVal;
 
   document.getElementById('builder-summary-subtotal').textContent = formatCurrency(subtotal);
   document.getElementById('builder-summary-markup-val').textContent = formatCurrency(markupVal);
+  
+  const effectiveMarkupPct = subtotal > 0 ? (markupVal / subtotal) * 100 : (currentQuote.markupPercent || 0);
+  const builderSummaryMarkupPct = document.getElementById('builder-summary-markup-pct');
+  if (builderSummaryMarkupPct) {
+    builderSummaryMarkupPct.textContent = `${effectiveMarkupPct.toFixed(1)}%`;
+  }
   
   const taxSummaryVal = document.getElementById('builder-summary-tax-val');
   if (isPlusTaxes) {
@@ -645,13 +672,25 @@ function setupBuilderListeners() {
         if (e.target.classList.contains('item-name-input')) {
           item.name = e.target.value;
         }
+        if (e.target.classList.contains('item-markup-input')) {
+          const val = e.target.value.trim();
+          if (val === '') {
+            delete item.markupPercent;
+          } else {
+            item.markupPercent = parseFloat(val);
+            if (isNaN(item.markupPercent)) delete item.markupPercent;
+          }
+        }
 
         // Trigger subtotal update
         const itemTotal = item.qty * (item.price + item.laborRate);
         const costCell = row.querySelector('.builder-item-cost-total');
         if (costCell) costCell.textContent = formatCurrency(itemTotal);
+        
+        const itemMarkup = item.markupPercent !== undefined ? item.markupPercent : (currentQuote.markupPercent || 0);
+        const markedUpTotal = itemTotal * (1 + itemMarkup / 100);
         const markupCell = row.querySelector('.builder-item-markedup-total');
-        if (markupCell) markupCell.textContent = formatCurrency(itemTotal * (1 + (currentQuote.markupPercent || 0) / 100));
+        if (markupCell) markupCell.textContent = formatCurrency(markedUpTotal);
         
         // Update section subtotal and grand totals
         const subtotalEl = card.querySelector('.section-subtotal-value');
@@ -660,7 +699,15 @@ function setupBuilderListeners() {
         }
         const markedUpSpan = card.querySelector('.section-markedup-subtotal-value');
         if (markedUpSpan) {
-          markedUpSpan.textContent = formatCurrency(calculateSectionSum(section) * (1 + (currentQuote.markupPercent || 0) / 100));
+          const secMarkedUp = section.items.reduce((sum, it) => sum + (it.qty * (it.price + it.laborRate) * (1 + (it.markupPercent !== undefined ? it.markupPercent : (currentQuote.markupPercent || 0)) / 100)), 0);
+          markedUpSpan.textContent = formatCurrency(secMarkedUp);
+          
+          const pctSpan = card.querySelector('.section-markup-percentage-value');
+          if (pctSpan) {
+            const secCost = calculateSectionSum(section);
+            const effectiveMarkup = secCost > 0 ? ((secMarkedUp - secCost) / secCost) * 100 : (currentQuote.markupPercent || 0);
+            pctSpan.textContent = `(${effectiveMarkup.toFixed(1)}%)`;
+          }
         }
         calculateTotals();
       }
