@@ -846,7 +846,7 @@ BEGIN
 
   -- Build Resend JSON payload (reply_to set to user's email)
   req_body := jsonb_build_object(
-    'from', 'MyBidBook Support <onboarding@resend.dev>',
+    'from', 'MyBidBook Support <contact@mybidbook.com>',
     'to', array['contact@mybidbook.com'],
     'reply_to', user_email,
     'subject', 'MyBidBook App Support: ' || subject,
