@@ -4,9 +4,9 @@
   <script>
     // Self-healing module cache-clearing routine
     try {
-      if (!localStorage.getItem('cq-cache-cleared-v57')) {
+      if (!localStorage.getItem('cq-cache-cleared-v58')) {
         localStorage.clear();
-        localStorage.setItem('cq-cache-cleared-v57', 'true');
+        localStorage.setItem('cq-cache-cleared-v58', 'true');
         window.location.reload(true);
       }
     } catch (e) {}
@@ -723,23 +723,10 @@
             <!-- Totals & Notes -->
             <div class="paper-totals-layout">
               <div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.35rem;" class="hide-in-print">
-                  <h4 class="paper-section-heading" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0;">Terms & Notes</h4>
-                  <button type="button" class="btn btn-secondary" id="detail-edit-notes-btn" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">✏️ Edit Notes</button>
-                </div>
-                <h4 class="paper-section-heading show-in-print-only">Terms & Notes</h4>
+                <h4 class="paper-section-heading" style="margin-bottom: 0.5rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.35rem;">Terms & Notes</h4>
                 
                 <div class="paper-notes-section" id="paper-notes">
                   Standard construction contract guidelines apply. All pricing is finalized unless structural modifications are requested.
-                </div>
-
-                <!-- Notes Inline Editor (Hidden by default) -->
-                <div id="detail-notes-edit-box" style="display: none; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem;" class="hide-in-print">
-                  <textarea class="form-textarea" id="detail-notes-textarea" rows="4" style="font-size: 0.8rem;"></textarea>
-                  <div style="display: flex; gap: 0.35rem; justify-content: flex-end; margin-top: 0.25rem;">
-                    <button type="button" class="btn btn-secondary" id="detail-notes-cancel-btn" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;">Cancel</button>
-                    <button type="button" class="btn btn-success" id="detail-notes-save-btn" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;">Save Notes</button>
-                  </div>
                 </div>
               </div>
               <div>
@@ -1146,7 +1133,7 @@
       <!-- Global Footer -->
       <footer class="hide-in-print" style="margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); text-align: center; font-size: 0.8rem; color: var(--text-muted); padding-bottom: 1.5rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem;">
         <img src="banner.png" style="max-height: 50px; max-width: 320px; object-fit: contain; width: auto; opacity: 0.85;" alt="MyBidBook Banner">
-        <span>© 2026 MyBidBook | v1.57</span>
+        <span>© 2026 MyBidBook | v1.58</span>
       </footer>
     </main>
   </div>
@@ -1658,7 +1645,7 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Javascript Modules -->
-  <script type="module" src="js/app.js?v=57"></script>
+  <script type="module" src="js/app.js?v=58"></script>
 
 </body>
 </html>

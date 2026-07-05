@@ -1,7 +1,7 @@
 // Quotes List & Dashboard management controller
-import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel } from './db.js?v=57';
+import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel } from './db.js?v=58';
 import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage } from './utils.js';
-import { navigateToView, editQuote, duplicateQuoteAsTemplate } from './app.js?v=57';
+import { navigateToView, editQuote, duplicateQuoteAsTemplate } from './app.js?v=58';
 
 let activeStatusFilter = 'pending';
 let activeSearchQuery = '';
@@ -622,25 +622,6 @@ export async function renderQuoteDetails(id) {
 
   document.getElementById('paper-notes').textContent = quote.notes || 'No extra terms specified.';
 
-  // Reset notes inline edit UI
-  const notesEditBox = document.getElementById('detail-notes-edit-box');
-  const paperNotes = document.getElementById('paper-notes');
-  const editNotesBtn = document.getElementById('detail-edit-notes-btn');
-  const notesTextarea = document.getElementById('detail-notes-textarea');
-
-  if (notesEditBox && paperNotes && editNotesBtn && notesTextarea) {
-    notesEditBox.style.display = 'none';
-    paperNotes.style.display = 'block';
-    
-    if (quote.status === 'Won' || quote.status === 'Completed' || quote.status === 'Lost' || quote.status === 'Inactive' || quote.isLegacy || isViewer) {
-      editNotesBtn.style.display = 'none';
-    } else {
-      editNotesBtn.style.display = 'block';
-    }
-    
-    notesTextarea.value = quote.notes || '';
-  }
-
   /* ==================== PRINT PHOTO GALLERY DRAW ==================== */
   // Excluded from print view paper by request. Gallery photos are internal documentation only.
 
@@ -1115,57 +1096,7 @@ function setupListListeners() {
     });
   }
 
-  // Inline notes editor listeners
-  const editNotesBtn = document.getElementById('detail-edit-notes-btn');
-  const cancelNotesBtn = document.getElementById('detail-notes-cancel-btn');
-  const saveNotesBtn = document.getElementById('detail-notes-save-btn');
-  const notesEditBox = document.getElementById('detail-notes-edit-box');
-  const paperNotes = document.getElementById('paper-notes');
-  const notesTextarea = document.getElementById('detail-notes-textarea');
 
-  if (editNotesBtn) {
-    editNotesBtn.addEventListener('click', () => {
-      if (notesEditBox && paperNotes && !isViewer) {
-        notesEditBox.style.display = 'flex';
-        paperNotes.style.display = 'none';
-        editNotesBtn.style.display = 'none';
-      }
-    });
-  }
-
-  if (cancelNotesBtn) {
-    cancelNotesBtn.addEventListener('click', () => {
-      if (notesEditBox && paperNotes) {
-        notesEditBox.style.display = 'none';
-        paperNotes.style.display = 'block';
-        editNotesBtn.style.display = isViewer ? 'none' : 'block';
-      }
-    });
-  }
-
-  if (saveNotesBtn) {
-    saveNotesBtn.addEventListener('click', async () => {
-      if (isViewer) return;
-      const updatedNotes = notesTextarea.value;
-      const quote = await getQuoteById(selectedQuoteId);
-      if (quote) {
-        quote.notes = updatedNotes;
-        const res = await saveQuote(quote);
-        if (res.success) {
-          showToast('Quote notes saved successfully.');
-          paperNotes.textContent = updatedNotes || 'No extra terms specified.';
-          
-          if (notesEditBox && paperNotes) {
-            notesEditBox.style.display = 'none';
-            paperNotes.style.display = 'block';
-            editNotesBtn.style.display = 'block';
-          }
-        } else {
-          showToast(res.error, 'danger');
-        }
-      }
-    });
-  }
 
   // Project gallery manager event listeners (uploads to storage)
   const detailGalleryUpload = document.getElementById('detail-gallery-upload');
