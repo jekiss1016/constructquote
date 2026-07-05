@@ -1,9 +1,9 @@
 // Quote Builder view controller
-import { getProducts, getSettings, saveQuote, checkJobIdUnique, saveSettings, getCustomers, getSupabase, getCurrentUserProfile, uploadFileToStorage } from './db.js?v=62';
+import { getProducts, getSettings, saveQuote, checkJobIdUnique, saveSettings, getCustomers, getSupabase, getCurrentUserProfile, uploadFileToStorage } from './db.js?v=63';
 import { formatCurrency, showToast, fileToBase64, generateJobIdSuggestion, compressImage } from './utils.js';
-import { navigateToView, viewQuoteDetails } from './app.js?v=62';
-import { renderQuoteDetails } from './quotes-list.js?v=62';
-import { openCustomerModalInline } from './customers.js?v=62';
+import { navigateToView, viewQuoteDetails } from './app.js?v=63';
+import { renderQuoteDetails } from './quotes-list.js?v=63';
+import { openCustomerModalInline } from './customers.js?v=63';
 
 let currentQuote = {
   id: null,
@@ -171,7 +171,9 @@ function populateBuilderFields() {
   document.getElementById('job-id-error').classList.remove('active');
   
   document.getElementById('builder-quote-number').value = currentQuote.quoteNumber || 'Generated automatically';
-  document.getElementById('builder-quote-date').value = currentQuote.date;
+  const todayStr = new Date().toISOString().split('T')[0];
+  document.getElementById('builder-quote-date').value = todayStr;
+  currentQuote.date = todayStr;
   document.getElementById('builder-expiry-date').value = currentQuote.expirationDate;
   document.getElementById('builder-customer-name').value = currentQuote.customerName;
   document.getElementById('builder-customer-email').value = currentQuote.customerEmail;
@@ -1062,6 +1064,8 @@ function setupBuilderListeners() {
         return;
       }
 
+      const todayStr = new Date().toISOString().split('T')[0];
+      currentQuote.date = todayStr;
       currentQuote.jobId = jobId;
       currentQuote.expirationDate = expiry;
       currentQuote.customerName = clientName;
