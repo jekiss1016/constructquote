@@ -728,6 +728,7 @@ export async function saveQuote(quote) {
     quote.dateCompleted = null;
   }
   
+  const todayStr = new Date().toISOString().split('T')[0];
   const mapped = {
     company_id: currentUserProfile.company_id,
     job_id: quote.jobId,
@@ -736,7 +737,7 @@ export async function saveQuote(quote) {
     project_address: quote.projectAddress,
     customer_phone: quote.customerPhone,
     customer_email: quote.customerEmail,
-    date: quote.date,
+    date: quote.date || todayStr,
     expiration_date: quote.expirationDate,
     markup_percent: quote.markupPercent,
     tax_rate: quote.taxRate,
@@ -820,6 +821,8 @@ export async function saveQuote(quote) {
         mapped.version = (existing.version || 1) + 1;
         mapped.parent_quote_id = existing.parentQuoteId || existing.id;
         mapped.created_date_time = new Date().toISOString(); // Stamp the new active version with the current time
+        mapped.date = todayStr; // Update quote date for the new active version
+        quote.date = todayStr;  // Sync in-memory representation
       }
     }
     
