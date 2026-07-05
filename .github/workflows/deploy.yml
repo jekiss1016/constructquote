@@ -33,6 +33,10 @@ jobs:
         with:
           path: '.'
           
+      - name: Pause to allow Pages API to clear locks
+        run: sleep 10
+        shell: bash
+          
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
