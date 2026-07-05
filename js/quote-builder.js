@@ -1,9 +1,9 @@
 // Quote Builder view controller
-import { getProducts, getSettings, saveQuote, checkJobIdUnique, saveSettings, getCustomers, getSupabase, getCurrentUserProfile, uploadFileToStorage } from './db.js?v=64';
+import { getProducts, getSettings, saveQuote, checkJobIdUnique, saveSettings, getCustomers, getSupabase, getCurrentUserProfile, uploadFileToStorage } from './db.js?v=65';
 import { formatCurrency, showToast, fileToBase64, generateJobIdSuggestion, compressImage } from './utils.js';
-import { navigateToView, viewQuoteDetails } from './app.js?v=64';
-import { renderQuoteDetails } from './quotes-list.js?v=64';
-import { openCustomerModalInline } from './customers.js?v=64';
+import { navigateToView, viewQuoteDetails } from './app.js?v=65';
+import { renderQuoteDetails } from './quotes-list.js?v=65';
+import { openCustomerModalInline } from './customers.js?v=65';
 
 let currentQuote = {
   id: null,
@@ -82,11 +82,17 @@ export async function startNewQuote() {
   renderBuilderGallery();
   calculateTotals();
   
+  const updateCostsBtn = document.getElementById('builder-update-costs-btn');
+  if (updateCostsBtn) updateCostsBtn.style.display = 'none';
+
   document.getElementById('builder-title').textContent = 'New Construction Quote';
 }
 
 // Edit existing quote
 export async function loadQuoteForEditing(quote) {
+  const updateCostsBtn = document.getElementById('builder-update-costs-btn');
+  if (updateCostsBtn) updateCostsBtn.style.display = 'inline-block';
+
   currentQuote = JSON.parse(JSON.stringify(quote)); // Deep clone
   if (currentQuote.taxPlusApplicable === undefined) currentQuote.taxPlusApplicable = false;
   if (!currentQuote.photos) currentQuote.photos = [];
@@ -1089,6 +1095,50 @@ function setupBuilderListeners() {
     });
   }
 
+  const updateCostsBtn = document.getElementById('builder-update-costs-btn');
+  if (updateCostsBtn) {
+    updateCostsBtn.addEventListener('click', async () => {
+      showToast('Fetching latest product catalog costs...');
+      const products = await getProducts();
+      let updatedCount = 0;
+      
+      currentQuote.sections.forEach(section => {
+        section.items.forEach(item => {
+          let p = null;
+          // Match by ID first, fallback to case-insensitive name match
+          if (item.productId) {
+            p = products.find(prod => prod.id === item.productId);
+          }
+          if (!p && item.name) {
+            p = products.find(prod => prod.name.trim().toLowerCase() === item.name.trim().toLowerCase());
+          }
+          
+          if (p) {
+            const oldPrice = item.price;
+            const oldLabor = item.laborRate || 0;
+            const newPrice = p.price;
+            const newLabor = p.laborRate || 0;
+            
+            if (oldPrice !== newPrice || oldLabor !== newLabor) {
+              item.price = newPrice;
+              item.laborRate = newLabor;
+              item.uom = p.uom || item.uom;
+              item.category = p.category || item.category;
+              updatedCount++;
+            }
+          }
+        });
+      });
+
+      if (updatedCount > 0) {
+        await renderBuilderSections();
+        calculateTotals();
+        showToast(`Successfully updated ${updatedCount} quote item(s) to current catalog costs.`, 'success');
+      } else {
+        showToast('All quote items are already up to date with the catalog.', 'info');
+      }
+    });
+  }
   if (cancelBtn) {
     cancelBtn.addEventListener('click', () => {
       if (confirm('Discard changes?')) {

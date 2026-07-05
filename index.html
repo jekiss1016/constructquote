@@ -4,9 +4,9 @@
   <script>
     // Self-healing module cache-clearing routine
     try {
-      if (!localStorage.getItem('cq-cache-cleared-v64')) {
+      if (!localStorage.getItem('cq-cache-cleared-v65')) {
         localStorage.clear();
-        localStorage.setItem('cq-cache-cleared-v64', 'true');
+        localStorage.setItem('cq-cache-cleared-v65', 'true');
         window.location.reload(true);
       }
     } catch (e) {}
@@ -362,7 +362,8 @@
             <h2 class="page-title" id="builder-title">New Construction Quote</h2>
             <p class="page-description">Fill out the information below to compile your quote proposal.</p>
           </div>
-          <div style="display: flex; gap: 0.75rem;">
+          <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <button type="button" class="btn btn-secondary" id="builder-update-costs-btn" style="display: none;" title="Updates All Quote Items to Current Catalog Costs">Update Product Costs</button>
             <button type="button" class="btn btn-secondary" id="builder-cancel-btn">Cancel</button>
             <button type="button" class="btn btn-success" id="builder-save-btn">Save Quote</button>
           </div>
@@ -1133,7 +1134,7 @@
       <!-- Global Footer -->
       <footer class="hide-in-print" style="margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); text-align: center; font-size: 0.8rem; color: var(--text-muted); padding-bottom: 1.5rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem;">
         <img src="banner.png" style="max-height: 50px; max-width: 320px; object-fit: contain; width: auto; opacity: 0.85;" alt="MyBidBook Banner">
-        <span>© 2026 MyBidBook | v1.64</span>
+        <span>© 2026 MyBidBook | v1.65</span>
       </footer>
     </main>
   </div>
@@ -1645,7 +1646,7 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Javascript Modules -->
-  <script type="module" src="js/app.js?v=64"></script>
+  <script type="module" src="js/app.js?v=65"></script>
 
 </body>
 </html>
