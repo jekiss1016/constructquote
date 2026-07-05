@@ -4,9 +4,9 @@
   <script>
     // Self-healing module cache-clearing routine
     try {
-      if (!localStorage.getItem('cq-cache-cleared-v75')) {
+      if (!localStorage.getItem('cq-cache-cleared-v76')) {
         localStorage.clear();
-        localStorage.setItem('cq-cache-cleared-v75', 'true');
+        localStorage.setItem('cq-cache-cleared-v76', 'true');
         window.location.reload(true);
       }
     } catch (e) {}
@@ -1028,11 +1028,7 @@
                 <input type="email" class="form-input" id="settings-co-email" placeholder="contact@company.com">
               </div>
             </div>
-            
-            <div class="form-group" style="margin-top: 0.5rem; margin-bottom: 1rem;">
-              <label class="form-label" for="settings-resend-key">Resend API Key (for Contact Support form)</label>
-              <input type="password" class="form-input" id="settings-resend-key" placeholder="re_1234567890abcdef">
-            </div>
+
 
             <div class="form-group-row" style="border-top: 1px solid var(--border-color); padding-top: 1rem;">
               <div class="form-group">
@@ -1206,7 +1202,7 @@
       <!-- Global Footer -->
       <footer class="hide-in-print" style="margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); text-align: center; font-size: 0.8rem; color: var(--text-muted); padding-bottom: 1.5rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem;">
         <img src="banner.png" style="max-height: 50px; max-width: 320px; object-fit: contain; width: auto; opacity: 0.85;" alt="MyBidBook Banner">
-        <span>© 2026 MyBidBook | v1.75</span>
+        <span>© 2026 MyBidBook | v1.76</span>
       </footer>
     </main>
   </div>
@@ -1752,7 +1748,7 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Javascript Modules -->
-  <script type="module" src="js/app.js?v=75"></script>
+  <script type="module" src="js/app.js?v=76"></script>
 
 </body>
 </html>

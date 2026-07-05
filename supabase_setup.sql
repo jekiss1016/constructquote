@@ -825,9 +825,6 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- Enable HTTP extension for server-side outbound webhooks
 CREATE EXTENSION IF NOT EXISTS http;
 
--- Add Resend API key column to company settings
-ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS resend_api_key TEXT;
-
 -- Postgres function to securely dispatch emails through Resend API
 CREATE OR REPLACE FUNCTION public.send_support_email(
   user_email text,
@@ -840,14 +837,11 @@ DECLARE
   resp_status integer;
   resp_content text;
 BEGIN
-  -- Retrieve Resend API Key from company settings
-  SELECT resend_api_key INTO resend_key 
-  FROM public.settings 
-  WHERE resend_api_key IS NOT NULL AND resend_api_key <> ''
-  LIMIT 1;
+  -- Configure your global Resend API Key here (replace re_YOUR_API_KEY_HERE with your key)
+  resend_key := 're_YOUR_API_KEY_HERE';
 
-  IF resend_key IS NULL OR resend_key = '' THEN
-    RETURN jsonb_build_object('success', false, 'message', 'Resend API Key is not configured in settings.');
+  IF resend_key IS NULL OR resend_key = '' OR resend_key = 're_YOUR_API_KEY_HERE' THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Resend API Key is not configured in send_support_email SQL function.');
   END IF;
 
   -- Build Resend JSON payload (reply_to set to user's email)

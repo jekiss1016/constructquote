@@ -19,12 +19,12 @@ import {
   uploadFileToStorage,
   rawDbWrite,
   getSubscriptionLevel
-} from './db.js?v=75';
+} from './db.js?v=76';
 import { showToast, fileToBase64 } from './utils.js';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=75';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=75';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=75';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=75';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=76';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=76';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=76';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=76';
 
 let activeChallengeId = null;
 let activeFactorId = null;
@@ -1102,11 +1102,7 @@ async function loadDefaultSettingsToUI() {
     termsTextarea.disabled = isViewer;
   }
 
-  const resendInput = document.getElementById('settings-resend-key');
-  if (resendInput) {
-    resendInput.value = settings.resendApiKey || '';
-    resendInput.disabled = isViewer;
-  }
+
 
   const saveBtn = document.getElementById('settings-save-btn');
   if (saveBtn) saveBtn.style.display = isViewer ? 'none' : 'inline-flex';
@@ -1150,8 +1146,7 @@ function setupSettingsHandlers() {
         defaultMarkupPercent: parseFloat(document.getElementById('settings-default-markup').value) || 0,
         defaultTaxRate: parseFloat(document.getElementById('settings-default-tax').value) || 0,
         defaultTaxPlusApplicable: document.getElementById('settings-default-tax-plus-applicable').checked,
-        defaultTermsNotes: document.getElementById('settings-default-terms-notes').value.trim(),
-        resendApiKey: document.getElementById('settings-resend-key').value.trim()
+        defaultTermsNotes: document.getElementById('settings-default-terms-notes').value.trim()
       };
 
       const res = await saveSettings(updated);
