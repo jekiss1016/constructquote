@@ -18,12 +18,12 @@ import {
   uploadFileToStorage,
   rawDbWrite,
   getSubscriptionLevel
-} from './db.js?v=70';
+} from './db.js?v=71';
 import { showToast, fileToBase64 } from './utils.js';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=70';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=70';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=70';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=70';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=71';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=71';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=71';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=71';
 
 let activeChallengeId = null;
 let activeFactorId = null;
@@ -882,9 +882,64 @@ function setupAppNavigation() {
   navItems.forEach(item => {
     item.addEventListener('click', () => {
       const target = item.getAttribute('data-target');
-      navigateToView(target);
+      if (target) navigateToView(target);
     });
   });
+
+  // Support modal open
+  const supportOpenBtn = document.getElementById('support-open-btn');
+  const supportModal = document.getElementById('support-modal');
+  const supportEmailInput = document.getElementById('support-email');
+  const supportSubjectInput = document.getElementById('support-subject');
+  const supportMessageInput = document.getElementById('support-message');
+  const supportForm = document.getElementById('support-form');
+  const supportCancelBtn = document.getElementById('support-modal-cancel-btn');
+  const supportCloseBtn = document.getElementById('support-modal-close-btn');
+
+  if (supportOpenBtn && supportModal) {
+    supportOpenBtn.addEventListener('click', () => {
+      const profile = getCurrentUserProfile();
+      if (supportEmailInput && profile && profile.email) {
+        supportEmailInput.value = profile.email;
+      }
+      if (supportSubjectInput) supportSubjectInput.value = '';
+      if (supportMessageInput) supportMessageInput.value = '';
+      supportModal.classList.add('active');
+    });
+  }
+
+  const closeSupportModal = () => {
+    if (supportModal) supportModal.classList.remove('active');
+  };
+
+  if (supportCancelBtn) supportCancelBtn.addEventListener('click', closeSupportModal);
+  if (supportCloseBtn) supportCloseBtn.addEventListener('click', closeSupportModal);
+
+  if (supportForm) {
+    supportForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const email = supportEmailInput ? supportEmailInput.value.trim() : '';
+      const subject = supportSubjectInput ? supportSubjectInput.value.trim() : '';
+      const msg = supportMessageInput ? supportMessageInput.value.trim() : '';
+      
+      if (!subject || !msg) {
+        showToast('Please fill out all required fields.', 'danger');
+        return;
+      }
+
+      // Build email mailto link
+      const to = 'contact@mybidbook.com';
+      const bodyText = `From User: ${email}\n\nIssue/Question Details:\n${msg}`;
+      const mailtoLink = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+      
+      // Open mailto link
+      window.location.href = mailtoLink;
+      
+      closeSupportModal();
+      showToast('Support email draft opened in mail client.', 'success');
+    });
+  }
 
   const dashNewBtn = document.getElementById('dashboard-new-quote-btn');
   const dashActNew = document.getElementById('dash-action-new-quote');
