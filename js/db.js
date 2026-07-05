@@ -812,12 +812,14 @@ export async function saveQuote(quote) {
           sections: legacyCopy.sections,
           photos: legacyCopy.photos,
           documents: legacyCopy.documents,
-          receipts: legacyCopy.receipts
+          receipts: legacyCopy.receipts,
+          created_date_time: legacyCopy.createdDateTime // Preserve the original timestamp on the archived copy
         });
         if (legError) return { success: false, error: 'Legacy archive failed: ' + legError.message };
         
         mapped.version = (existing.version || 1) + 1;
         mapped.parent_quote_id = existing.parentQuoteId || existing.id;
+        mapped.created_date_time = new Date().toISOString(); // Stamp the new active version with the current time
       }
     }
     
