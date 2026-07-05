@@ -1,7 +1,7 @@
 // Customer management controller
-import { getCustomers, saveCustomer, deleteCustomer, getQuotes, getSupabase, getCurrentUserProfile, uploadFileToStorage, getCustomerById } from './db.js?v=74';
+import { getCustomers, saveCustomer, deleteCustomer, getQuotes, getSupabase, getCurrentUserProfile, uploadFileToStorage, getCustomerById } from './db.js?v=75';
 import { formatCurrency, formatDateTime, showToast, formatPhoneNumber } from './utils.js';
-import { navigateToView, viewQuoteDetails } from './app.js?v=74';
+import { navigateToView, viewQuoteDetails } from './app.js?v=75';
 
 let activeSearchQuery = '';
 let inlineSaveCallback = null;

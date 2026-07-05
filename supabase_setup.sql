@@ -817,3 +817,68 @@ BEGIN
   END IF;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- =====================================================================
+-- Support Email Routing Integration with Resend (v75)
+-- =====================================================================
+
+-- Enable HTTP extension for server-side outbound webhooks
+CREATE EXTENSION IF NOT EXISTS http;
+
+-- Add Resend API key column to company settings
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS resend_api_key TEXT;
+
+-- Postgres function to securely dispatch emails through Resend API
+CREATE OR REPLACE FUNCTION public.send_support_email(
+  user_email text,
+  subject text,
+  msg text
+) RETURNS jsonb SECURITY DEFINER AS $$
+DECLARE
+  resend_key text;
+  req_body text;
+  resp_status integer;
+  resp_content text;
+BEGIN
+  -- Retrieve Resend API Key from company settings
+  SELECT resend_api_key INTO resend_key 
+  FROM public.settings 
+  WHERE resend_api_key IS NOT NULL AND resend_api_key <> ''
+  LIMIT 1;
+
+  IF resend_key IS NULL OR resend_key = '' THEN
+    RETURN jsonb_build_object('success', false, 'message', 'Resend API Key is not configured in settings.');
+  END IF;
+
+  -- Build Resend JSON payload (reply_to set to user's email)
+  req_body := jsonb_build_object(
+    'from', 'MyBidBook Support <onboarding@resend.dev>',
+    'to', array['contact@mybidbook.com'],
+    'reply_to', user_email,
+    'subject', 'MyBidBook App Support: ' || subject,
+    'html', '<p><strong>From:</strong> ' || user_email || '</p><p><strong>Message:</strong></p><p style="white-space: pre-wrap;">' || msg || '</p>'
+  )::text;
+
+  -- Dispatch HTTP POST
+  SELECT status, content INTO resp_status, resp_content
+  FROM http((
+    'POST',
+    'https://api.resend.com/emails',
+    ARRAY[
+      http_header('Authorization', 'Bearer ' || resend_key),
+      http_header('Content-Type', 'application/json')
+    ],
+    req_body,
+    NULL
+  )::http_request);
+
+  IF resp_status >= 200 AND resp_status < 300 THEN
+    RETURN jsonb_build_object('success', true, 'message', 'Support request sent successfully!');
+  ELSE
+    RETURN jsonb_build_object('success', false, 'message', 'Resend API returned status ' || resp_status || ': ' || resp_content);
+  END IF;
+EXCEPTION WHEN OTHERS THEN
+  RETURN jsonb_build_object('success', false, 'message', 'SQL Execution Error: ' || SQLERRM);
+END;
+$$ LANGUAGE plpgsql;
+

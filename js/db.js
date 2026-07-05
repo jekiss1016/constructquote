@@ -915,7 +915,8 @@ export async function getSettings() {
     companyLogo: row.company_logo,
     theme: row.theme || 'light',
     defaultTermsNotes: row.default_terms_notes || '',
-    defaultTaxPlusApplicable: row.default_tax_plus_applicable || false
+    defaultTaxPlusApplicable: row.default_tax_plus_applicable || false,
+    resendApiKey: row.resend_api_key
   };
 }
 
@@ -933,6 +934,7 @@ export async function saveSettings(settingsObj) {
   if (settingsObj.theme !== undefined) mapped.theme = settingsObj.theme;
   if (settingsObj.defaultTermsNotes !== undefined) mapped.default_terms_notes = settingsObj.defaultTermsNotes;
   if (settingsObj.defaultTaxPlusApplicable !== undefined) mapped.default_tax_plus_applicable = settingsObj.defaultTaxPlusApplicable;
+  if (settingsObj.resendApiKey !== undefined) mapped.resend_api_key = settingsObj.resendApiKey;
   
   mapped.company_id = currentUserProfile.company_id;
   
@@ -955,6 +957,39 @@ export async function saveSettings(settingsObj) {
     
     if (res.ok) {
       return { success: true };
+    } else {
+      const data = await res.json();
+      return { success: false, error: data.message || `HTTP error ${res.status}` };
+    }
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function sendSupportEmail(userEmail, subject, message) {
+  const config = await getSupabaseConfig();
+  if (!config) return { success: false, error: 'Supabase configuration missing.' };
+  const token = await getAccessToken();
+  if (!token) return { success: false, error: 'Authentication session not found.' };
+
+  try {
+    const res = await fetch(`${config.url}/rest/v1/rpc/send_support_email`, {
+      method: 'POST',
+      headers: {
+        'apikey': config.key,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        user_email: userEmail,
+        subject: subject,
+        msg: message
+      })
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      return data;
     } else {
       const data = await res.json();
       return { success: false, error: data.message || `HTTP error ${res.status}` };

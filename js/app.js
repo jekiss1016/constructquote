@@ -9,6 +9,7 @@ import {
   setSupabaseConfig, 
   getSettings, 
   saveSettings, 
+  sendSupportEmail,
   exportDB, 
   importDB, 
   getQuoteById, 
@@ -18,12 +19,12 @@ import {
   uploadFileToStorage,
   rawDbWrite,
   getSubscriptionLevel
-} from './db.js?v=74';
+} from './db.js?v=75';
 import { showToast, fileToBase64 } from './utils.js';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=74';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=74';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=74';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=74';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=75';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=75';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=75';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=75';
 
 let activeChallengeId = null;
 let activeFactorId = null;
@@ -886,11 +887,57 @@ function setupAppNavigation() {
     });
   });
 
-  // Contact Support handler - immediately opens mail client
+  // Contact Support handler - opens modal
   const supportOpenBtn = document.getElementById('support-open-btn');
-  if (supportOpenBtn) {
+  const supportModal = document.getElementById('support-modal');
+  const supportEmailInput = document.getElementById('support-email');
+  const supportSubjectInput = document.getElementById('support-subject');
+  const supportMessageInput = document.getElementById('support-message');
+  const supportForm = document.getElementById('support-form');
+  const supportCancelBtn = document.getElementById('support-modal-cancel-btn');
+  const supportCloseBtn = document.getElementById('support-modal-close-btn');
+
+  if (supportOpenBtn && supportModal) {
     supportOpenBtn.addEventListener('click', () => {
-      window.location.href = 'mailto:contact@mybidbook.com?subject=MyBidBook App Support';
+      const profile = getCurrentUserProfile();
+      if (supportEmailInput && profile && profile.email) {
+        supportEmailInput.value = profile.email;
+      }
+      if (supportSubjectInput) supportSubjectInput.value = '';
+      if (supportMessageInput) supportMessageInput.value = '';
+      supportModal.classList.add('active');
+    });
+  }
+
+  const closeSupportModal = () => {
+    if (supportModal) supportModal.classList.remove('active');
+  };
+
+  if (supportCancelBtn) supportCancelBtn.addEventListener('click', closeSupportModal);
+  if (supportCloseBtn) supportCloseBtn.addEventListener('click', closeSupportModal);
+
+  if (supportForm) {
+    supportForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const email = supportEmailInput ? supportEmailInput.value.trim() : '';
+      const subject = supportSubjectInput ? supportSubjectInput.value.trim() : '';
+      const msg = supportMessageInput ? supportMessageInput.value.trim() : '';
+      
+      if (!subject || !msg) {
+        showToast('Please fill out all required fields.', 'danger');
+        return;
+      }
+
+      showToast('Sending support request...');
+      const res = await sendSupportEmail(email, subject, msg);
+      
+      if (res.success) {
+        showToast('Support request sent successfully!', 'success');
+        closeSupportModal();
+      } else {
+        showToast(res.message || res.error || 'Failed to send support request.', 'danger');
+      }
     });
   }
 
@@ -1055,6 +1102,12 @@ async function loadDefaultSettingsToUI() {
     termsTextarea.disabled = isViewer;
   }
 
+  const resendInput = document.getElementById('settings-resend-key');
+  if (resendInput) {
+    resendInput.value = settings.resendApiKey || '';
+    resendInput.disabled = isViewer;
+  }
+
   const saveBtn = document.getElementById('settings-save-btn');
   if (saveBtn) saveBtn.style.display = isViewer ? 'none' : 'inline-flex';
 
@@ -1097,7 +1150,8 @@ function setupSettingsHandlers() {
         defaultMarkupPercent: parseFloat(document.getElementById('settings-default-markup').value) || 0,
         defaultTaxRate: parseFloat(document.getElementById('settings-default-tax').value) || 0,
         defaultTaxPlusApplicable: document.getElementById('settings-default-tax-plus-applicable').checked,
-        defaultTermsNotes: document.getElementById('settings-default-terms-notes').value.trim()
+        defaultTermsNotes: document.getElementById('settings-default-terms-notes').value.trim(),
+        resendApiKey: document.getElementById('settings-resend-key').value.trim()
       };
 
       const res = await saveSettings(updated);
