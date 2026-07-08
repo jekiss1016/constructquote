@@ -24,3 +24,7 @@ $RECYCLE.BIN/
 .env.local
 config.dev.json
 
+# Local E2E testing tools
+test-runner.html
+js/tests.js
+
