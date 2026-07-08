@@ -875,3 +875,33 @@ EXCEPTION WHEN OTHERS THEN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Get User Provider Check Function (v81)
+CREATE OR REPLACE FUNCTION public.get_user_provider(p_email text)
+RETURNS text AS $$
+DECLARE
+  v_provider text;
+BEGIN
+  -- First check auth.identities
+  SELECT provider INTO v_provider
+  FROM auth.identities
+  WHERE LOWER(email) = LOWER(p_email)
+  LIMIT 1;
+
+  -- Fallback to raw_app_meta_data in auth.users
+  IF v_provider IS NULL THEN
+    SELECT 
+      CASE 
+        WHEN raw_app_meta_data->>'provider' = 'google' THEN 'google'
+        WHEN raw_app_meta_data->'providers' @> '["google"]'::jsonb THEN 'google'
+        ELSE raw_app_meta_data->>'provider'
+      END INTO v_provider
+    FROM auth.users
+    WHERE LOWER(email) = LOWER(p_email)
+    LIMIT 1;
+  END IF;
+
+  RETURN v_provider;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+

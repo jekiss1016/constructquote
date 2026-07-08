@@ -316,21 +316,47 @@ function setupForgotPasswordListeners() {
         const sb = getSupabase();
         if (!sb) throw new Error('Supabase client not initialized');
 
-        const { error } = await sb.auth.resetPasswordForEmail(email, {
-          redirectTo: window.location.origin + window.location.pathname
-        });
-
-        if (error) {
-          showToast(error.message, 'danger');
-        } else {
-          showToast('Password reset link sent! Please check your email.');
-          // Toggle back to login
-          document.getElementById('auth-forgot-container').style.display = 'none';
-          document.getElementById('auth-main-container').style.display = 'block';
+        // Check if the user is registered with Google or Email
+        let provider = null;
+        let rpcSuccessful = false;
+        try {
+          const { data, error: rpcError } = await sb.rpc('get_user_provider', { p_email: email });
+          if (!rpcError) {
+            provider = data;
+            rpcSuccessful = true;
+          } else {
+            console.warn('RPC check failed, falling back to direct recovery attempt:', rpcError);
+          }
+        } catch (rpcErr) {
+          console.warn('RPC check error, falling back to direct recovery attempt:', rpcErr);
         }
+
+        // Send reset password email if user provider is email, or if RPC failed/is missing (fallback check)
+        if (provider === 'email' || !rpcSuccessful) {
+          try {
+            await sb.auth.resetPasswordForEmail(email, {
+              redirectTo: window.location.origin + window.location.pathname
+            });
+          } catch (resetErr) {
+            console.error('Silent resetPasswordForEmail execution error:', resetErr);
+          }
+        } else {
+          console.log(`Skipping reset password email request: User provider is '${provider || 'unknown'}' (non-email).`);
+        }
+
+        // Always display the exact user status message requested
+        showToast('If you signed up with email and it is found in the system you will recieve a reset link. Please check your spam or junk folder if you do not see it.');
+
+        // Toggle back to login
+        document.getElementById('auth-forgot-container').style.display = 'none';
+        document.getElementById('auth-main-container').style.display = 'block';
+
       } catch (err) {
-        console.error('Forgot password error:', err);
-        showToast('An error occurred. Please try again.', 'danger');
+        console.error('Forgot password handler error:', err);
+        // Display the standard user status message even on handler error to prevent leaks/console noise
+        showToast('If you signed up with email and it is found in the system you will recieve a reset link. Please check your spam or junk folder if you do not see it.');
+        document.getElementById('auth-forgot-container').style.display = 'none';
+        document.getElementById('auth-main-container').style.display = 'block';
       } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Send Reset Link';
