@@ -115,7 +115,7 @@ create table if not exists public.quotes (
 -- Settings Table (1 per Company)
 create table if not exists public.settings (
   company_id uuid primary key references public.companies on delete cascade,
-  company_name text not null,
+  company_name text default 'New Contractor Co.'::text not null,
   company_address text,
   company_phone text,
   company_email text,
