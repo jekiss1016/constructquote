@@ -25,7 +25,18 @@ let cachedConfig = null;
 export async function loadRuntimeConfig() {
   if (cachedConfig) return cachedConfig;
   try {
-    const response = await fetch('config.json');
+    let configFile = 'config.json';
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      try {
+        const devResponse = await fetch('config.dev.json');
+        if (devResponse.ok) {
+          configFile = 'config.dev.json';
+        }
+      } catch (e) {
+        // Fall back to config.json
+      }
+    }
+    const response = await fetch(configFile);
     if (response.ok) {
       const config = await response.json();
       if (config.supabaseUrl && config.supabaseKey) {
