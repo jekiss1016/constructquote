@@ -20,7 +20,7 @@ import {
   rawDbWrite,
   getSubscriptionLevel
 } from './db.js?v=80';
-import { showToast, fileToBase64 } from './utils.js';
+import { showToast, fileToBase64, formatPhoneNumber } from './utils.js';
 import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=80';
 import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=80';
 import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=80';
@@ -1100,7 +1100,7 @@ async function loadDefaultSettingsToUI() {
     addrInput.disabled = isViewer;
   }
   if (phoneInput) {
-    phoneInput.value = settings.companyPhone || '';
+    phoneInput.value = formatPhoneNumber(settings.companyPhone || '');
     phoneInput.disabled = isViewer;
   }
   if (emailInput) {
@@ -1172,6 +1172,13 @@ function setupSettingsHandlers() {
         taxInput.disabled = isViewer;
         taxInput.value = '0';
       }
+    });
+  }
+
+  const settingsCoPhone = document.getElementById('settings-co-phone');
+  if (settingsCoPhone) {
+    settingsCoPhone.addEventListener('input', (e) => {
+      e.target.value = formatPhoneNumber(e.target.value);
     });
   }
 
