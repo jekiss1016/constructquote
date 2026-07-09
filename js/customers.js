@@ -1,5 +1,5 @@
 // Customer management controller
-import { getCustomers, saveCustomer, deleteCustomer, getQuotes, getSupabase, getCurrentUserProfile, uploadFileToStorage, getCustomerById } from './db.js?v=80';
+import { getCustomers, saveCustomer, deleteCustomer, getQuotes, getSupabase, getCurrentUserProfile, uploadFileToStorage, getCustomerById, getSettings } from './db.js?v=80';
 import { formatCurrency, formatDateTime, showToast, formatPhoneNumber } from './utils.js';
 import { navigateToView, viewQuoteDetails } from './app.js?v=80';
 
@@ -175,7 +175,7 @@ function renderCustomerDocuments(documents = []) {
 }
 
 // Interface helper to open customer modal inline
-export function openCustomerModalInline(callback = null) {
+export async function openCustomerModalInline(callback = null) {
   inlineSaveCallback = callback;
   activeCustomerDocs = [];
   
@@ -186,9 +186,20 @@ export function openCustomerModalInline(callback = null) {
   document.getElementById('customer-form-id').value = '';
   document.getElementById('customer-modal-title').textContent = 'Add Database Customer';
   
-  document.getElementById('customer-form-default-markup').value = '';
-  document.getElementById('customer-form-default-terms-notes').value = '';
-  document.getElementById('customer-form-default-tax-plus-applicable').checked = false;
+  const settings = await getSettings();
+  document.getElementById('customer-form-default-markup').value = settings.defaultMarkupPercent !== undefined ? settings.defaultMarkupPercent : 15;
+  document.getElementById('customer-form-default-terms-notes').value = settings.defaultTermsNotes || '';
+  
+  const isPlusTax = settings.defaultTaxPlusApplicable || false;
+  const plusTaxCheck = document.getElementById('customer-form-default-tax-plus-applicable');
+  if (plusTaxCheck) {
+    plusTaxCheck.checked = isPlusTax;
+  }
+  const taxInput = document.getElementById('customer-form-default-tax');
+  if (taxInput) {
+    taxInput.value = isPlusTax ? '' : (settings.defaultTaxRate || 0);
+    taxInput.disabled = isPlusTax;
+  }
   
   const contactsList = document.getElementById('customer-contacts-list');
   contactsList.innerHTML = ''; // Reset contacts
@@ -270,6 +281,20 @@ function setupCustomerListeners() {
   if (zipInput) {
     zipInput.addEventListener('input', (e) => {
       e.target.value = e.target.value.replace(/\D/g, '').slice(0, 5);
+    });
+  }
+
+  const plusTaxCheck = document.getElementById('customer-form-default-tax-plus-applicable');
+  const taxInput = document.getElementById('customer-form-default-tax');
+  if (plusTaxCheck && taxInput) {
+    plusTaxCheck.addEventListener('change', () => {
+      if (plusTaxCheck.checked) {
+        taxInput.value = '';
+        taxInput.disabled = true;
+      } else {
+        taxInput.disabled = isViewer;
+        taxInput.value = '0';
+      }
     });
   }
 
@@ -450,9 +475,21 @@ function setupCustomerListeners() {
           contacts,
           documents: activeCustomerDocs,
           defaultMarkupPercent: parseFloat(document.getElementById('customer-form-default-markup').value) || 0,
+          defaultTaxRate: parseFloat(document.getElementById('customer-form-default-tax').value) || 0,
           defaultTermsNotes: document.getElementById('customer-form-default-terms-notes').value.trim(),
           defaultTaxPlusApplicable: document.getElementById('customer-form-default-tax-plus-applicable').checked
         };
+
+        const markupVal = document.getElementById('customer-form-default-markup').value;
+        const taxPlus = document.getElementById('customer-form-default-tax-plus-applicable').checked;
+        const taxVal = document.getElementById('customer-form-default-tax').value;
+
+        if (markupVal === '' || parseFloat(markupVal) === 0) {
+          alert("Warning: Default Markup Percentage is zero or blank.");
+        }
+        if (!taxPlus && (taxVal === '' || parseFloat(taxVal) === 0)) {
+          alert("Warning: Default Sales Tax Rate is zero or blank.");
+        }
 
         const res = await saveCustomer(customer);
         if (res.success) {
@@ -514,9 +551,15 @@ function setupCustomerListeners() {
           document.getElementById('customer-form-state').value = c.state || '';
           document.getElementById('customer-form-zip').value = c.zip || '';
           
-          document.getElementById('customer-form-default-markup').value = c.defaultMarkupPercent || '';
+          document.getElementById('customer-form-default-markup').value = c.defaultMarkupPercent !== undefined ? c.defaultMarkupPercent : '';
           document.getElementById('customer-form-default-terms-notes').value = c.defaultTermsNotes || '';
-          document.getElementById('customer-form-default-tax-plus-applicable').checked = c.defaultTaxPlusApplicable || false;
+          
+          const isPlusTax = c.defaultTaxPlusApplicable || false;
+          document.getElementById('customer-form-default-tax-plus-applicable').checked = isPlusTax;
+          const taxInput = document.getElementById('customer-form-default-tax');
+          if (taxInput) {
+            taxInput.value = isPlusTax ? '' : (c.defaultTaxRate || 0);
+          }
           
           contactsList.innerHTML = '';
           if (c.contacts && c.contacts.length > 0) {
@@ -528,6 +571,11 @@ function setupCustomerListeners() {
           formInputs.forEach(input => {
             input.disabled = isViewer;
           });
+
+          // Specifically disable the tax input if plus tax is checked
+          if (taxInput && isPlusTax) {
+            taxInput.disabled = true;
+          }
 
           // Toggle visibility of management elements for viewers
           const submitBtn = document.getElementById('customer-modal-submit-btn');

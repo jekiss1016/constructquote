@@ -1111,15 +1111,15 @@ async function loadDefaultSettingsToUI() {
     markupInput.value = settings.defaultMarkupPercent || 0;
     markupInput.disabled = isViewer;
   }
-  if (taxInput) {
-    taxInput.value = settings.defaultTaxRate || 0;
-    taxInput.disabled = isViewer;
-  }
-
   const plusTaxCheck = document.getElementById('settings-default-tax-plus-applicable');
+  const isPlusTax = settings.defaultTaxPlusApplicable || false;
   if (plusTaxCheck) {
-    plusTaxCheck.checked = settings.defaultTaxPlusApplicable || false;
+    plusTaxCheck.checked = isPlusTax;
     plusTaxCheck.disabled = isViewer;
+  }
+  if (taxInput) {
+    taxInput.value = isPlusTax ? '' : (settings.defaultTaxRate || 0);
+    taxInput.disabled = isViewer || isPlusTax;
   }
 
   const termsTextarea = document.getElementById('settings-default-terms-notes');
@@ -1160,6 +1160,20 @@ function setupSettingsHandlers() {
   
   const profile = getCurrentUserProfile();
   const isViewer = profile && profile.role === 'viewer';
+
+  const plusTaxCheck = document.getElementById('settings-default-tax-plus-applicable');
+  const taxInput = document.getElementById('settings-default-tax');
+  if (plusTaxCheck && taxInput) {
+    plusTaxCheck.addEventListener('change', () => {
+      if (plusTaxCheck.checked) {
+        taxInput.value = '';
+        taxInput.disabled = true;
+      } else {
+        taxInput.disabled = isViewer;
+        taxInput.value = '0';
+      }
+    });
+  }
 
   if (saveBtn) {
     saveBtn.addEventListener('click', async () => {

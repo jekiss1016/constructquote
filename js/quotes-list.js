@@ -387,8 +387,8 @@ export async function renderQuoteDetails(id) {
   const paperLogo = document.getElementById('paper-logo');
   const paperLogoPlaceholder = document.getElementById('paper-logo-placeholder');
   
-  if (quote.companyLogo) {
-    paperLogo.src = quote.companyLogo;
+  if (settings.companyLogo) {
+    paperLogo.src = settings.companyLogo;
     paperLogo.style.display = 'block';
     paperLogoPlaceholder.style.display = 'none';
   } else {

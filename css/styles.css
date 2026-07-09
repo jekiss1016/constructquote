@@ -701,6 +701,22 @@ body {
   transition: border-color var(--transition-fast);
 }
 
+.form-input:disabled, .form-select:disabled, .form-textarea:disabled {
+  background-color: #cbd5e1;
+  color: #475569;
+  border-color: #94a3b8;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+[data-theme="dark"] .form-input:disabled, 
+[data-theme="dark"] .form-select:disabled, 
+[data-theme="dark"] .form-textarea:disabled {
+  background-color: #334155;
+  color: #94a3b8;
+  border-color: #475569;
+}
+
 .form-input:focus, .form-select:focus, .form-textarea:focus {
   border-color: var(--border-focus);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);

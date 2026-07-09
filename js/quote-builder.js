@@ -186,13 +186,17 @@ function populateBuilderFields() {
   document.getElementById('builder-customer-phone').value = currentQuote.customerPhone;
   document.getElementById('builder-project-address').value = currentQuote.projectAddress;
   document.getElementById('builder-markup').value = currentQuote.markupPercent;
-  document.getElementById('builder-tax').value = currentQuote.taxRate;
   document.getElementById('builder-notes').value = currentQuote.notes;
 
   const plusTaxCheck = document.getElementById('builder-tax-plus-applicable');
+  const isPlusTax = currentQuote.taxPlusApplicable || false;
   if (plusTaxCheck) {
-    plusTaxCheck.checked = currentQuote.taxPlusApplicable || false;
-    document.getElementById('builder-tax').disabled = currentQuote.taxPlusApplicable || false;
+    plusTaxCheck.checked = isPlusTax;
+  }
+  const taxInput = document.getElementById('builder-tax');
+  if (taxInput) {
+    taxInput.value = isPlusTax ? '' : (currentQuote.taxRate || 0);
+    taxInput.disabled = isPlusTax;
   }
 
   const detCheck = document.getElementById('print-show-details');
@@ -205,23 +209,7 @@ function populateBuilderFields() {
 
   updatePrintOptionsUI();
 
-  const logoPreview = document.getElementById('builder-logo-preview');
-  const logoClearBtn = document.getElementById('builder-logo-clear-btn');
-  const saveDefaultCheckbox = document.getElementById('builder-save-default-logo');
-  
-  saveDefaultCheckbox.checked = false;
-  
-  if (currentQuote.companyLogo) {
-    logoPreview.innerHTML = `<img src="${currentQuote.companyLogo}" alt="Logo Preview">`;
-    if (logoClearBtn) logoClearBtn.style.display = 'flex';
-  } else {
-    logoPreview.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-      </svg>
-    `;
-    if (logoClearBtn) logoClearBtn.style.display = 'none';
-  }
+
 }
 
 function updatePrintOptionsUI() {
@@ -618,7 +606,16 @@ function setupBuilderListeners() {
   if (taxPlusCheck) {
     taxPlusCheck.addEventListener('change', () => {
       currentQuote.taxPlusApplicable = taxPlusCheck.checked;
-      if (taxInput) taxInput.disabled = taxPlusCheck.checked;
+      if (taxInput) {
+        taxInput.disabled = taxPlusCheck.checked;
+        if (taxPlusCheck.checked) {
+          taxInput.value = '';
+          currentQuote.taxRate = 0;
+        } else {
+          taxInput.value = '0';
+          currentQuote.taxRate = 0;
+        }
+      }
       calculateTotals();
     });
   }
@@ -844,7 +841,16 @@ function setupBuilderListeners() {
           const plusTaxCheck = document.getElementById('builder-tax-plus-applicable');
           if (plusTaxCheck) {
             plusTaxCheck.checked = plusTax;
-            if (taxInput) taxInput.disabled = plusTax;
+          }
+          if (taxInput) {
+            taxInput.disabled = plusTax;
+            if (plusTax) {
+              taxInput.value = '';
+              currentQuote.taxRate = 0;
+            } else {
+              taxInput.value = settings.defaultTaxRate || 0;
+              currentQuote.taxRate = settings.defaultTaxRate || 0;
+            }
           }
 
           showToast(`Linked customer "${c.name}" defaults.`);
@@ -866,7 +872,16 @@ function setupBuilderListeners() {
         const plusTaxCheck = document.getElementById('builder-tax-plus-applicable');
         if (plusTaxCheck) {
           plusTaxCheck.checked = plusTax;
-          if (taxInput) taxInput.disabled = plusTax;
+        }
+        if (taxInput) {
+          taxInput.disabled = plusTax;
+          if (plusTax) {
+            taxInput.value = '';
+            currentQuote.taxRate = 0;
+          } else {
+            taxInput.value = settings.defaultTaxRate || 0;
+            currentQuote.taxRate = settings.defaultTaxRate || 0;
+          }
         }
 
         calculateTotals();
@@ -918,51 +933,7 @@ function setupBuilderListeners() {
     });
   }
 
-  // Logo uploading to Supabase Storage
-  if (logoUpload) {
-    logoUpload.addEventListener('change', async (e) => {
-      if (e.target.files.length > 0) {
-        const file = e.target.files[0];
-        const sb = getSupabase();
-        if (sb && profile) {
-          showToast('Uploading company logo...');
-          const filePath = `${profile.company_id}/logo_${Math.random().toString(36).substr(2, 9)}_${file.name}`;
-          const { error } = await uploadFileToStorage('company-logos', filePath, file);
-          
-          if (error) {
-            showToast('Upload failed: ' + error.message, 'danger');
-            return;
-          }
-          
-          const { data: { publicUrl } } = sb.storage.from('company-logos').getPublicUrl(filePath);
-          currentQuote.companyLogo = publicUrl;
-          
-          const logoPreview = document.getElementById('builder-logo-preview');
-          logoPreview.innerHTML = `<img src="${publicUrl}" alt="Logo Preview">`;
-          if (logoClear) logoClear.style.display = 'flex';
-          
-          showToast('Company logo updated.');
-        } else {
-          showToast('Database connection not established.', 'danger');
-        }
-      }
-    });
-  }
 
-  if (logoClear) {
-    logoClear.addEventListener('click', () => {
-      currentQuote.companyLogo = '';
-      const logoPreview = document.getElementById('builder-logo-preview');
-      logoPreview.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-      `;
-      logoClear.style.display = 'none';
-      logoUpload.value = '';
-      showToast('Logo cleared.');
-    });
-  }
 
   /* ==================== PHOTO GALLERY ACTIONS ==================== */
   if (galleryUpload) {
@@ -1097,6 +1068,18 @@ function setupBuilderListeners() {
         showToast('Project Address is required.', 'danger');
         document.getElementById('builder-project-address').focus();
         return;
+      }
+
+      // Validate markup/tax rate values and warn if zero or blank
+      const markupVal = document.getElementById('builder-markup').value;
+      const taxPlus = document.getElementById('builder-tax-plus-applicable').checked;
+      const taxVal = document.getElementById('builder-tax').value;
+
+      if (markupVal === '' || parseFloat(markupVal) === 0) {
+        alert("Warning: Markup Percentage is zero or blank.");
+      }
+      if (!taxPlus && (taxVal === '' || parseFloat(taxVal) === 0)) {
+        alert("Warning: Sales Tax Rate is zero or blank.");
       }
 
       const totalItems = currentQuote.sections.reduce((acc, sec) => acc + sec.items.length, 0);

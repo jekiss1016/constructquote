@@ -449,6 +449,7 @@ export async function getCustomers() {
       documents: c.documents || [],
       defaultTermsNotes: c.default_terms_notes || '',
       defaultMarkupPercent: parseFloat(c.default_markup_percent) || 0,
+      defaultTaxRate: parseFloat(c.default_tax_rate) || 0,
       defaultTaxPlusApplicable: c.default_tax_plus_applicable || false
     };
   });
@@ -477,6 +478,7 @@ export async function saveCustomer(customer) {
     documents: customer.documents || [],
     default_terms_notes: customer.defaultTermsNotes || '',
     default_markup_percent: parseFloat(customer.defaultMarkupPercent) || 0,
+    default_tax_rate: parseFloat(customer.defaultTaxRate) || 0,
     default_tax_plus_applicable: customer.defaultTaxPlusApplicable || false
   };
   

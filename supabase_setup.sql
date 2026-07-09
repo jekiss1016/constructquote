@@ -403,6 +403,7 @@ ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS default_tax_plus_applicable
 
 ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS default_terms_notes TEXT;
 ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS default_markup_percent NUMERIC(5,2) DEFAULT 0;
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS default_tax_rate NUMERIC(5,2) DEFAULT 0.00;
 ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS default_tax_plus_applicable BOOLEAN DEFAULT FALSE;
 
 ALTER TABLE public.quotes ADD COLUMN IF NOT EXISTS tax_plus_applicable BOOLEAN DEFAULT FALSE;
