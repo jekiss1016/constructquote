@@ -170,6 +170,26 @@ export async function populateCustomerSelectDropdown() {
   `;
 }
 
+function updateExpiryMinDate() {
+  const quoteDateInput = document.getElementById('builder-quote-date');
+  const expiryInput = document.getElementById('builder-expiry-date');
+  if (!quoteDateInput || !expiryInput) return;
+
+  const quoteDateVal = quoteDateInput.value;
+  if (!quoteDateVal) return;
+
+  const qDate = new Date(quoteDateVal + 'T00:00:00');
+  qDate.setDate(qDate.getDate() + 1);
+  
+  const minDateStr = qDate.toISOString().split('T')[0];
+  expiryInput.min = minDateStr;
+
+  if (expiryInput.value && expiryInput.value < minDateStr) {
+    expiryInput.value = minDateStr;
+    currentQuote.expirationDate = minDateStr;
+  }
+}
+
 // Fills html fields from state
 function populateBuilderFields() {
   document.getElementById('builder-job-id').value = currentQuote.jobId;
@@ -208,8 +228,7 @@ function populateBuilderFields() {
   if (qtyCheck) qtyCheck.checked = currentQuote.printShowQuantities !== false;
 
   updatePrintOptionsUI();
-
-
+  updateExpiryMinDate();
 }
 
 function updatePrintOptionsUI() {
@@ -556,11 +575,16 @@ function setupBuilderListeners() {
   if (dateInput) {
     dateInput.addEventListener('change', () => {
       currentQuote.date = dateInput.value;
+      updateExpiryMinDate();
     });
   }
   if (expiryInput) {
     expiryInput.addEventListener('change', () => {
+      updateExpiryMinDate();
       currentQuote.expirationDate = expiryInput.value;
+    });
+    expiryInput.addEventListener('blur', () => {
+      updateExpiryMinDate();
     });
   }
   if (clientNameInput) {
