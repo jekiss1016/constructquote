@@ -1,6 +1,6 @@
 // Quotes List & Dashboard management controller
 import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel } from './db.js?v=80';
-import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage } from './utils.js';
+import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage, parseCombinedAddress } from './utils.js';
 import { navigateToView, editQuote, duplicateQuoteAsTemplate } from './app.js?v=80';
 
 let activeStatusFilter = 'pending';
@@ -218,8 +218,8 @@ export async function renderQuotesTable() {
         <td style="font-weight: 700;">${escapeHtml(q.jobId)}</td>
         <td style="color: var(--text-secondary); font-weight: 500;">#${q.quoteNumber}</td>
         <td style="font-weight: 600;">${escapeHtml(q.customerName)}</td>
-        <td style="font-size: 0.85rem; color: var(--text-secondary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-          ${escapeHtml(q.projectAddress)}
+        <td style="font-size: 0.85rem; color: var(--text-secondary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(q.projectAddress || '').replace(/\n/g, ', ')}">
+          ${escapeHtml((q.projectAddress || '').replace(/\n/g, ', '))}
         </td>
         <td>${formatDate(q.date)}</td>
         <td>${formatDate(q.expirationDate)}</td>
@@ -409,7 +409,13 @@ export async function renderQuoteDetails(id) {
   document.getElementById('paper-meta-expiry').textContent = formatDate(quote.expirationDate);
 
   document.getElementById('paper-client-name').textContent = quote.customerName;
-  document.getElementById('paper-client-address').textContent = quote.projectAddress;
+  const parsedAddr = parseCombinedAddress(quote.projectAddress);
+  const paperStreet = document.getElementById('paper-client-address-street');
+  const paperCityStateZip = document.getElementById('paper-client-address-citystatezip');
+  if (paperStreet) paperStreet.textContent = parsedAddr.street || 'N/A';
+  if (paperCityStateZip) {
+    paperCityStateZip.textContent = [parsedAddr.city, [parsedAddr.state, parsedAddr.zip].filter(Boolean).join(' ')].filter(Boolean).join(', ') || '';
+  }
   document.getElementById('paper-client-phone').textContent = quote.customerPhone || 'N/A';
   document.getElementById('paper-client-email').textContent = quote.customerEmail || 'N/A';
 

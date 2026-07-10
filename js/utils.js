@@ -154,3 +154,33 @@ export function formatPhoneNumber(value) {
   }
   return `(${part1}) ${part2}-${part3}`;
 }
+
+export function parseCombinedAddress(addrStr) {
+  if (!addrStr) return { street: '', city: '', state: '', zip: '' };
+  
+  const parts = addrStr.split(',').map(p => p.trim());
+  if (parts.length >= 3) {
+    const street = parts[0];
+    const city = parts[1];
+    const stateZipPart = parts[2];
+    
+    const stateZipMatch = stateZipPart.match(/^([A-Z]{2})\s+(\d{5})$/i) || stateZipPart.match(/^([A-Z]{2})$/i) || stateZipPart.match(/^(\d{5})$/);
+    let state = '';
+    let zip = '';
+    if (stateZipMatch) {
+      if (stateZipMatch[2]) {
+        state = stateZipMatch[1];
+        zip = stateZipMatch[2];
+      } else if (stateZipMatch[1]) {
+        if (isNaN(stateZipMatch[1])) {
+          state = stateZipMatch[1];
+        } else {
+          zip = stateZipMatch[1];
+        }
+      }
+    }
+    return { street, city, state, zip };
+  }
+  
+  return { street: addrStr, city: '', state: '', zip: '' };
+}
