@@ -425,9 +425,9 @@ export async function renderBuilderSections() {
           <table class="custom-table select-table" style="font-size: 0.85rem;">
             <thead>
               <tr>
-                <th style="width: 27%;">Item Detail</th>
+                <th style="width: 25%;">Item Detail</th>
                 <th style="width: 9%;">Category</th>
-                <th style="width: 6%;">UOM</th>
+                <th style="width: 8%;">UOM</th>
                 <th style="width: 6%;">Qty</th>
                 <th style="width: 9%;">Material ($)</th>
                 <th style="width: 9%;">Labor ($)</th>
