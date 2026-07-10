@@ -259,7 +259,7 @@
         <a href="#dashboard" class="toc-link">1. Dashboard</a>
         <a href="#quotes" class="toc-link">2. Quotes Manager</a>
         <a href="#builder" class="toc-link">3. Quote Builder</a>
-        <a href="#preview" class="toc-link">4. Proposal Preview</a>
+        <a href="#preview" class="toc-link">4. Quote Preview</a>
         <a href="#catalog" class="toc-link">5. Product Catalog</a>
         <a href="#customers" class="toc-link">6. Customer Manager</a>
         <a href="#settings" class="toc-link">7. Settings & Security</a>
@@ -328,29 +328,33 @@
       </h2>
       <p>The Builder is the engine of MyBidBook. This page is where you configure bid sections, assign products, material values, labor costs, and apply profit margins.</p>
       
-      <h3>Section Management</h3>
-      <p>Proposals can be broken down into structured sections (e.g., <em>"Phase 1: Foundation"</em>, <em>"Phase 2: Framing"</em>). You can add new sections and delete sections. Each section calculates its own local cost subtotal and total marked-up price.</p>
+      <h3>Client Details</h3>
+      <ul>
+        <li><strong>Select Customer (Required)</strong>: You must select an existing customer record from the dropdown. Manual name inputs have been disabled to ensure consistency with your database.</li>
+        <li><strong>Project Address (Optional)</strong>: Split into distinct inputs for Street Address, City, State, and Zip Code (with 5-digit number verification) for cleaner formatting.</li>
+        <li><strong>Quote Expiration</strong>: Restricts selection to at least <strong>Creation Date + 1 Day</strong>, which is automatically enforced.</li>
+      </ul>
 
-      <h3>Line Item Details</h3>
-      <ol>
-        <li><strong>Material ($) & Labor ($)</strong>: Edit material unit cost and labor rate values. If an item is marked as <em>Labor Only</em>, the material cost field will automatically disable.</li>
-        <li><strong>Markup Percentages</strong>: You can assign a custom percentage markup line-by-line. If left blank, the item defaults to the quote-wide markup.</li>
-        <li><strong>Update Product Costs</strong>: In edit mode, click the "Update Product Costs" button at the top to automatically synchronize your current draft line items to match the current costs stored in your product catalog.</li>
-      </ol>
+      <h3>Section Management & Price Summary</h3>
+      <ul>
+        <li><strong>Sections</strong>: Quotes can be broken down into structured sections (e.g., <em>"Phase 1: Foundation"</em>, <em>"Phase 2: Framing"</em>).</li>
+        <li><strong>Quote Configuration Panel</strong>: Houses your Markup %, Sales Tax %, and Tax exemption settings, alongside print layout controls.</li>
+        <li><strong>Price Summary Breakdown</strong>: Displays Material, Labor, and Markup subtotals under a Combined Subtotal, followed by calculated Tax and the final Total Price.</li>
+      </ul>
 
       <div class="note-card warning">
-        <p><strong>Warning:</strong> Ensure the project has a valid "Created Date" specified before saving, otherwise the proposal will not be written to the database.</p>
+        <p><strong>Warning:</strong> Ensure the project has a valid "Created Date" specified before saving, otherwise the quote will not be written to the database.</p>
       </div>
     </section>
 
-    <!-- 4. PROPOSAL PREVIEW -->
+    <!-- 4. QUOTE PREVIEW -->
     <section id="preview" class="help-section">
       <h2>
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
         </svg>
-        Proposal Preview
+        Quote Preview
       </h2>
       <p>This page gives you a clean representation of the quote proposal as your client will view it. It is print-friendly and supports several customizable display settings.</p>
       
@@ -362,7 +366,7 @@
       </ul>
 
       <h3>Client Actions</h3>
-      <p>Mark proposals as <strong>Won</strong> or <strong>Lost</strong> directly from this page, print directly to paper, or generate a PDF file to email to your customer.</p>
+      <p>Mark quotes as <strong>Won</strong> or <strong>Lost</strong> directly from this page, print directly to paper, or generate a PDF file to email to your customer.</p>
     </section>
 
     <!-- 5. PRODUCT CATALOG -->
