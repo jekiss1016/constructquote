@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyBidBook Pro - E2E UI Test Suite</title>
+  <style>
+    :root {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-tertiary: #334155;
+      --text-primary: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --border-color: #475569;
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header {
+      background-color: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .badge-dev {
+      background-color: var(--primary);
+      color: white;
+      font-size: 0.75rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .controls {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .btn {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border-radius: var(--radius);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: background 0.2s;
+    }
+
+    .btn:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .btn-secondary {
+      background-color: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--border-color);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .workspace {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 65px);
+      overflow: hidden;
+    }
+
+    .report-panel {
+      width: 400px;
+      background-color: var(--bg-secondary);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .iframe-panel {
+      flex: 1;
+      background-color: #fff;
+      position: relative;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background-color: white;
+    }
+
+    .report-header {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      flex-shrink: 0;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    .stat-card {
+      background-color: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 0.5rem;
+      text-align: center;
+    }
+
+    .stat-val {
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .stat-label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-top: 0.2rem;
+    }
+
+    .test-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .test-card {
+      background-color: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      transition: border-color 0.2s;
+    }
+
+    .test-card.running {
+      border-color: var(--warning);
+    }
+
+    .test-card.passed {
+      border-color: var(--success);
+    }
+
+    .test-card.failed {
+      border-color: var(--danger);
+    }
+
+    .test-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .test-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .test-status {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .status-pending { background-color: var(--bg-tertiary); color: var(--text-muted); }
+    .status-running { background-color: var(--warning); color: #000; }
+    .status-passed { background-color: var(--success); color: #000; }
+    .status-failed { background-color: var(--danger); color: white; }
+
+    .test-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      border-top: 1px solid var(--border-color);
+      padding-top: 0.5rem;
+      margin-top: 0.25rem;
+    }
+
+    .step-item {
+      font-size: 0.8rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.4rem;
+      color: var(--text-muted);
+    }
+
+    .step-item.success {
+      color: var(--text-primary);
+    }
+
+    .step-item.fail {
+      color: var(--danger);
+      font-weight: 600;
+    }
+
+    .step-bullet {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: var(--border-color);
+      margin-top: 0.3rem;
+      flex-shrink: 0;
+    }
+
+    .step-item.success .step-bullet { background-color: var(--success); }
+    .step-item.fail .step-bullet { background-color: var(--danger); }
+    .step-item.running .step-bullet {
+      background-color: var(--warning);
+      animation: pulse 1s infinite alternate;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 0.3; }
+      100% { opacity: 1; }
+    }
+
+    .console-pane {
+      height: 120px;
+      background-color: #020617;
+      border-top: 1px solid var(--border-color);
+      padding: 0.5rem;
+      font-family: monospace;
+      font-size: 0.75rem;
+      overflow-y: auto;
+      color: #38bdf8;
+      flex-shrink: 0;
+    }
+
+    .console-line {
+      margin-bottom: 0.25rem;
+    }
+
+    .overlay-iframe-blocker {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(15, 23, 42, 0.4);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: white;
+      z-index: 10;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .overlay-iframe-blocker.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>MyBidBook Pro E2E Suite <span class="badge-dev">dev-branch only</span></h1>
+    <div class="controls">
+      <button class="btn" id="run-btn">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
+        </svg>
+        Run Test Suite
+      </button>
+      <button class="btn btn-secondary" id="reset-btn">Reset App</button>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <div class="report-panel">
+      <div class="report-header">
+        <h2>E2E Test Report</h2>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-val" id="stat-total">0</div>
+            <div class="stat-label">Total</div>
+          </div>
+          <div class="stat-card" style="border-color: rgba(16, 185, 129, 0.4);">
+            <div class="stat-val" id="stat-passed" style="color: var(--success);">0</div>
+            <div class="stat-label">Passed</div>
+          </div>
+          <div class="stat-card" style="border-color: rgba(239, 68, 68, 0.4);">
+            <div class="stat-val" id="stat-failed" style="color: var(--danger);">0</div>
+            <div class="stat-label">Failed</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="test-list" id="test-list">
+        <!-- Dynamic Test Cards go here -->
+      </div>
+
+      <div class="console-pane" id="console-pane">
+        <div class="console-line">> Runner initialized. Press "Run Test Suite" to start automation.</div>
+      </div>
+    </div>
+
+    <div class="iframe-panel">
+      <div class="overlay-iframe-blocker" id="iframe-blocker">Automated testing in progress...</div>
+      <iframe src="index.html" id="app-iframe"></iframe>
+    </div>
+  </div>
+
+  <script src="js/tests.js?v=85"></script>
+</body>
+</html>
