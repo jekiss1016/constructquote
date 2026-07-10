@@ -158,32 +158,53 @@ export function formatPhoneNumber(value) {
 export function parseCombinedAddress(addrStr) {
   if (!addrStr) return { street: '', city: '', state: '', zip: '' };
   
-  // Normalize newline separators to commas to handle both format variations cleanly
   const normalized = addrStr.replace(/\r?\n/g, ', ');
-  
   const parts = normalized.split(',').map(p => p.trim()).filter(Boolean);
-  if (parts.length >= 3) {
-    const street = parts[0];
-    const city = parts[1];
-    const stateZipPart = parts[2];
-    
-    const stateZipMatch = stateZipPart.match(/^([A-Z]{2})\s+(\d{5})$/i) || stateZipPart.match(/^([A-Z]{2})$/i) || stateZipPart.match(/^(\d{5})$/);
-    let state = '';
-    let zip = '';
-    if (stateZipMatch) {
-      if (stateZipMatch[2]) {
-        state = stateZipMatch[1];
-        zip = stateZipMatch[2];
-      } else if (stateZipMatch[1]) {
-        if (isNaN(stateZipMatch[1])) {
-          state = stateZipMatch[1];
-        } else {
-          zip = stateZipMatch[1];
-        }
-      }
-    }
-    return { street, city, state, zip };
-  }
   
-  return { street: addrStr, city: '', state: '', zip: '' };
+  let street = '';
+  let city = '';
+  let state = '';
+  let zip = '';
+
+  if (parts.length >= 3) {
+    street = parts[0];
+    city = parts[1];
+    const stateZipPart = parts[2];
+    const stateZipMatch = stateZipPart.match(/^([A-Z]{2})\s+(\d{5})$/i) || stateZipPart.match(/^([A-Z]{2})$/i) || stateZipPart.match(/^(\d{5})$/);
+    if (stateZipMatch) {
+      state = stateZipMatch[1] || '';
+      zip = stateZipMatch[2] || '';
+    }
+  } else if (parts.length === 2) {
+    const firstPart = parts[0];
+    const camelCaseMatch = firstPart.match(/([a-z])([A-Z])/);
+    if (camelCaseMatch) {
+      const splitIdx = camelCaseMatch.index + 1;
+      street = firstPart.substring(0, splitIdx).trim();
+      city = firstPart.substring(splitIdx).trim();
+    } else {
+      street = firstPart;
+      city = '';
+    }
+    
+    const stateZipPart = parts[1];
+    const stateZipMatch = stateZipPart.match(/^([A-Z]{2})\s+(\d{5})$/i) || stateZipPart.match(/^([A-Z]{2})$/i) || stateZipPart.match(/^(\d{5})$/);
+    if (stateZipMatch) {
+      state = stateZipMatch[1] || '';
+      zip = stateZipMatch[2] || '';
+    }
+  } else {
+    street = addrStr;
+  }
+
+  if (street && !city) {
+    const camelCaseMatch = street.match(/([a-z])([A-Z])/);
+    if (camelCaseMatch) {
+      const splitIdx = camelCaseMatch.index + 1;
+      city = street.substring(splitIdx).trim();
+      street = street.substring(0, splitIdx).trim();
+    }
+  }
+
+  return { street, city, state, zip };
 }

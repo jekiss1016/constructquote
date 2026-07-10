@@ -1,7 +1,7 @@
 // Quotes List & Dashboard management controller
-import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel } from './db.js?v=82';
-import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage, parseCombinedAddress } from './utils.js?v=82';
-import { navigateToView, editQuote, duplicateQuoteAsTemplate } from './app.js?v=82';
+import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel } from './db.js?v=83';
+import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage, parseCombinedAddress } from './utils.js?v=83';
+import { navigateToView, editQuote, duplicateQuoteAsTemplate } from './app.js?v=83';
 
 let activeStatusFilter = 'pending';
 let activeSearchQuery = '';
@@ -213,13 +213,20 @@ export async function renderQuotesTable() {
       ` : ''}
     `;
 
+    const parsedAddr = parseCombinedAddress(q.projectAddress);
+    const displayAddr = [
+      parsedAddr.street,
+      parsedAddr.city,
+      [parsedAddr.state, parsedAddr.zip].filter(Boolean).join(' ')
+    ].filter(Boolean).join(', ');
+
     return `
       <tr>
         <td style="font-weight: 700;">${escapeHtml(q.jobId)}</td>
         <td style="color: var(--text-secondary); font-weight: 500;">#${q.quoteNumber}</td>
         <td style="font-weight: 600;">${escapeHtml(q.customerName)}</td>
-        <td style="font-size: 0.85rem; color: var(--text-secondary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(q.projectAddress || '').replace(/\n/g, ', ')}">
-          ${escapeHtml((q.projectAddress || '').replace(/\n/g, ', '))}
+        <td style="font-size: 0.85rem; color: var(--text-secondary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(displayAddr)}">
+          ${escapeHtml(displayAddr)}
         </td>
         <td>${formatDate(q.date)}</td>
         <td>${formatDate(q.expirationDate)}</td>
