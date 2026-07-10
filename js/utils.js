@@ -158,7 +158,10 @@ export function formatPhoneNumber(value) {
 export function parseCombinedAddress(addrStr) {
   if (!addrStr) return { street: '', city: '', state: '', zip: '' };
   
-  const parts = addrStr.split(',').map(p => p.trim());
+  // Normalize newline separators to commas to handle both format variations cleanly
+  const normalized = addrStr.replace(/\r?\n/g, ', ');
+  
+  const parts = normalized.split(',').map(p => p.trim()).filter(Boolean);
   if (parts.length >= 3) {
     const street = parts[0];
     const city = parts[1];
