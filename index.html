@@ -644,24 +644,9 @@
 
           <!-- Right side sticky summary card -->
           <div class="builder-summary-panel">
-            <h3 class="builder-section-title">Price Summary</h3>
-            
-            <div class="summary-row">
-              <span>Material Subtotal:</span>
-              <span id="builder-summary-materials">$0.00</span>
-            </div>
-            
-            <div class="summary-row">
-              <span>Labor Subtotal:</span>
-              <span id="builder-summary-labor">$0.00</span>
-            </div>
-
-            <div class="summary-row" style="border-top: 1px solid var(--border-color); padding-top: 0.75rem; margin-top: 0.25rem;">
-              <span>Subtotal Combined:</span>
-              <span id="builder-summary-subtotal">$0.00</span>
-            </div>
-
-            <div class="form-group" style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
+            <!-- Section 1: Quote Configuration -->
+            <h3 class="builder-section-title">Quote Configuration</h3>
+            <div class="form-group" style="margin-bottom: 0.5rem;">
               <label class="form-label" for="builder-markup">Markup (%)</label>
               <input type="number" class="form-input" id="builder-markup" value="0" min="0" step="1">
             </div>
@@ -677,8 +662,9 @@
               </div>
             </div>
 
+            <!-- Section 2: Print Visibility Controls -->
             <div style="border-top: 1px solid var(--border-color); padding-top: 0.75rem; margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.45rem;">
-              <span class="form-label" style="margin-bottom: 0.15rem; font-size: 0.8rem;">Print Visibility Controls</span>
+              <span class="form-label" style="margin-bottom: 0.15rem; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">Print Visibility Controls</span>
               <div style="display: flex; align-items: center; gap: 0.35rem;">
                 <input type="checkbox" id="print-show-details" checked style="cursor: pointer;">
                 <label class="form-label" for="print-show-details" style="margin-bottom: 0; font-size: 0.75rem; font-weight: 500; cursor: pointer;">Show product line details</label>
@@ -693,22 +679,41 @@
               </div>
             </div>
 
-            <div class="summary-row">
-              <span>Markup Amount:</span>
-              <span id="builder-summary-markup-val">$0.00</span>
+            <!-- Section 3: Price Summary -->
+            <div style="border-top: 1px solid var(--border-color); padding-top: 0.75rem; display: flex; flex-direction: column; gap: 0.65rem;">
+              <h3 class="builder-section-title" style="margin-bottom: 0.25rem; border-bottom: none; padding-bottom: 0;">Price Summary</h3>
+              
+              <div class="summary-row">
+                <span>Material Subtotal:</span>
+                <span id="builder-summary-materials">$0.00</span>
+              </div>
+              
+              <div class="summary-row">
+                <span>Labor Subtotal:</span>
+                <span id="builder-summary-labor">$0.00</span>
+              </div>
+
+              <div class="summary-row">
+                <span>Markup Subtotal:</span>
+                <span id="builder-summary-markup-val">$0.00</span>
+              </div>
+
+              <div class="summary-row" style="border-top: 1px solid var(--border-color); padding-top: 0.5rem; margin-top: 0.15rem; font-weight: 600;">
+                <span>Combined Subtotal:</span>
+                <span id="builder-summary-subtotal">$0.00</span>
+              </div>
+
+              <div class="summary-row">
+                <span>Tax Amount:</span>
+                <span id="builder-summary-tax-val">$0.00</span>
+              </div>
+
+              <div class="summary-row total">
+                <span>Total Price:</span>
+                <span id="builder-summary-total">$0.00</span>
+              </div>
             </div>
-
-
-
-            <div class="summary-row">
-              <span>Tax Amount:</span>
-              <span id="builder-summary-tax-val">$0.00</span>
-            </div>
-
-            <div class="summary-row total">
-              <span>Total Price:</span>
-              <span id="builder-summary-total">$0.00</span>
-            </div>
+          </div>
           </div>
         </div>
       </section>

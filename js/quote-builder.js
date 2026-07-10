@@ -540,6 +540,15 @@ function renderBuilderGallery() {
 function calculateTotals() {
   const subtotal = currentQuote.sections.reduce((sum, sec) => sum + calculateSectionSum(sec), 0);
   
+  let materialSubtotal = 0;
+  let laborSubtotal = 0;
+  currentQuote.sections.forEach(sec => {
+    sec.items.forEach(item => {
+      materialSubtotal += item.qty * (item.price || 0);
+      laborSubtotal += item.qty * (item.laborRate || 0);
+    });
+  });
+
   const markupVal = currentQuote.sections.reduce((sum, sec) => {
     return sum + sec.items.reduce((itemSum, item) => {
       const itemTotal = item.qty * (item.price + item.laborRate);
@@ -552,7 +561,13 @@ function calculateTotals() {
   const taxVal = isPlusTaxes ? 0 : (subtotal + markupVal) * (currentQuote.taxRate / 100);
   const grandTotal = subtotal + markupVal + taxVal;
 
-  document.getElementById('builder-summary-subtotal').textContent = formatCurrency(subtotal);
+  const materialsEl = document.getElementById('builder-summary-materials');
+  if (materialsEl) materialsEl.textContent = formatCurrency(materialSubtotal);
+  
+  const laborEl = document.getElementById('builder-summary-labor');
+  if (laborEl) laborEl.textContent = formatCurrency(laborSubtotal);
+
+  document.getElementById('builder-summary-subtotal').textContent = formatCurrency(subtotal + markupVal);
   document.getElementById('builder-summary-markup-val').textContent = formatCurrency(markupVal);
   
   const effectiveMarkupPct = subtotal > 0 ? (markupVal / subtotal) * 100 : (currentQuote.markupPercent || 0);
