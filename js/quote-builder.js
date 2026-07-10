@@ -34,6 +34,62 @@ let activePhotoUrl = '';
 let galleryFilterCategory = 'all';
 let isTaxRateEdited = false;
 
+function parseCombinedAddress(addrStr) {
+  if (!addrStr) return { street: '', city: '', state: '', zip: '' };
+  
+  const parts = addrStr.split(',').map(p => p.trim());
+  if (parts.length >= 3) {
+    const street = parts[0];
+    const city = parts[1];
+    const stateZipPart = parts[2];
+    
+    const stateZipMatch = stateZipPart.match(/^([A-Z]{2})\s+(\d{5})$/i) || stateZipPart.match(/^([A-Z]{2})$/i) || stateZipPart.match(/^(\d{5})$/);
+    let state = '';
+    let zip = '';
+    if (stateZipMatch) {
+      if (stateZipMatch[2]) {
+        state = stateZipMatch[1];
+        zip = stateZipMatch[2];
+      } else if (stateZipMatch[1]) {
+        if (isNaN(stateZipMatch[1])) {
+          state = stateZipMatch[1];
+        } else {
+          zip = stateZipMatch[1];
+        }
+      }
+    }
+    return { street, city, state, zip };
+  }
+  
+  return { street: addrStr, city: '', state: '', zip: '' };
+}
+
+function updateBuilderProjectAddressFromFields() {
+  const streetInput = document.getElementById('builder-project-address-street');
+  const cityInput = document.getElementById('builder-project-address-city');
+  const stateSelect = document.getElementById('builder-project-address-state');
+  const zipInput = document.getElementById('builder-project-address-zip');
+  const hiddenInput = document.getElementById('builder-project-address');
+  
+  if (!streetInput || !cityInput || !stateSelect || !zipInput || !hiddenInput) return;
+  
+  const street = streetInput.value.trim();
+  const city = cityInput.value.trim();
+  const state = stateSelect.value;
+  const zip = zipInput.value.trim();
+  
+  let parts = [];
+  if (street) parts.push(street);
+  if (city) parts.push(city);
+  if (state || zip) {
+    let stateZip = [state, zip].filter(Boolean).join(' ');
+    if (stateZip) parts.push(stateZip);
+  }
+  const combined = parts.join(', ');
+  hiddenInput.value = combined;
+  currentQuote.projectAddress = combined;
+}
+
 export function initQuoteBuilderView() {
   setupBuilderListeners();
 }
@@ -205,6 +261,11 @@ function populateBuilderFields() {
   document.getElementById('builder-customer-email').value = currentQuote.customerEmail;
   document.getElementById('builder-customer-phone').value = currentQuote.customerPhone;
   document.getElementById('builder-project-address').value = currentQuote.projectAddress;
+  const parsedAddr = parseCombinedAddress(currentQuote.projectAddress);
+  document.getElementById('builder-project-address-street').value = parsedAddr.street || '';
+  document.getElementById('builder-project-address-city').value = parsedAddr.city || '';
+  document.getElementById('builder-project-address-state').value = parsedAddr.state || '';
+  document.getElementById('builder-project-address-zip').value = parsedAddr.zip || '';
   document.getElementById('builder-markup').value = currentQuote.markupPercent;
   document.getElementById('builder-notes').value = currentQuote.notes;
 
@@ -520,7 +581,6 @@ function setupBuilderListeners() {
   const addSectionBtn = document.getElementById('builder-add-section-btn');
   
   const customerSelect = document.getElementById('builder-customer-select');
-  const customerAddBtn = document.getElementById('builder-add-customer-inline');
   const jobIdInput = document.getElementById('builder-job-id');
   const dateInput = document.getElementById('builder-quote-date');
   const expiryInput = document.getElementById('builder-expiry-date');
@@ -528,7 +588,6 @@ function setupBuilderListeners() {
   const clientNameInput = document.getElementById('builder-customer-name');
   const clientEmailInput = document.getElementById('builder-customer-email');
   const clientPhoneInput = document.getElementById('builder-customer-phone');
-  const clientAddressInput = document.getElementById('builder-project-address');
   
   const markupInput = document.getElementById('builder-markup');
   const taxInput = document.getElementById('builder-tax');
@@ -602,9 +661,31 @@ function setupBuilderListeners() {
       currentQuote.customerPhone = clientPhoneInput.value.trim();
     });
   }
-  if (clientAddressInput) {
-    clientAddressInput.addEventListener('input', () => {
-      currentQuote.projectAddress = clientAddressInput.value.trim();
+  
+  const streetInput = document.getElementById('builder-project-address-street');
+  const cityInput = document.getElementById('builder-project-address-city');
+  const stateSelect = document.getElementById('builder-project-address-state');
+  const zipInput = document.getElementById('builder-project-address-zip');
+
+  if (streetInput) {
+    streetInput.addEventListener('input', () => {
+      updateBuilderProjectAddressFromFields();
+    });
+  }
+  if (cityInput) {
+    cityInput.addEventListener('input', () => {
+      updateBuilderProjectAddressFromFields();
+    });
+  }
+  if (stateSelect) {
+    stateSelect.addEventListener('change', () => {
+      updateBuilderProjectAddressFromFields();
+    });
+  }
+  if (zipInput) {
+    zipInput.addEventListener('input', (e) => {
+      e.target.value = e.target.value.replace(/\D/g, '').slice(0, 5);
+      updateBuilderProjectAddressFromFields();
     });
   }
 
@@ -841,13 +922,17 @@ function setupBuilderListeners() {
           document.getElementById('builder-customer-name').value = c.name;
           document.getElementById('builder-customer-email').value = c.email || '';
           document.getElementById('builder-customer-phone').value = c.phone || '';
-          document.getElementById('builder-project-address').value = c.address;
+          
+          document.getElementById('builder-project-address-street').value = c.address1 || '';
+          document.getElementById('builder-project-address-city').value = c.city || '';
+          document.getElementById('builder-project-address-state').value = c.state || '';
+          document.getElementById('builder-project-address-zip').value = c.zip || '';
+          updateBuilderProjectAddressFromFields();
           
           currentQuote.customerId = c.id;
           currentQuote.customerName = c.name;
           currentQuote.customerEmail = c.email || '';
           currentQuote.customerPhone = c.phone || '';
-          currentQuote.projectAddress = c.address;
 
           // Default markup
           const defaultMarkup = c.defaultMarkupPercent > 0 ? c.defaultMarkupPercent : (settings.defaultMarkupPercent || 15);
@@ -882,6 +967,19 @@ function setupBuilderListeners() {
         }
       } else {
         currentQuote.customerId = null;
+        currentQuote.customerName = '';
+        currentQuote.customerEmail = '';
+        currentQuote.customerPhone = '';
+        document.getElementById('builder-customer-name').value = '';
+        document.getElementById('builder-customer-email').value = '';
+        document.getElementById('builder-customer-phone').value = '';
+        
+        document.getElementById('builder-project-address-street').value = '';
+        document.getElementById('builder-project-address-city').value = '';
+        document.getElementById('builder-project-address-state').value = '';
+        document.getElementById('builder-project-address-zip').value = '';
+        updateBuilderProjectAddressFromFields();
+
         // Revert to global settings defaults
         const defaultMarkup = settings.defaultMarkupPercent || 15;
         currentQuote.markupPercent = defaultMarkup;
@@ -913,26 +1011,7 @@ function setupBuilderListeners() {
     });
   }
 
-  // Inline Customer Create
-  if (customerAddBtn) {
-    customerAddBtn.addEventListener('click', () => {
-      openCustomerModalInline(async (newCustomer) => {
-        await populateCustomerSelectDropdown();
-        customerSelect.value = newCustomer.id;
-        document.getElementById('builder-customer-name').value = newCustomer.name;
-        document.getElementById('builder-customer-email').value = newCustomer.email || '';
-        document.getElementById('builder-customer-phone').value = newCustomer.phone || '';
-        document.getElementById('builder-project-address').value = newCustomer.address;
-        
-        currentQuote.customerId = newCustomer.id;
-        currentQuote.customerName = newCustomer.name;
-        currentQuote.customerEmail = newCustomer.email || '';
-        currentQuote.customerPhone = newCustomer.phone || '';
-        currentQuote.projectAddress = newCustomer.address;
-        showToast(`Created and linked customer: "${newCustomer.name}"`);
-      });
-    });
-  }
+
 
   // Job ID Unique Validation
   if (jobIdInput) {
@@ -1082,17 +1161,19 @@ function setupBuilderListeners() {
         return;
       }
 
-      if (!clientName) {
-        showToast('Client Name is required.', 'danger');
-        document.getElementById('builder-customer-name').focus();
+      const custSelect = document.getElementById('builder-customer-select');
+      if (custSelect && !custSelect.value) {
+        showToast('Please select a customer.', 'danger');
+        custSelect.focus();
         return;
       }
 
-      if (!clientAddress) {
-        showToast('Project Address is required.', 'danger');
-        document.getElementById('builder-project-address').focus();
+      if (!clientName) {
+        showToast('Client Name is required. Please select a customer.', 'danger');
         return;
       }
+
+
 
       // Validate markup/tax rate values and warn if zero or blank
       const markupVal = document.getElementById('builder-markup').value;
