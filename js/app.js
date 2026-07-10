@@ -716,6 +716,12 @@ async function initAppViews() {
   }
 }
 
+let previousViewId = 'quotes-view';
+
+export function getPreviousViewId() {
+  return previousViewId;
+}
+
 /* ==================== VIEW ROUTER ==================== */
 export async function navigateToView(viewId) {
   const profile = getCurrentUserProfile();
@@ -724,6 +730,12 @@ export async function navigateToView(viewId) {
       showToast('Viewers do not have access to this page.', 'danger');
       return navigateToView('dashboard-view');
     }
+  }
+
+  const activeSection = document.querySelector('.view-section.active');
+  const currentActiveViewId = activeSection ? activeSection.id : null;
+  if (currentActiveViewId && currentActiveViewId !== viewId) {
+    previousViewId = currentActiveViewId;
   }
 
   const sections = document.querySelectorAll('.view-section');

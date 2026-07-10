@@ -1,7 +1,7 @@
 // Quote Builder view controller
 import { getProducts, getSettings, saveQuote, checkJobIdUnique, saveSettings, getCustomers, getSupabase, getCurrentUserProfile, uploadFileToStorage } from './db.js?v=80';
 import { formatCurrency, showToast, fileToBase64, generateJobIdSuggestion, compressImage } from './utils.js';
-import { navigateToView, viewQuoteDetails } from './app.js?v=80';
+import { navigateToView, viewQuoteDetails, getPreviousViewId } from './app.js?v=80';
 import { renderQuoteDetails } from './quotes-list.js?v=80';
 import { openCustomerModalInline } from './customers.js?v=80';
 
@@ -1292,11 +1292,8 @@ function setupBuilderListeners() {
   if (cancelBtn) {
     cancelBtn.addEventListener('click', () => {
       if (confirm('Discard changes?')) {
-        if (currentQuote.id) {
-          viewQuoteDetails(currentQuote.id);
-        } else {
-          navigateToView('quotes-view');
-        }
+        const prev = getPreviousViewId();
+        navigateToView(prev || 'quotes-view');
       }
     });
   }
