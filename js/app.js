@@ -1518,6 +1518,17 @@ async function loadTeamManagementUI() {
         return;
       }
 
+      // Enforce unique email: check against active members and pending invitations
+      const emailLower = email.toLowerCase();
+      if (members && members.some(m => m.email && m.email.toLowerCase() === emailLower)) {
+        showToast('This email is already an active team member.', 'warning');
+        return;
+      }
+      if (invites && invites.some(i => i.email && i.email.toLowerCase() === emailLower)) {
+        showToast('An invitation has already been sent to this email.', 'warning');
+        return;
+      }
+
       showToast('Sending invitation...');
       const { error } = await rawDbWrite('company_invitations', 'POST', {
         company_id: profile.company_id,

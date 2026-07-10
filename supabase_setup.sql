@@ -905,4 +905,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- ==================== UNIQUE EMAIL ENFORCEMENT ====================
+
+-- Enforce unique email per company in profiles (case-insensitive)
+-- The company_invitations table already has PRIMARY KEY (company_id, email) which enforces uniqueness.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_profiles_company_email_unique
+  ON public.profiles (company_id, LOWER(email));
 
