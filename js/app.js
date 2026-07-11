@@ -19,12 +19,12 @@ import {
   uploadFileToStorage,
   rawDbWrite,
   getSubscriptionLevel
-} from './db.js?v=88';
-import { showToast, fileToBase64, formatPhoneNumber } from './utils.js?v=88';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=88';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=88';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=88';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=88';
+} from './db.js?v=89';
+import { showToast, fileToBase64, formatPhoneNumber } from './utils.js?v=89';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=89';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=89';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=89';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=89';
 
 let activeChallengeId = null;
 let activeFactorId = null;
@@ -745,6 +745,9 @@ export async function navigateToView(viewId) {
   if (targetSection) {
     targetSection.classList.add('active');
   }
+
+  // Reset scroll position to top on view changes
+  window.scrollTo(0, 0);
 
   const navItems = document.querySelectorAll('.nav-item');
   navItems.forEach(item => {
