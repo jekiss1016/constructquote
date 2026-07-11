@@ -13,19 +13,21 @@ export function formatCurrency(amount) {
 // Formats date string (YYYY-MM-DD) into readable formats (e.g., June 29, 2026)
 export function formatDate(dateString) {
   if (!dateString) return 'N/A';
-  const parts = dateString.split('-');
-  if (parts.length !== 3) return dateString;
   
-  // Use UTC to prevent timezone offsets shifting dates
-  const date = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+  // If strictly YYYY-MM-DD (e.g. from DB date columns), parse without timezone shifts
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString.trim())) {
+    const parts = dateString.split('-');
+    return `${parts[1]}/${parts[2]}/${parts[0]}`;
+  }
+  
+  // Fallback or full ISO strings: convert to user's local PC timezone
+  const date = new Date(dateString);
   if (isNaN(date.getTime())) return dateString;
   
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    timeZone: 'UTC'
-  });
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  const yyyy = date.getFullYear();
+  return `${mm}/${dd}/${yyyy}`;
 }
 
 // Converts a File object (uploaded image) to a Base64 string
@@ -79,10 +81,17 @@ export function generateJobIdSuggestion() {
   return `JOB-${year}-${randNum}`;
 }
 
-// Formats an ISO date-time string into readable format (e.g., 2026-06-30 10:45 AM)
+// Formats an ISO date-time string into readable format (e.g., 06/30/2026 10:45 AM)
 export function formatDateTime(isoString) {
   if (!isoString) return 'N/A';
-  const date = new Date(isoString);
+  
+  let dateString = isoString;
+  // If date-only format (YYYY-MM-DD), treat as local midnight so timezone shifts do not alter the date
+  if (/^\d{4}-\d{2}-\d{2}$/.test(isoString.trim())) {
+    dateString = `${isoString.trim()}T00:00:00`;
+  }
+  
+  const date = new Date(dateString);
   if (isNaN(date.getTime())) return isoString;
   
   const yyyy = date.getFullYear();
@@ -94,8 +103,9 @@ export function formatDateTime(isoString) {
   const ampm = hours >= 12 ? 'PM' : 'AM';
   hours = hours % 12;
   hours = hours ? hours : 12; // 0 hour should be 12
+  const hh = String(hours).padStart(2, '0');
   
-  return `${yyyy}-${mm}-${dd} ${hours}:${minutes} ${ampm}`;
+  return `${mm}/${dd}/${yyyy} ${hh}:${minutes} ${ampm}`;
 }
 
 // Compress image using HTML5 Canvas to fit storage boundaries
