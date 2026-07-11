@@ -19,12 +19,12 @@ import {
   uploadFileToStorage,
   rawDbWrite,
   getSubscriptionLevel
-} from './db.js?v=90';
-import { showToast, fileToBase64, formatPhoneNumber } from './utils.js?v=90';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=90';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=90';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=90';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=90';
+} from './db.js?v=91';
+import { showToast, fileToBase64, formatPhoneNumber } from './utils.js?v=91';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=91';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=91';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=91';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=91';
 
 let activeChallengeId = null;
 let activeFactorId = null;
@@ -42,6 +42,7 @@ let sessionCountdownInterval = null;
 let currentSessionExpiryTime = 0;
 
 document.addEventListener('DOMContentLoaded', async () => {
+  setupPWA();
   // Bind global logout delegation immediately
   document.addEventListener('click', async (e) => {
     const logoutBtn = e.target.closest('#auth-logout-btn, .settings-logout-btn, #session-logout-btn');
@@ -1809,4 +1810,114 @@ export function setupLightboxListeners() {
       }
     }
   });
+}
+
+// PWA & Connection Setup
+function setupPWA() {
+  // 1. Register Service Worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then((reg) => {
+          console.log('[PWA] Service Worker registered with scope:', reg.scope);
+        })
+        .catch((err) => {
+          console.error('[PWA] Service Worker registration failed:', err);
+        });
+    });
+  }
+
+  // 2. Handle Online/Offline Status
+  window.addEventListener('online', updateOnlineStatus);
+  window.addEventListener('offline', updateOnlineStatus);
+  updateOnlineStatus(); // run check on startup
+
+  // 3. Handle Installation Prompt
+  const installContainer = document.getElementById('nav-item-pwa-install');
+  const installBtn = document.getElementById('pwa-install-btn');
+  let deferredPrompt = null;
+
+  // Standalone detection
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  if (isStandalone) {
+    if (installContainer) installContainer.style.display = 'none';
+    return; // Already running as PWA
+  }
+
+  // Detect iOS
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isIPadOS = navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && /MacIntel/.test(navigator.platform);
+  const isAnyIOS = isIOS || isIPadOS;
+
+  if (isAnyIOS) {
+    // For iOS, show the install button which will redirect to the guide page
+    if (installContainer) installContainer.style.display = 'block';
+    if (installBtn) {
+      installBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.location.href = 'ios-install.html';
+      });
+    }
+  } else {
+    // Windows/Android (using beforeinstallprompt)
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      if (installContainer) installContainer.style.display = 'block';
+    });
+
+    if (installBtn) {
+      installBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          console.log(`[PWA] Installation prompt user choice: ${outcome}`);
+          deferredPrompt = null;
+          if (installContainer) installContainer.style.display = 'none';
+        } else {
+          // Fallback if beforeinstallprompt is not supported but they clicked
+          alert("To install MyBidBook, open your browser menu (usually three dots or share icon) and select 'Install app' or 'Add to Home screen'.");
+        }
+      });
+    }
+
+    window.addEventListener('appinstalled', () => {
+      console.log('[PWA] Application installed successfully');
+      if (installContainer) installContainer.style.display = 'none';
+      showToast('App installed successfully!', 'success');
+    });
+  }
+}
+
+function updateOnlineStatus() {
+  const isOnline = navigator.onLine;
+  const offlineBanner = document.getElementById('offline-warning-banner');
+  const appContainer = document.querySelector('.app-container');
+
+  if (!isOnline) {
+    if (!offlineBanner) {
+      const banner = document.createElement('div');
+      banner.id = 'offline-warning-banner';
+      banner.style.cssText = 'position:fixed;top:0;left:0;width:100%;background-color:var(--danger);color:white;text-align:center;padding:0.75rem 1rem;z-index:99999;font-weight:600;font-size:0.95rem;box-shadow:var(--shadow-md);display:flex;align-items:center;justify-content:center;gap:0.5rem;box-sizing:border-box;';
+      banner.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20" style="stroke-width: 2.5; flex-shrink: 0; color: white;">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <span>You are offline. Some functions are not available. Please try again when connected to the internet.</span>
+      `;
+      document.body.appendChild(banner);
+      if (appContainer) {
+        appContainer.style.marginTop = '44px';
+      }
+    }
+  } else {
+    if (offlineBanner) {
+      offlineBanner.remove();
+      if (appContainer) {
+        appContainer.style.marginTop = '0';
+      }
+      showToast('You are back online.', 'success');
+    }
+  }
 }

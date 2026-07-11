@@ -1870,4 +1870,34 @@ body {
   }
 }
 
+/* PWA Installation & Offline Indicator Styles */
+.nav-item .pwa-install-btn {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2), 0 2px 4px -2px rgba(37, 99, 235, 0.2);
+  transition: all var(--transition-fast);
+  margin-top: 0.5rem;
+}
+.nav-item .pwa-install-btn:hover {
+  background-color: #1d4ed8 !important;
+  color: #ffffff !important;
+  box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3), 0 4px 6px -4px rgba(37, 99, 235, 0.3);
+}
+.nav-item .pwa-install-btn svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+#offline-warning-banner {
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+
+
 

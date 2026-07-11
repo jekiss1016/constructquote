@@ -263,6 +263,7 @@
         <a href="#catalog" class="toc-link">5. Product Catalog</a>
         <a href="#customers" class="toc-link">6. Customer Manager</a>
         <a href="#settings" class="toc-link">7. Settings & Security</a>
+        <a href="#pwa" class="toc-link">8. PWA & Offline Support</a>
       </nav>
     </div>
   </aside>
@@ -418,6 +419,28 @@
 
       <h3>Local Database Backups</h3>
       <p>Under the settings view, you can export a full backup of all products, categories, customers, and quote configurations as a single, compressed JSON file. This can be re-imported later if you move devices or want to restore a past project archive.</p>
+    </section>
+
+    <!-- 8. PWA & OFFLINE SUPPORT -->
+    <section id="pwa" class="help-section">
+      <h2>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+        </svg>
+        PWA & Offline Support
+      </h2>
+      <p>MyBidBook supports Progressive Web App (PWA) installation for native-like desktop and mobile experiences, as well as offline connection handling.</p>
+      
+      <h3>PWA Installation</h3>
+      <p>To install the app on your device, click the <strong>Get The App</strong> button located in the sidebar navigation:</p>
+      <ul>
+        <li><strong>Windows & Android:</strong> Tapping the button will trigger the browser's native PWA installation dialog. Once accepted, the app will run in its own standalone window.</li>
+        <li><strong>iOS (iPhone/iPad):</strong> iOS requires Safari for app installation. Clicking the button will take you to a guided installation helper page. From Safari, tap the <strong>Share</strong> icon and select <strong>Add to Home Screen</strong>.</li>
+      </ul>
+
+      <h3>Offline Mode & Connection Warnings</h3>
+      <p>If your device loses internet connectivity, a red warning banner will appear at the top of the screen: <em>"You are offline. Some functions are not available. Please try again when connected to the internet."</em></p>
+      <p>While offline, you can continue browsing cached data and local catalog items. However, database synchronizations, quote updates, and photo uploads will be paused until a stable internet connection is restored.</p>
     </section>
   </main>
 

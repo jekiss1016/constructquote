@@ -215,9 +215,25 @@ async function runTestSuite() {
     await wait(1000);
 
     // -------------------------------------------------------------
-    // TEST 2: Material Catalog Operations
+    // TEST 2: PWA Install UI Verification
     // -------------------------------------------------------------
-    createTestCard('2. Material Catalog Operations');
+    createTestCard('2. PWA Installation UI Check');
+    const stepPwaCheck = addStep('Verifying PWA install button elements in DOM');
+    const pwaBtn = doc.querySelector('#pwa-install-btn');
+    const pwaContainer = doc.querySelector('#nav-item-pwa-install');
+    if (!pwaBtn || !pwaContainer) {
+      throw new Error('PWA install button elements not found in the DOM.');
+    }
+    updateStepStatus(stepPwaCheck, 'success');
+    endActiveTest(true);
+    log('PWA elements verified in the sidebar.', 'success');
+
+    await wait(1000);
+
+    // -------------------------------------------------------------
+    // TEST 3: Material Catalog Operations
+    // -------------------------------------------------------------
+    createTestCard('3. Material Catalog Operations');
     const stepCatNav = addStep('Navigating to Catalog View');
     
     // Click on catalog nav item
@@ -278,9 +294,9 @@ async function runTestSuite() {
     await wait(1000);
 
     // -------------------------------------------------------------
-    // TEST 3: Settings & Team Invite Enforcement
+    // TEST 4: Settings & Team Invite Enforcement
     // -------------------------------------------------------------
-    createTestCard('3. Settings & Team Invite Enforcement');
+    createTestCard('4. Settings & Team Invite Enforcement');
     const stepSetNav = addStep('Navigating to Settings View');
     doc.querySelector('.nav-item[data-target="settings-view"]').click();
     await wait(500);
@@ -322,7 +338,7 @@ async function runTestSuite() {
 
     // Database verification: query the Supabase endpoint directly to check what is in the tables
     try {
-      const db = await win.eval("import('./js/db.js?v=90')");
+      const db = await win.eval("import('./js/db.js?v=91')");
       const profile = db.getCurrentUserProfile();
       if (profile && profile.company_id) {
         log(`User profile company_id: ${profile.company_id}, role: ${profile.role}`);
@@ -432,9 +448,9 @@ async function runTestSuite() {
     await wait(1000);
 
     // -------------------------------------------------------------
-    // TEST 4: Quote Calculator Verification
+    // TEST 5: Quote Calculator Verification
     // -------------------------------------------------------------
-    createTestCard('4. Quote Calculator Verification');
+    createTestCard('5. Quote Calculator Verification');
     const stepBldNav = addStep('Opening Quote Builder');
     
     // Go to dashboard first, then click Create New Quote
@@ -547,9 +563,9 @@ async function runTestSuite() {
     await wait(1000);
 
     // -------------------------------------------------------------
-    // TEST 5: Dashboard Expiration Filter Verification
+    // TEST 6: Dashboard Expiration Filter Verification
     // -------------------------------------------------------------
-    createTestCard('5. Dashboard Expiration Filter Verification');
+    createTestCard('6. Dashboard Expiration Filter Verification');
     const stepDashNav = addStep('Navigating to Dashboard View');
     doc.querySelector('.nav-item[data-target="dashboard-view"]').click();
     await wait(1000);
