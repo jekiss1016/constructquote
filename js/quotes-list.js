@@ -54,6 +54,15 @@ export async function renderDashboardExpirations() {
   const warningCountSpan = document.getElementById('dashboard-expiration-count');
   if (!tbody) return;
 
+  const daysSelect = document.getElementById('dashboard-expiration-days');
+  if (daysSelect) {
+    const savedDays = localStorage.getItem('dashboard-expiration-days');
+    if (savedDays && daysSelect.value !== savedDays) {
+      daysSelect.value = savedDays;
+    }
+  }
+  const limitDays = daysSelect ? parseInt(daysSelect.value, 10) : 10;
+
   const quotes = (await getQuotes()).filter(q => !q.isLegacy && q.status === 'Pending');
   const today = new Date();
   
@@ -62,7 +71,7 @@ export async function renderDashboardExpirations() {
     const expiry = new Date(q.expirationDate);
     const diffTime = expiry.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays <= 7;
+    return diffDays <= limitDays;
   });
 
   warningQuotes.sort((a, b) => new Date(a.expirationDate) - new Date(b.expirationDate));
@@ -959,6 +968,18 @@ function setupListListeners() {
   if (isListListenersSetup) return;
   isListListenersSetup = true;
   console.log('setupListListeners -> Starting...');
+  const daysSelect = document.getElementById('dashboard-expiration-days');
+  if (daysSelect) {
+    const savedDays = localStorage.getItem('dashboard-expiration-days');
+    if (savedDays) {
+      daysSelect.value = savedDays;
+    }
+    daysSelect.addEventListener('change', async (e) => {
+      localStorage.setItem('dashboard-expiration-days', e.target.value);
+      await renderDashboardExpirations();
+    });
+  }
+
   const searchInput = document.getElementById('quotes-search-input');
   const tabs = document.getElementById('quotes-status-tabs');
   const tableBody = document.getElementById('quotes-table-body');

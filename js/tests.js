@@ -21,6 +21,7 @@ function log(msg, type = 'info') {
   line.textContent = `> [${new Date().toLocaleTimeString()}] ${msg}`;
   consolePane.appendChild(line);
   consolePane.scrollTop = consolePane.scrollHeight;
+  console.log(`[TEST LOG] [${type}] ${msg}`);
 }
 
 // Visual report builder helpers
@@ -277,9 +278,9 @@ async function runTestSuite() {
     await wait(1000);
 
     // -------------------------------------------------------------
-    // TEST 3: Settings Customization
+    // TEST 3: Settings & Team Invite Enforcement
     // -------------------------------------------------------------
-    createTestCard('3. Settings Updates');
+    createTestCard('3. Settings & Team Invite Enforcement');
     const stepSetNav = addStep('Navigating to Settings View');
     doc.querySelector('.nav-item[data-target="settings-view"]').click();
     await wait(500);
@@ -301,39 +302,67 @@ async function runTestSuite() {
       log(`Header text "${brandHeader.textContent}" didn't match expected "${testCoName}", but DB write succeeded.`, 'warning');
     }
     updateStepStatus(stepSetSave, 'success');
-    endActiveTest(true);
-    log('Settings updated successfully.', 'success');
-
-    await wait(1000);
-
-    // -------------------------------------------------------------
-    // TEST 4: Team Invite Duplicate Email Enforcement
-    // -------------------------------------------------------------
-    createTestCard('4. Team Invite Duplicate Email Enforcement');
-    const stepTeamNav = addStep('Navigating to Settings View');
-    doc.querySelector('.nav-item[data-target="settings-view"]').click();
-    await wait(1000);
-    updateStepStatus(stepTeamNav, 'success');
 
     const stepTeamWait = addStep('Waiting for team management table to load');
     const teamTbody = await waitForSelector('#settings-team-tbody', 5000);
-    await wait(1500); // Allow async data to populate
+    
+    // Dynamic waiter: wait up to 4 seconds for rows to load and not contain placeholder text
+    const startTime = Date.now();
+    let loaded = false;
+    while (Date.now() - startTime < 4000) {
+      const rows = teamTbody.querySelectorAll('tr');
+      if (rows.length > 0 && !teamTbody.textContent.includes('No team members added.')) {
+        loaded = true;
+        break;
+      }
+      await wait(250);
+    }
+    log(`Dynamic table load check completed. Loaded: ${loaded}. Content: "${teamTbody.textContent.trim()}"`);
     updateStepStatus(stepTeamWait, 'success');
+
+    // Database verification: query the Supabase endpoint directly to check what is in the tables
+    try {
+      const db = await win.eval("import('./js/db.js?v=85')");
+      const profile = db.getCurrentUserProfile();
+      if (profile && profile.company_id) {
+        log(`User profile company_id: ${profile.company_id}, role: ${profile.role}`);
+        const config = await db.getSupabaseConfig();
+        const tokenObj = win.localStorage.getItem(`sb-${config.url.split('//')[1].split('.')[0]}-auth-token`);
+        const token = tokenObj ? JSON.parse(tokenObj).access_token : '';
+        
+        // Fetch profiles
+        const resProfiles = await fetch(`${config.url}/rest/v1/profiles?company_id=eq.${profile.company_id}`, {
+          headers: { 'apikey': config.key, 'Authorization': `Bearer ${token}` }
+        });
+        const profilesData = await resProfiles.json();
+        log(`Direct API profiles count: ${profilesData.length}. Emails: ${JSON.stringify(profilesData.map(p => p.email))}`);
+
+        // Fetch invitations
+        const resInvites = await fetch(`${config.url}/rest/v1/company_invitations?company_id=eq.${profile.company_id}`, {
+          headers: { 'apikey': config.key, 'Authorization': `Bearer ${token}` }
+        });
+        const invitesData = await resInvites.json();
+        log(`Direct API invites count: ${invitesData.length}. Emails: ${JSON.stringify(invitesData.map(i => i.email))}`);
+      }
+    } catch (e) {
+      log('Direct API verification failed: ' + e.message, 'warning');
+    }
 
     // Find an existing active member email from the rendered table
     const teamRows = teamTbody.querySelectorAll('tr');
     let activeMemberEmail = '';
     let pendingInviteEmail = '';
     for (const row of teamRows) {
-      const statusBadge = row.querySelector('.badge');
       const emailCell = row.querySelector('td');
-      if (!statusBadge || !emailCell) continue;
-      const badgeText = statusBadge.textContent.trim().toLowerCase();
-      const email = emailCell.textContent.trim();
-      if (badgeText === 'active' && !activeMemberEmail && email) {
+      const activeBadge = row.querySelector('.badge-won');
+      const invitedBadge = row.querySelector('.badge-pending');
+      const email = emailCell ? emailCell.textContent.trim() : '';
+      log(`Row cell text: "${row.innerText || row.textContent}" | active: ${!!activeBadge} | invited: ${!!invitedBadge}`);
+      
+      if (activeBadge && email && !activeMemberEmail) {
         activeMemberEmail = email;
       }
-      if (badgeText === 'invited' && !pendingInviteEmail && email) {
+      if (invitedBadge && email && !pendingInviteEmail) {
         pendingInviteEmail = email;
       }
     }
@@ -350,7 +379,7 @@ async function runTestSuite() {
       await wait(1500);
 
       // Look for the warning toast
-      const toasts = doc.querySelectorAll('.toast-message');
+      const toasts = doc.querySelectorAll('.toast');
       let foundWarning = false;
       for (const t of toasts) {
         if (t.textContent.toLowerCase().includes('already an active team member')) {
@@ -379,7 +408,7 @@ async function runTestSuite() {
       inviteForm.dispatchEvent(new win.Event('submit', { cancelable: true, bubbles: true }));
       await wait(1500);
 
-      const toasts = doc.querySelectorAll('.toast-message');
+      const toasts = doc.querySelectorAll('.toast');
       let foundWarning = false;
       for (const t of toasts) {
         if (t.textContent.toLowerCase().includes('already been sent to this email')) {
@@ -398,14 +427,14 @@ async function runTestSuite() {
     }
 
     endActiveTest(true);
-    log('Team invite duplicate email enforcement verified.', 'success');
+    log('Settings and team duplicate email block updates verified successfully.', 'success');
 
     await wait(1000);
 
     // -------------------------------------------------------------
-    // TEST 5: Quote Calculator Verification
+    // TEST 4: Quote Calculator Verification
     // -------------------------------------------------------------
-    createTestCard('5. Quote Calculator Verification');
+    createTestCard('4. Quote Calculator Verification');
     const stepBldNav = addStep('Opening Quote Builder');
     
     // Go to dashboard first, then click Create New Quote
@@ -514,6 +543,47 @@ async function runTestSuite() {
     updateStepStatus(stepBldSave, 'success');
     endActiveTest(true);
     log('Quote calculations and saving verified successfully!', 'success');
+
+    await wait(1000);
+
+    // -------------------------------------------------------------
+    // TEST 5: Dashboard Expiration Filter Verification
+    // -------------------------------------------------------------
+    createTestCard('5. Dashboard Expiration Filter Verification');
+    const stepDashNav = addStep('Navigating to Dashboard View');
+    doc.querySelector('.nav-item[data-target="dashboard-view"]').click();
+    await wait(1000);
+    updateStepStatus(stepDashNav, 'success');
+
+    const stepDashSelect = addStep('Verifying threshold select and default value');
+    const expirySelect = doc.querySelector('#dashboard-expiration-days');
+    if (!expirySelect) throw new Error('Dashboard expiration dropdown not found');
+    if (expirySelect.value !== '10') throw new Error(`Expected default value "10", got "${expirySelect.value}"`);
+    updateStepStatus(stepDashSelect, 'success');
+
+    const stepDashChange30 = addStep('Changing threshold to 30 Days and verifying persistence');
+    triggerInput(expirySelect, '30');
+    await wait(1000); // Allow render to finish
+    let savedVal = win.localStorage.getItem('dashboard-expiration-days');
+    if (savedVal !== '30') throw new Error(`Expected localStorage to save "30", got "${savedVal}"`);
+    updateStepStatus(stepDashChange30, 'success');
+
+    const stepDashChange90 = addStep('Changing threshold to 90 Days and verifying persistence');
+    triggerInput(expirySelect, '90');
+    await wait(1000); // Allow render to finish
+    savedVal = win.localStorage.getItem('dashboard-expiration-days');
+    if (savedVal !== '90') throw new Error(`Expected localStorage to save "90", got "${savedVal}"`);
+    updateStepStatus(stepDashChange90, 'success');
+
+    const stepDashReset = addStep('Resetting threshold to 10 Days');
+    triggerInput(expirySelect, '10');
+    await wait(1000);
+    savedVal = win.localStorage.getItem('dashboard-expiration-days');
+    if (savedVal !== '10') throw new Error(`Expected localStorage to save "10", got "${savedVal}"`);
+    updateStepStatus(stepDashReset, 'success');
+
+    endActiveTest(true);
+    log('Dashboard expiration threshold dropdown tested successfully!', 'success');
 
     log('==================================================');
     log(` TEST SUITE COMPLETE: ${passCount} PASSED, ${failCount} FAILED`, 'success');
