@@ -1451,4 +1451,380 @@ body {
   padding: 0.4rem 0.25rem !important;
 }
 
+/* ==================== MOBILE RESPONSIVE OVERRIDES ==================== */
+/* Hide mobile header and overlay by default on desktop viewports */
+.mobile-header {
+  display: none;
+}
+.sidebar-overlay {
+  display: none;
+}
+
+/* Targets modern smartphones like Samsung Galaxy S26 & iPhone 17 */
+@media (max-width: 768px) {
+  /* Mobile Top Header */
+  .mobile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    padding: 0 1rem;
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 999;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .mobile-toggle-btn {
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    margin-left: -0.5rem;
+    border-radius: var(--radius-md);
+  }
+
+  .mobile-toggle-btn:hover {
+    background-color: var(--bg-tertiary);
+  }
+
+  .mobile-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .mobile-brand-name {
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    color: var(--text-primary);
+  }
+
+  /* Backdrop Overlay */
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-normal);
+  }
+
+  .sidebar-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Sidebar Drawer */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 250px;
+    height: 100vh;
+    z-index: 1001;
+    transform: translateX(-100%);
+    box-shadow: var(--shadow-xl);
+    border-right: 1px solid var(--border-color);
+  }
+
+  .sidebar.active {
+    transform: translateX(0);
+  }
+
+  /* Main Layout Adjustment */
+  .main-content {
+    margin-left: 0;
+    padding: 1rem;
+    padding-top: calc(56px + 1.25rem); /* Space for mobile header */
+    min-height: calc(100vh - 56px);
+  }
+
+  /* Controls (Filters & Search) */
+  .list-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .search-input-wrapper {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .filter-tabs {
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+    display: flex;
+    justify-content: flex-start;
+    -webkit-overflow-scrolling: touch;
+    padding: 0.25rem;
+  }
+
+  .filter-tabs::-webkit-scrollbar {
+    display: none; /* Hide scrollbar for tab strip */
+  }
+
+  .filter-tab {
+    flex: 1 0 auto;
+    text-align: center;
+    padding: 0.5rem 0.75rem;
+  }
+
+  /* Page Headers */
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    text-align: left;
+  }
+
+  .page-header > div:last-child {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .page-header .btn {
+    width: 100%;
+  }
+
+  /* Form Layouts */
+  .form-group-row {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  /* Prevent horizontal layout breaks from grids and panels */
+  .builder-layout,
+  .detail-view-container,
+  .app-container,
+  .main-content {
+    min-width: 0;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  .builder-layout > *,
+  .detail-view-container > * {
+    min-width: 0;
+    width: 100%;
+  }
+
+  /* Paper View (Quote details view inside the app) */
+  .quote-paper-view {
+    padding: 1.25rem 0.75rem;
+    min-height: auto;
+    border-radius: var(--radius-md);
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .paper-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .paper-company-info {
+    text-align: left;
+  }
+
+  .paper-quote-title-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .paper-title {
+    font-size: 1.75rem;
+  }
+
+  .paper-meta-grid {
+    grid-template-columns: max-content 1fr;
+    row-gap: 0.25rem;
+    column-gap: 1rem;
+  }
+
+  .paper-bill-to-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .paper-totals-layout {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding-top: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  /* General Cards and Grids */
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .stat-card {
+    padding: 1rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .stat-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .stat-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .stat-value {
+    font-size: 1.25rem;
+  }
+
+  /* Modals */
+  .modal-overlay {
+    padding: 0.5rem;
+  }
+
+  .modal-container {
+    max-height: 95vh;
+  }
+
+  .modal-body {
+    padding: 1rem;
+    overflow-y: auto;
+  }
+
+  /* Hide print-only things which might leak */
+  .show-in-print-only {
+    display: none !important;
+  }
+
+  /* Transform tables with class '.custom-table' (except builder or catalog tables) to cards */
+  #quotes-table, 
+  #quotes-table thead, 
+  #quotes-table tbody, 
+  #quotes-table th, 
+  #quotes-table td, 
+  #quotes-table tr,
+  #customers-table,
+  #customers-table thead,
+  #customers-table tbody,
+  #customers-table th,
+  #customers-table td,
+  #customers-table tr,
+  #dashboard-view .custom-table,
+  #dashboard-view .custom-table thead,
+  #dashboard-view .custom-table tbody,
+  #dashboard-view .custom-table th,
+  #dashboard-view .custom-table td,
+  #dashboard-view .custom-table tr {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  #quotes-table thead,
+  #customers-table thead,
+  #dashboard-view .custom-table thead {
+    display: none !important; /* Hide header row */
+  }
+
+  #quotes-table tbody tr,
+  #customers-table tbody tr,
+  #dashboard-view .custom-table tbody tr {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background-color: var(--bg-secondary);
+    margin-bottom: 1rem;
+    padding: 0.75rem 0.5rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  #quotes-table td,
+  #customers-table td,
+  #dashboard-view .custom-table td {
+    border: none !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    position: relative !important;
+    padding-left: 45% !important;
+    text-align: right !important;
+    padding-top: 0.65rem !important;
+    padding-bottom: 0.65rem !important;
+    font-size: 0.9rem;
+    min-height: 42px;
+    display: flex !important;
+    justify-content: flex-end !important;
+    align-items: center;
+    max-width: 100% !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    box-sizing: border-box;
+  }
+
+  #quotes-table td:last-child,
+  #customers-table td:last-child,
+  #dashboard-view .custom-table td:last-child {
+    border-bottom: none !important;
+  }
+
+  #quotes-table td::before,
+  #customers-table td::before,
+  #dashboard-view .custom-table td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: 1rem;
+    width: 40%;
+    text-align: left;
+    font-weight: 700;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+  }
+
+  #quotes-table td > div,
+  #customers-table td > div,
+  #dashboard-view .custom-table td > div {
+    justify-content: flex-end !important;
+    width: auto !important;
+  }
+
+  /* Make sure table-container doesn't have borders/shadows since cards handle it */
+  #quotes-view .table-container,
+  #customers-view .table-container,
+  #dashboard-view .table-container {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+}
+
 

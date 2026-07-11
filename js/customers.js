@@ -75,18 +75,17 @@ export async function renderCustomersTable() {
         </svg>
       </button>
     `);
-
     return `
       <tr>
-        <td style="font-weight: 600;">${escapeHtml(c.name)}</td>
-        <td>${escapeHtml(c.email || '-')}</td>
-        <td>${escapeHtml(c.phone || '-')}</td>
-        <td style="font-size: 0.85rem; color: var(--text-secondary); max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(c.address)}">
+        <td data-label="Name" style="font-weight: 600;">${escapeHtml(c.name)}</td>
+        <td data-label="Email">${escapeHtml(c.email || '-')}</td>
+        <td data-label="Phone">${escapeHtml(c.phone || '-')}</td>
+        <td data-label="Address" style="font-size: 0.85rem; color: var(--text-secondary); max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(c.address)}">
           ${escapeHtml(c.address)}
         </td>
-        <td style="text-align: center;"><span class="badge badge-legacy">${c.contacts ? c.contacts.length : 0} Contacts</span></td>
-        <td>${statusBadge}</td>
-        <td style="text-align: right;">
+        <td data-label="Contacts" style="text-align: center;"><span class="badge badge-legacy">${c.contacts ? c.contacts.length : 0} Contacts</span></td>
+        <td data-label="Status">${statusBadge}</td>
+        <td data-label="Actions" style="text-align: right;">
           <div style="display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center;">
             ${toggleBtn}
             <button type="button" class="btn btn-secondary btn-icon-only edit-customer-btn" data-id="${c.id}" title="${isViewer ? 'View Customer' : 'Edit Customer'}">

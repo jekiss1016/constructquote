@@ -925,6 +925,49 @@ function setupAppNavigation() {
     });
   });
 
+  // Mobile navigation drawer toggle and click-away helpers
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  const toggleBtn = document.getElementById('mobile-sidebar-toggle');
+
+  const closeMobileSidebar = () => {
+    if (sidebar && sidebar.classList.contains('active')) {
+      sidebar.classList.remove('active');
+      if (overlay) overlay.classList.remove('active');
+    }
+  };
+
+  const openMobileSidebar = () => {
+    if (sidebar) {
+      sidebar.classList.add('active');
+      if (overlay) overlay.classList.add('active');
+    }
+  };
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (sidebar && sidebar.classList.contains('active')) {
+        closeMobileSidebar();
+      } else {
+        openMobileSidebar();
+      }
+    });
+  }
+
+  if (overlay) {
+    overlay.addEventListener('click', closeMobileSidebar);
+  }
+
+  // Auto-close sidebar on navigating or opening support modal
+  navItems.forEach(item => {
+    item.addEventListener('click', closeMobileSidebar);
+  });
+  const supportOpenBtnInNav = document.getElementById('support-open-btn');
+  if (supportOpenBtnInNav) {
+    supportOpenBtnInNav.addEventListener('click', closeMobileSidebar);
+  }
+
   // Contact Support handler - opens modal
   const supportOpenBtn = document.getElementById('support-open-btn');
   const supportModal = document.getElementById('support-modal');

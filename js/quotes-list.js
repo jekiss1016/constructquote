@@ -107,15 +107,14 @@ export async function renderDashboardExpirations() {
     const expiryDisplay = isExpired 
       ? `<span style="color: var(--danger); font-weight: 700;">EXPIRED (${formatDate(q.expirationDate)})</span>`
       : `<span style="color: var(--warning-hover); font-weight: 600;">${formatDate(q.expirationDate)}</span>`;
-
     return `
       <tr>
-        <td style="font-weight: 600;">${escapeHtml(q.jobId)}</td>
-        <td>${escapeHtml(q.customerName)}</td>
-        <td>${formatDate(q.date)}</td>
-        <td>${expiryDisplay}</td>
-        <td style="font-weight: 600;">${formatCurrency(total)}</td>
-        <td>
+        <td data-label="Job ID" style="font-weight: 600;">${escapeHtml(q.jobId)}</td>
+        <td data-label="Customer">${escapeHtml(q.customerName)}</td>
+        <td data-label="Date Created">${formatDate(q.date)}</td>
+        <td data-label="Expiration">${expiryDisplay}</td>
+        <td data-label="Total Value" style="font-weight: 600;">${formatCurrency(total)}</td>
+        <td data-label="Action">
           <button type="button" class="btn btn-secondary dash-followup-btn" data-id="${q.id}" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
             Follow Up
           </button>
@@ -228,20 +227,19 @@ export async function renderQuotesTable() {
       parsedAddr.city,
       [parsedAddr.state, parsedAddr.zip].filter(Boolean).join(' ')
     ].filter(Boolean).join(', ');
-
     return `
       <tr>
-        <td style="font-weight: 700;">${escapeHtml(q.jobId)}</td>
-        <td style="color: var(--text-secondary); font-weight: 500;">#${q.quoteNumber}</td>
-        <td style="font-weight: 600;">${escapeHtml(q.customerName)}</td>
-        <td style="font-size: 0.85rem; color: var(--text-secondary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(displayAddr)}">
+        <td data-label="Job ID" style="font-weight: 700;">${escapeHtml(q.jobId)}</td>
+        <td data-label="Quote #" style="color: var(--text-secondary); font-weight: 500;">#${q.quoteNumber}</td>
+        <td data-label="Customer" style="font-weight: 600;">${escapeHtml(q.customerName)}</td>
+        <td data-label="Project Address" style="font-size: 0.85rem; color: var(--text-secondary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(displayAddr)}">
           ${escapeHtml(displayAddr)}
         </td>
-        <td>${formatDate(q.date)}</td>
-        <td>${formatDate(q.expirationDate)}</td>
-        <td style="font-weight: 700; color: var(--primary);">${formatCurrency(total)}</td>
-        <td>${statusBadge}</td>
-        <td style="text-align: right;">
+        <td data-label="Date">${formatDate(q.date)}</td>
+        <td data-label="Expiration">${formatDate(q.expirationDate)}</td>
+        <td data-label="Amount" style="font-weight: 700; color: var(--primary);">${formatCurrency(total)}</td>
+        <td data-label="Status">${statusBadge}</td>
+        <td data-label="Actions" style="text-align: right;">
           <div style="display: flex; gap: 0.4rem; justify-content: flex-end;">
             ${actionButtons}
           </div>
