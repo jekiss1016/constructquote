@@ -12,8 +12,8 @@ const ASSETS = [
   './js/customers.js?v=91',
   './js/quote-builder.js?v=91',
   './js/quotes-list.js?v=91',
-  './icon-192.png',
-  './icon-512.png',
+  './icon-192.png?v=91',
+  './icon-512.png?v=91',
   './manifest.json'
 ];
 
