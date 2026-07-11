@@ -1,7 +1,7 @@
 // Customer management controller
-import { getCustomers, saveCustomer, deleteCustomer, getQuotes, getSupabase, getCurrentUserProfile, uploadFileToStorage, getCustomerById, getSettings } from './db.js?v=87';
-import { formatCurrency, formatDateTime, showToast, formatPhoneNumber } from './utils.js?v=87';
-import { navigateToView, viewQuoteDetails } from './app.js?v=87';
+import { getCustomers, saveCustomer, deleteCustomer, getQuotes, getSupabase, getCurrentUserProfile, uploadFileToStorage, getCustomerById, getSettings } from './db.js?v=88';
+import { formatCurrency, formatDateTime, showToast, formatPhoneNumber } from './utils.js?v=88';
+import { navigateToView, viewQuoteDetails } from './app.js?v=88';
 
 let activeSearchQuery = '';
 let inlineSaveCallback = null;
@@ -515,6 +515,18 @@ function setupCustomerListeners() {
 
   if (tableBody) {
     tableBody.addEventListener('click', async (e) => {
+      // Mobile card-click navigation helper
+      const isMobile = window.innerWidth <= 768;
+      const clickedRow = e.target.closest('tr');
+      const isActionButton = e.target.closest('button') || e.target.closest('a') || e.target.closest('input') || e.target.closest('select') || e.target.closest('svg') || e.target.closest('path');
+      if (isMobile && clickedRow && !isActionButton) {
+        const rowEditBtn = clickedRow.querySelector('.edit-customer-btn');
+        if (rowEditBtn) {
+          rowEditBtn.click();
+          return;
+        }
+      }
+
       const editBtn = e.target.closest('.edit-customer-btn');
       const deleteBtn = e.target.closest('.delete-customer-btn');
       const toggleStatusBtn = e.target.closest('.toggle-customer-status-btn');

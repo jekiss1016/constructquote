@@ -1,7 +1,7 @@
 // Quotes List & Dashboard management controller
-import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel } from './db.js?v=87';
-import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage, parseCombinedAddress } from './utils.js?v=87';
-import { navigateToView, editQuote, duplicateQuoteAsTemplate } from './app.js?v=87';
+import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel } from './db.js?v=88';
+import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage, parseCombinedAddress } from './utils.js?v=88';
+import { navigateToView, editQuote, duplicateQuoteAsTemplate } from './app.js?v=88';
 
 let activeStatusFilter = 'pending';
 let activeSearchQuery = '';
@@ -1018,6 +1018,18 @@ function setupListListeners() {
     console.log('setupListListeners -> Binding click event listener to tableBody');
     tableBody.addEventListener('click', async (e) => {
       console.log('tableBody click event detected. Target:', e.target);
+
+      // Mobile card-click navigation helper
+      const isMobile = window.innerWidth <= 768;
+      const clickedRow = e.target.closest('tr');
+      const isActionButton = e.target.closest('button') || e.target.closest('a') || e.target.closest('input') || e.target.closest('select') || e.target.closest('svg') || e.target.closest('path');
+      if (isMobile && clickedRow && !isActionButton) {
+        const rowViewBtn = clickedRow.querySelector('.view-quote-btn');
+        if (rowViewBtn) {
+          rowViewBtn.click();
+          return;
+        }
+      }
       const viewBtn = e.target.closest('.view-quote-btn');
       const editBtn = e.target.closest('.edit-quote-btn');
       console.log('tableBody click -> viewBtn:', viewBtn, 'editBtn:', editBtn);
@@ -1064,6 +1076,18 @@ function setupListListeners() {
 
   if (expTbody) {
     expTbody.addEventListener('click', async (e) => {
+      // Mobile card-click navigation helper
+      const isMobile = window.innerWidth <= 768;
+      const clickedRow = e.target.closest('tr');
+      const isActionButton = e.target.closest('button') || e.target.closest('a') || e.target.closest('input') || e.target.closest('select') || e.target.closest('svg') || e.target.closest('path');
+      if (isMobile && clickedRow && !isActionButton) {
+        const rowBtn = clickedRow.querySelector('.dash-followup-btn');
+        if (rowBtn) {
+          rowBtn.click();
+          return;
+        }
+      }
+
       const btn = e.target.closest('.dash-followup-btn');
       if (btn) {
         const id = btn.getAttribute('data-id');
