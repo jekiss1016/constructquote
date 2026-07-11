@@ -44,8 +44,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MyBidBook | Smart Construction Estimation</title>
-  <link rel="stylesheet" href="css/styles.css?v=89">
-  <link rel="stylesheet" href="css/print.css?v=89">
+  <link rel="stylesheet" href="css/styles.css?v=90">
+  <link rel="stylesheet" href="css/print.css?v=90">
 </head>
 <body>
 
@@ -1241,7 +1241,7 @@
       <!-- Global Footer -->
       <footer class="hide-in-print" style="margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); text-align: center; font-size: 0.8rem; color: var(--text-muted); padding-bottom: 1.5rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; width: 100%; box-sizing: border-box; align-self: center;">
         <img src="banner.png" style="max-height: 50px; max-width: 320px; object-fit: contain; width: auto; opacity: 0.85;" alt="MyBidBook Banner">
-        <span>© 2026 MyBidBook | v1.89</span>
+        <span>© 2026 MyBidBook | v1.90</span>
       </footer>
     </main>
   </div>
@@ -1787,11 +1787,42 @@
     </div>
   </div>
 
+  <!-- ==================== IMAGE LIGHTBOX MODAL ==================== -->
+  <div class="modal-overlay" id="lightbox-modal" style="background-color: rgba(0, 0, 0, 0.95); z-index: 1000; padding: 0;">
+    <div style="position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+      <!-- Close Button -->
+      <button type="button" id="lightbox-close-btn" style="position: absolute; top: 1rem; right: 1rem; background: rgba(0,0,0,0.5); border: none; color: white; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 1010; font-size: 1.5rem;">✕</button>
+      
+      <!-- Left Arrow -->
+      <button type="button" id="lightbox-prev-btn" style="position: absolute; left: 1rem; background: rgba(0,0,0,0.5); border: none; color: white; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 1010; font-size: 2rem;">‹</button>
+      
+      <!-- Right Arrow -->
+      <button type="button" id="lightbox-next-btn" style="position: absolute; right: 1rem; background: rgba(0,0,0,0.5); border: none; color: white; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 1010; font-size: 2rem;">›</button>
+      
+      <!-- Main Content Container -->
+      <div style="max-width: 90%; max-height: 80%; display: flex; flex-direction: column; align-items: center; gap: 1rem; color: white; text-align: center;">
+        <img id="lightbox-image" src="" alt="Full size view" style="max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: var(--radius-md); box-shadow: var(--shadow-xl);">
+        <div id="lightbox-caption" style="font-size: 1rem; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.8); word-break: break-word;">Photo Caption</div>
+        <div id="lightbox-category" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #94a3b8; margin-top: -0.5rem;">CATEGORY</div>
+        
+        <!-- Action Buttons -->
+        <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+          <a id="lightbox-download-btn" href="" download="mybidbook-attachment" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; padding: 0.5rem 1rem; font-size: 0.85rem;">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="16" height="16">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Download / Save
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast system notifications -->
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Javascript Modules -->
-  <script type="module" src="js/app.js?v=89"></script>
+  <script type="module" src="js/app.js?v=90"></script>
 
 </body>
 </html>

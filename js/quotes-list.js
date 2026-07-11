@@ -1,7 +1,7 @@
 // Quotes List & Dashboard management controller
-import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel } from './db.js?v=89';
-import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage, parseCombinedAddress } from './utils.js?v=89';
-import { navigateToView, editQuote, duplicateQuoteAsTemplate } from './app.js?v=89';
+import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel } from './db.js?v=90';
+import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage, parseCombinedAddress } from './utils.js?v=90';
+import { navigateToView, editQuote, duplicateQuoteAsTemplate, openLightbox } from './app.js?v=90';
 
 let activeStatusFilter = 'pending';
 let activeSearchQuery = '';
@@ -109,7 +109,7 @@ export async function renderDashboardExpirations() {
       : `<span style="color: var(--warning-hover); font-weight: 600;">${formatDate(q.expirationDate)}</span>`;
     return `
       <tr>
-        <td data-label="Job ID" style="font-weight: 600;">${escapeHtml(q.jobId)}</td>
+        <td data-label="Job ID" style="font-weight: 600;"><span class="view-quote-job-link" data-id="${q.id}" style="color: var(--primary); cursor: pointer; text-decoration: underline; text-underline-offset: 2px;">${escapeHtml(q.jobId)}</span></td>
         <td data-label="Customer">${escapeHtml(q.customerName)}</td>
         <td data-label="Date Created">${formatDate(q.date)}</td>
         <td data-label="Expiration">${expiryDisplay}</td>
@@ -229,7 +229,7 @@ export async function renderQuotesTable() {
     ].filter(Boolean).join(', ');
     return `
       <tr>
-        <td data-label="Job ID" style="font-weight: 700;">${escapeHtml(q.jobId)}</td>
+        <td data-label="Job ID" style="font-weight: 700;"><span class="view-quote-job-link" data-id="${q.id}" style="color: var(--primary); cursor: pointer; text-decoration: underline; text-underline-offset: 2px;">${escapeHtml(q.jobId)}</span></td>
         <td data-label="Quote #" style="color: var(--text-secondary); font-weight: 500;">#${q.quoteNumber}</td>
         <td data-label="Customer" style="font-weight: 600;">${escapeHtml(q.customerName)}</td>
         <td data-label="Project Address" style="font-size: 0.85rem; color: var(--text-secondary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(displayAddr)}">
@@ -658,30 +658,35 @@ export async function renderQuoteDetails(id) {
   // Draw Sidebar Project Gallery Manager
   const detailGalleryList = document.getElementById('detail-gallery-list');
   if (detailGalleryList) {
+    // Style as 2-column grid
+    detailGalleryList.style.display = 'grid';
+    detailGalleryList.style.gridTemplateColumns = '1fr 1fr';
+    detailGalleryList.style.gap = '0.5rem';
+    detailGalleryList.style.maxHeight = '350px';
+    detailGalleryList.style.overflowY = 'auto';
+
     const photos = quote.photos || [];
     if (photos.length === 0) {
       detailGalleryList.innerHTML = `
-        <div style="text-align: center; color: var(--text-muted); font-size: 0.75rem; padding: 0.75rem; border: 1px dashed var(--border-color); border-radius: var(--radius-sm);">
+        <div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); font-size: 0.75rem; padding: 0.75rem; border: 1px dashed var(--border-color); border-radius: var(--radius-sm);">
           No project photos attached.
         </div>
       `;
     } else {
       detailGalleryList.innerHTML = photos.map(p => {
         const deleteBtn = isViewer ? '' : `
-          <button type="button" class="item-delete-btn detail-photo-delete-btn" data-photo-id="${p.id}" title="Delete Photo" style="padding: 0.2rem; flex-shrink: 0;">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="13" height="13">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          <button type="button" class="remove-gallery-photo-btn detail-photo-delete-btn" data-photo-id="${p.id}" title="Delete Photo" style="position: absolute; top: 0.25rem; right: 0.25rem; background: rgba(239, 68, 68, 0.9); border: none; color: white; width: 20px; height: 20px; border-radius: var(--radius-sm); cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 1;">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="10" height="10">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         `;
         return `
-          <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; background: var(--bg-secondary); padding: 0.35rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
-            <div style="display: flex; align-items: center; gap: 0.35rem; overflow: hidden; width: 100%;">
-              <img src="${p.url}" style="width: 28px; height: 28px; object-fit: cover; border-radius: 2px; flex-shrink: 0;">
-              <div style="font-size: 0.72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%;">
-                <div style="font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(p.label)}">${escapeHtml(p.label)}</div>
-                <div style="font-size: 0.62rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">${p.category}</div>
-              </div>
+          <div class="gallery-photo-card" data-photo-id="${p.id}" style="position: relative; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); overflow: hidden; display: flex; flex-direction: column;">
+            <img class="detail-gallery-img" src="${p.url}" data-photo-id="${p.id}" style="width: 100%; height: 80px; object-fit: cover; cursor: pointer;" alt="${escapeHtml(p.label)}">
+            <div style="padding: 0.35rem 0.25rem; font-size: 0.7rem; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden;">
+              <div style="font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(p.label)}">${escapeHtml(p.label)}</div>
+              <div style="font-size: 0.6rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700; margin-top: 0.1rem;">${p.category}</div>
             </div>
             ${deleteBtn}
           </div>
@@ -1019,29 +1024,31 @@ function setupListListeners() {
     tableBody.addEventListener('click', async (e) => {
       console.log('tableBody click event detected. Target:', e.target);
 
+      const viewBtn = e.target.closest('.view-quote-btn');
+      const jobLink = e.target.closest('.view-quote-job-link');
+      const editBtn = e.target.closest('.edit-quote-btn');
+      const wonBtn = e.target.closest('.mark-won-btn');
+      const lostBtn = e.target.closest('.mark-lost-btn');
+      const inactiveBtn = e.target.closest('.mark-inactive-btn');
+      const compBtn = e.target.closest('.mark-completed-btn');
+
+      if (viewBtn || jobLink) {
+        const id = (viewBtn || jobLink).getAttribute('data-id');
+        await renderQuoteDetails(id);
+        navigateToView('detail-view');
+        return;
+      }
+
       // Mobile card-click navigation helper
       const isMobile = window.innerWidth <= 768;
       const clickedRow = e.target.closest('tr');
-      const isActionButton = e.target.closest('button') || e.target.closest('a') || e.target.closest('input') || e.target.closest('select') || e.target.closest('svg') || e.target.closest('path');
+      const isActionButton = e.target.closest('button') || e.target.closest('a') || e.target.closest('input') || e.target.closest('select') || e.target.closest('svg') || e.target.closest('path') || e.target.closest('.view-quote-job-link');
       if (isMobile && clickedRow && !isActionButton) {
         const rowViewBtn = clickedRow.querySelector('.view-quote-btn');
         if (rowViewBtn) {
           rowViewBtn.click();
           return;
         }
-      }
-      const viewBtn = e.target.closest('.view-quote-btn');
-      const editBtn = e.target.closest('.edit-quote-btn');
-      console.log('tableBody click -> viewBtn:', viewBtn, 'editBtn:', editBtn);
-      const wonBtn = e.target.closest('.mark-won-btn');
-      const lostBtn = e.target.closest('.mark-lost-btn');
-      const inactiveBtn = e.target.closest('.mark-inactive-btn');
-      const compBtn = e.target.closest('.mark-completed-btn');
-
-      if (viewBtn) {
-        const id = viewBtn.getAttribute('data-id');
-        await renderQuoteDetails(id);
-        navigateToView('detail-view');
       }
       if (editBtn && !isViewer) {
         const id = editBtn.getAttribute('data-id');
@@ -1076,23 +1083,26 @@ function setupListListeners() {
 
   if (expTbody) {
     expTbody.addEventListener('click', async (e) => {
+      const btn = e.target.closest('.dash-followup-btn');
+      const jobLink = e.target.closest('.view-quote-job-link');
+
+      if (btn || jobLink) {
+        const id = (btn || jobLink).getAttribute('data-id');
+        await renderQuoteDetails(id);
+        navigateToView('detail-view');
+        return;
+      }
+
       // Mobile card-click navigation helper
       const isMobile = window.innerWidth <= 768;
       const clickedRow = e.target.closest('tr');
-      const isActionButton = e.target.closest('button') || e.target.closest('a') || e.target.closest('input') || e.target.closest('select') || e.target.closest('svg') || e.target.closest('path');
+      const isActionButton = e.target.closest('button') || e.target.closest('a') || e.target.closest('input') || e.target.closest('select') || e.target.closest('svg') || e.target.closest('path') || e.target.closest('.view-quote-job-link');
       if (isMobile && clickedRow && !isActionButton) {
         const rowBtn = clickedRow.querySelector('.dash-followup-btn');
         if (rowBtn) {
           rowBtn.click();
           return;
         }
-      }
-
-      const btn = e.target.closest('.dash-followup-btn');
-      if (btn) {
-        const id = btn.getAttribute('data-id');
-        await renderQuoteDetails(id);
-        navigateToView('detail-view');
       }
     });
   }
@@ -1248,6 +1258,17 @@ function setupListListeners() {
   if (detailGalleryList) {
     detailGalleryList.addEventListener('click', async (e) => {
       const delBtn = e.target.closest('.detail-photo-delete-btn');
+      const img = e.target.closest('.detail-gallery-img');
+
+      if (img) {
+        const quote = await getQuoteById(selectedQuoteId);
+        if (quote && quote.photos) {
+          const photoId = img.getAttribute('data-photo-id');
+          openLightbox(quote.photos, photoId);
+        }
+        return;
+      }
+
       if (delBtn && !isViewer) {
         const photoId = delBtn.getAttribute('data-photo-id');
         const quote = await getQuoteById(selectedQuoteId);

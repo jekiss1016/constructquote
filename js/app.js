@@ -19,12 +19,12 @@ import {
   uploadFileToStorage,
   rawDbWrite,
   getSubscriptionLevel
-} from './db.js?v=89';
-import { showToast, fileToBase64, formatPhoneNumber } from './utils.js?v=89';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=89';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=89';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=89';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=89';
+} from './db.js?v=90';
+import { showToast, fileToBase64, formatPhoneNumber } from './utils.js?v=90';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=90';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=90';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=90';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=90';
 
 let activeChallengeId = null;
 let activeFactorId = null;
@@ -688,6 +688,7 @@ async function initAppViews() {
     setupThemeToggler();
     setupSettingsHandlers();
     setupDatabaseUtilityHandlers();
+    setupLightboxListeners();
   } catch (e) {
     console.error('Failed to setup navigation and handlers:', e);
   }
@@ -1703,4 +1704,109 @@ function escapeHtml(text) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+/* ==================== PHOTO GALLERY LIGHTBOX ==================== */
+let lightboxPhotos = [];
+let currentLightboxIndex = 0;
+
+export function openLightbox(photos, startId) {
+  lightboxPhotos = photos || [];
+  // Find index by id or URL matching
+  currentLightboxIndex = lightboxPhotos.findIndex(p => p.id === startId || p.url === startId);
+  if (currentLightboxIndex === -1) {
+    // Attempt numeric string comparison
+    currentLightboxIndex = lightboxPhotos.findIndex(p => String(p.id) === String(startId));
+  }
+  if (currentLightboxIndex === -1) currentLightboxIndex = 0;
+  
+  const modal = document.getElementById('lightbox-modal');
+  if (!modal) return;
+  
+  updateLightboxContent();
+  modal.classList.add('active');
+}
+
+function updateLightboxContent() {
+  const modal = document.getElementById('lightbox-modal');
+  if (!modal || lightboxPhotos.length === 0) return;
+  
+  const photo = lightboxPhotos[currentLightboxIndex];
+  const img = document.getElementById('lightbox-image');
+  const caption = document.getElementById('lightbox-caption');
+  const category = document.getElementById('lightbox-category');
+  const downloadBtn = document.getElementById('lightbox-download-btn');
+  
+  if (img) img.src = photo.url;
+  if (caption) caption.textContent = photo.label || 'Project Photo';
+  if (category) category.textContent = photo.category || 'GENERAL';
+  if (downloadBtn) {
+    downloadBtn.href = photo.url;
+    // Set a clean download attribute using the label
+    downloadBtn.download = (photo.label || 'mybidbook-photo').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+  }
+  
+  // Hide prev/next buttons if only 1 photo exists
+  const prevBtn = document.getElementById('lightbox-prev-btn');
+  const nextBtn = document.getElementById('lightbox-next-btn');
+  
+  if (prevBtn) prevBtn.style.display = lightboxPhotos.length > 1 ? 'flex' : 'none';
+  if (nextBtn) nextBtn.style.display = lightboxPhotos.length > 1 ? 'flex' : 'none';
+}
+
+export function setupLightboxListeners() {
+  const modal = document.getElementById('lightbox-modal');
+  const closeBtn = document.getElementById('lightbox-close-btn');
+  const prevBtn = document.getElementById('lightbox-prev-btn');
+  const nextBtn = document.getElementById('lightbox-next-btn');
+  
+  if (prevBtn) {
+    prevBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (lightboxPhotos.length > 1) {
+        currentLightboxIndex = (currentLightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length;
+        updateLightboxContent();
+      }
+    });
+  }
+  
+  if (nextBtn) {
+    nextBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (lightboxPhotos.length > 1) {
+        currentLightboxIndex = (currentLightboxIndex + 1) % lightboxPhotos.length;
+        updateLightboxContent();
+      }
+    });
+  }
+  
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      if (modal) modal.classList.remove('active');
+    });
+  }
+  
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      // Close if clicking outside the main image wrapper
+      if (e.target === modal || e.target.id === 'lightbox-modal') {
+        modal.classList.remove('active');
+      }
+    });
+  }
+  
+  // Keyboard listeners
+  window.addEventListener('keydown', (e) => {
+    if (modal && modal.classList.contains('active')) {
+      if (e.key === 'Escape') {
+        modal.classList.remove('active');
+      } else if (e.key === 'ArrowLeft' && lightboxPhotos.length > 1) {
+        currentLightboxIndex = (currentLightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length;
+        updateLightboxContent();
+      } else if (e.key === 'ArrowRight' && lightboxPhotos.length > 1) {
+        currentLightboxIndex = (currentLightboxIndex + 1) % lightboxPhotos.length;
+        updateLightboxContent();
+      }
+    }
+  });
 }

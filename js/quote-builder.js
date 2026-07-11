@@ -1,9 +1,9 @@
 // Quote Builder view controller
-import { getProducts, getSettings, saveQuote, checkJobIdUnique, saveSettings, getCustomers, getSupabase, getCurrentUserProfile, uploadFileToStorage } from './db.js?v=89';
-import { formatCurrency, showToast, fileToBase64, generateJobIdSuggestion, compressImage, parseCombinedAddress } from './utils.js?v=89';
-import { navigateToView, viewQuoteDetails, getPreviousViewId } from './app.js?v=89';
-import { renderQuoteDetails } from './quotes-list.js?v=89';
-import { openCustomerModalInline } from './customers.js?v=89';
+import { getProducts, getSettings, saveQuote, checkJobIdUnique, saveSettings, getCustomers, getSupabase, getCurrentUserProfile, uploadFileToStorage } from './db.js?v=90';
+import { formatCurrency, showToast, fileToBase64, generateJobIdSuggestion, compressImage, parseCombinedAddress } from './utils.js?v=90';
+import { navigateToView, viewQuoteDetails, getPreviousViewId, openLightbox } from './app.js?v=90';
+import { renderQuoteDetails } from './quotes-list.js?v=90';
+import { openCustomerModalInline } from './customers.js?v=90';
 
 let currentQuote = {
   id: null,
@@ -494,7 +494,7 @@ function renderBuilderGallery() {
 
   container.innerHTML = filtered.map(p => `
     <div class="photo-thumbnail-card" data-photo-id="${p.id}">
-      <img src="${p.url}" alt="Attachment">
+      <img class="builder-gallery-img" src="${p.url}" alt="Attachment" style="cursor: pointer;">
       <button type="button" class="remove-gallery-photo-btn" title="Remove Photo">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="12" height="12">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
@@ -1106,6 +1106,17 @@ function setupBuilderListeners() {
   if (galleryTbody) {
     galleryTbody.addEventListener('click', (e) => {
       const deleteBtn = e.target.closest('.remove-gallery-photo-btn');
+      const img = e.target.closest('.builder-gallery-img');
+
+      if (img) {
+        const card = img.closest('.photo-thumbnail-card');
+        const id = card.getAttribute('data-photo-id');
+        const photos = currentQuote.photos || [];
+        const filtered = galleryFilterCategory === 'all' ? photos : photos.filter(p => p.category === galleryFilterCategory);
+        openLightbox(filtered, id);
+        return;
+      }
+
       if (deleteBtn) {
         const card = deleteBtn.closest('.photo-thumbnail-card');
         const id = card.getAttribute('data-photo-id');
