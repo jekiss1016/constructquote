@@ -1,9 +1,9 @@
 // Quote Builder view controller
-import { getProducts, getSettings, saveQuote, checkJobIdUnique, saveSettings, getCustomers, getSupabase, getCurrentUserProfile, uploadFileToStorage } from './db.js?v=91';
-import { formatCurrency, showToast, fileToBase64, generateJobIdSuggestion, compressImage, parseCombinedAddress } from './utils.js?v=91';
-import { navigateToView, viewQuoteDetails, getPreviousViewId, openLightbox } from './app.js?v=91';
-import { renderQuoteDetails } from './quotes-list.js?v=91';
-import { openCustomerModalInline } from './customers.js?v=91';
+import { getProducts, getSettings, saveQuote, checkJobIdUnique, saveSettings, getCustomers, getSupabase, getCurrentUserProfile, uploadFileToStorage } from './db.js?v=92';
+import { formatCurrency, showToast, fileToBase64, generateJobIdSuggestion, compressImage, parseCombinedAddress } from './utils.js?v=92';
+import { navigateToView, viewQuoteDetails, getPreviousViewId, openLightbox } from './app.js?v=92';
+import { renderQuoteDetails } from './quotes-list.js?v=92';
+import { openCustomerModalInline } from './customers.js?v=92';
 
 
 let currentQuote = {
