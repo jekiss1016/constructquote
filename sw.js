@@ -1,20 +1,20 @@
 // Service Worker for MyBidBook PWA
-const CACHE_NAME = 'mybidbook-cache-v92';
+const CACHE_NAME = 'mybidbook-cache-v93';
 const ASSETS = [
   './',
   './index.html',
-  './css/styles.css?v=92',
-  './css/print.css?v=92',
-  './js/app.js?v=92',
-  './js/utils.js?v=92',
-  './js/db.js?v=92',
-  './js/catalog.js?v=92',
-  './js/customers.js?v=92',
-  './js/quote-builder.js?v=92',
-  './js/quotes-list.js?v=92',
-  './icon-192.png?v=92',
-  './icon-512.png?v=92',
-  './apple-touch-icon.png?v=92',
+  './css/styles.css?v=93',
+  './css/print.css?v=93',
+  './js/app.js?v=93',
+  './js/utils.js?v=93',
+  './js/db.js?v=93',
+  './js/catalog.js?v=93',
+  './js/customers.js?v=93',
+  './js/quote-builder.js?v=93',
+  './js/quotes-list.js?v=93',
+  './icon-192.png?v=93',
+  './icon-512.png?v=93',
+  './apple-touch-icon.png?v=93',
   './manifest.json'
 ];
 

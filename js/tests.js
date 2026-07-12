@@ -338,7 +338,7 @@ async function runTestSuite() {
 
     // Database verification: query the Supabase endpoint directly to check what is in the tables
     try {
-      const db = await win.eval("import('./js/db.js?v=91')");
+      const db = await win.eval("import('./js/db.js?v=93')");
       const profile = db.getCurrentUserProfile();
       if (profile && profile.company_id) {
         log(`User profile company_id: ${profile.company_id}, role: ${profile.role}`);
