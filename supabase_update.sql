@@ -40,7 +40,9 @@ CREATE OR REPLACE FUNCTION public.send_quote_email(
   p_to_email text,
   p_cc_emails text[],
   p_subject text,
-  p_msg text
+  p_msg text,
+  p_pdf_base64 text DEFAULT NULL,
+  p_pdf_filename text DEFAULT NULL
 ) RETURNS jsonb SECURITY DEFINER AS $$
 DECLARE
   brevo_key text;
@@ -48,6 +50,7 @@ DECLARE
   resp_status integer;
   resp_content text;
   cc_brevo jsonb;
+  payload jsonb;
 BEGIN
   -- Fetch API keys from system config
   SELECT value INTO brevo_key FROM public.system_config WHERE key = 'brevo_api_key';
@@ -67,6 +70,26 @@ BEGIN
       cc_brevo := NULL;
     END IF;
 
+    -- Build base payload
+    payload := jsonb_build_object(
+      'sender', jsonb_build_object('name', p_company_name, 'email', 'Quotes@mybidbook.com'),
+      'to', jsonb_build_array(jsonb_build_object('email', p_to_email)),
+      'cc', cc_brevo,
+      'bcc', jsonb_build_array(jsonb_build_object('email', p_company_email)),
+      'replyTo', jsonb_build_object('email', p_company_email),
+      'subject', p_subject,
+      'htmlContent', '<div style="font-family: sans-serif; white-space: pre-wrap; font-size: 15px; line-height: 1.6; color: #334155;">' || p_msg || '</div>'
+    );
+
+    -- Append attachment if provided
+    IF p_pdf_base64 IS NOT NULL AND p_pdf_filename IS NOT NULL AND p_pdf_base64 <> '' THEN
+      payload := payload || jsonb_build_object(
+        'attachment', jsonb_build_array(
+          jsonb_build_object('content', p_pdf_base64, 'name', p_pdf_filename)
+        )
+      );
+    END IF;
+
     SELECT status, content INTO resp_status, resp_content
     FROM http((
       'POST',
@@ -76,15 +99,7 @@ BEGIN
         http_header('Content-Type', 'application/json')
       ],
       'application/json',
-      jsonb_build_object(
-        'sender', jsonb_build_object('name', p_company_name, 'email', 'Quotes@mybidbook.com'),
-        'to', jsonb_build_array(jsonb_build_object('email', p_to_email)),
-        'cc', cc_brevo,
-        'bcc', jsonb_build_array(jsonb_build_object('email', p_company_email)),
-        'replyTo', jsonb_build_object('email', p_company_email),
-        'subject', p_subject,
-        'htmlContent', '<div style="font-family: sans-serif; white-space: pre-wrap; font-size: 15px; line-height: 1.6; color: #334155;">' || p_msg || '</div>'
-      )::text
+      payload::text
     )::http_request);
 
     IF resp_status >= 200 AND resp_status < 300 THEN
@@ -95,6 +110,26 @@ BEGIN
 
   -- 2. Fall back to Resend API
   ELSE
+    -- Build base payload
+    payload := jsonb_build_object(
+      'from', p_company_name || ' <Quotes@mybidbook.com>',
+      'to', array[p_to_email],
+      'cc', p_cc_emails,
+      'bcc', array[p_company_email],
+      'reply_to', p_company_email,
+      'subject', p_subject,
+      'html', '<div style="font-family: sans-serif; white-space: pre-wrap; font-size: 15px; line-height: 1.6; color: #334155;">' || p_msg || '</div>'
+    );
+
+    -- Append attachment if provided
+    IF p_pdf_base64 IS NOT NULL AND p_pdf_filename IS NOT NULL AND p_pdf_base64 <> '' THEN
+      payload := payload || jsonb_build_object(
+        'attachments', jsonb_build_array(
+          jsonb_build_object('content', p_pdf_base64, 'filename', p_pdf_filename)
+        )
+      );
+    END IF;
+
     SELECT status, content INTO resp_status, resp_content
     FROM http((
       'POST',
@@ -104,15 +139,7 @@ BEGIN
         http_header('Content-Type', 'application/json')
       ],
       'application/json',
-      jsonb_build_object(
-        'from', p_company_name || ' <Quotes@mybidbook.com>',
-        'to', array[p_to_email],
-        'cc', p_cc_emails,
-        'bcc', array[p_company_email],
-        'reply_to', p_company_email,
-        'subject', p_subject,
-        'html', '<div style="font-family: sans-serif; white-space: pre-wrap; font-size: 15px; line-height: 1.6; color: #334155;">' || p_msg || '</div>'
-      )::text
+      payload::text
     )::http_request);
 
     IF resp_status >= 200 AND resp_status < 300 THEN

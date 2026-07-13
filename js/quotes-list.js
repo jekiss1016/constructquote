@@ -1,7 +1,7 @@
 // Quotes List & Dashboard management controller
-import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel, getCustomerById, sendQuoteEmail, getQuoteEmailLogs, saveQuoteEmailLog } from './db.js?v=94';
-import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage, parseCombinedAddress } from './utils.js?v=94';
-import { navigateToView, editQuote, duplicateQuoteAsTemplate, openLightbox } from './app.js?v=94';
+import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel, getCustomerById, sendQuoteEmail, getQuoteEmailLogs, saveQuoteEmailLog } from './db.js?v=95';
+import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage, parseCombinedAddress } from './utils.js?v=95';
+import { navigateToView, editQuote, duplicateQuoteAsTemplate, openLightbox } from './app.js?v=95';
 
 
 let activeStatusFilter = 'pending';
@@ -968,8 +968,34 @@ async function handleEmailQuoteSubmit(e) {
   // Show loading state
   const submitBtn = document.getElementById('email-quote-modal-submit-btn');
   const originalText = submitBtn.textContent;
-  submitBtn.textContent = 'Sending...';
   submitBtn.disabled = true;
+
+  let pdfBase64 = '';
+  const pdfFilename = `Quotation_${quote.jobId.replace(/[^a-zA-Z0-9-_]/g, '_')}.pdf`;
+
+  try {
+    const paperEl = document.getElementById('quote-paper');
+    if (paperEl && typeof html2pdf !== 'undefined') {
+      submitBtn.textContent = 'Generating PDF...';
+      const opt = {
+        margin:       [0.4, 0.4, 0.4, 0.4],
+        filename:     pdfFilename,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, logging: false },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+
+      const pdfDataUri = await html2pdf().set(opt).from(paperEl).outputPdf('datauristring');
+      pdfBase64 = pdfDataUri.split(',')[1];
+    } else {
+      console.warn('html2pdf library is not loaded. Sending email without PDF attachment.');
+    }
+  } catch (pdfErr) {
+    console.error('Error generating PDF attachment:', pdfErr);
+    showToast('Warning: Could not generate PDF attachment. Emailing message only.', 'warning');
+  }
+
+  submitBtn.textContent = 'Sending...';
 
   try {
     const res = await sendQuoteEmail({
@@ -978,7 +1004,9 @@ async function handleEmailQuoteSubmit(e) {
       toEmail,
       ccEmails,
       subject,
-      message
+      message,
+      pdfBase64,
+      pdfFilename
     });
 
     if (res.success) {

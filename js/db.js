@@ -1,6 +1,6 @@
 // Database management using Supabase Cloud & LocalStorage fallbacks
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { showToast } from './utils.js?v=94';
+import { showToast } from './utils.js?v=95';
 
 const KEYS = {
   SUPABASE_CONFIG: 'cq_supabase_config'
@@ -1221,7 +1221,9 @@ export async function sendQuoteEmail(emailData) {
         p_to_email: emailData.toEmail,
         p_cc_emails: emailData.ccEmails,
         p_subject: emailData.subject,
-        p_msg: emailData.message
+        p_msg: emailData.message,
+        p_pdf_base64: emailData.pdfBase64 || null,
+        p_pdf_filename: emailData.pdfFilename || null
       })
     });
 
