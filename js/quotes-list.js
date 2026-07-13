@@ -272,9 +272,11 @@ export async function renderQuoteDetails(id) {
 
   const settings = await getSettings();
   const priceWarning = document.getElementById('detail-price-warning');
+  const profile = getCurrentUserProfile();
+  const isViewer = profile && profile.role === 'viewer';
 
   // Mismatch warning display
-  if (quote.status === 'Pending' && !quote.isLegacy && (await hasPriceMismatch(quote))) {
+  if (!isViewer && quote.status === 'Pending' && !quote.isLegacy && (await hasPriceMismatch(quote))) {
     priceWarning.style.display = 'flex';
   } else {
     priceWarning.style.display = 'none';
@@ -287,9 +289,6 @@ export async function renderQuoteDetails(id) {
   const isWon = quote.status === 'Won';
   const isCompleted = quote.status === 'Completed';
   const isInactive = quote.status === 'Inactive';
-
-  const profile = getCurrentUserProfile();
-  const isViewer = profile && profile.role === 'viewer';
 
   if (isViewer) {
     actionContainer.innerHTML = `
@@ -1040,6 +1039,12 @@ async function handleEmailQuoteSubmit(e) {
 // Executes price mismatch archiving and updates active quote prices to catalog
 async function handleUpdateQuotePrices() {
   if (!selectedQuoteId) return;
+  const profile = getCurrentUserProfile();
+  const isViewer = profile && profile.role === 'viewer';
+  if (isViewer) {
+    showToast('Permission denied: Viewers cannot update pricing.', 'danger');
+    return;
+  }
   const activeQuote = await getQuoteById(selectedQuoteId);
   if (!activeQuote) return;
 
