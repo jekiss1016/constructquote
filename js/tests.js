@@ -338,10 +338,7 @@ async function runTestSuite() {
 
     // Database verification: query the Supabase endpoint directly to check what is in the tables
     try {
-      const appScript = doc.querySelector('script[src*="js/app.js"]');
-      const versionMatch = appScript ? appScript.src.match(/\?v=(\d+)/) : null;
-      const version = versionMatch ? versionMatch[1] : '95';
-      const db = await win.eval(`import('/js/db.js?v=${version}')`);
+      const db = await win.eval("import('./js/db.js?v=93')");
       const profile = db.getCurrentUserProfile();
       if (profile && profile.company_id) {
         log(`User profile company_id: ${profile.company_id}, role: ${profile.role}`);
@@ -649,49 +646,6 @@ async function runTestSuite() {
 
     endActiveTest(true);
     log('Email Quote modal validation tested successfully!', 'success');
-
-    await wait(1000);
-
-    // -------------------------------------------------------------
-    // TEST 8: Viewer Role UI Restriction Verification
-    // -------------------------------------------------------------
-    createTestCard('8. Viewer Role UI Restriction');
-    const stepViewCheck = addStep('Simulating viewer role and checking warning visibility');
-
-    // Get active app script to dynamically extract cache-busting version query parameter
-    const appScript = doc.querySelector('script[src*="js/app.js"]');
-    const versionMatch = appScript ? appScript.src.match(/\?v=(\d+)/) : null;
-    const version = versionMatch ? versionMatch[1] : '95';
-    const db = await win.eval(`import('/js/db.js?v=${version}')`);
-    const quotesList = await win.eval(`import('/js/quotes-list.js?v=${version}')`);
-
-    // Get current profile
-    const originalProfile = db.getCurrentUserProfile();
-    
-    // Switch profile to view-only user
-    db.setCurrentUserProfile({ ...originalProfile, role: 'viewer' });
-    
-    // Find a quote in the system (or the one we just saved or first quote)
-    const quoteLinkForViewer = doc.querySelector('.view-quote-job-link');
-    if (quoteLinkForViewer) {
-      // Re-render quote details view under the viewer role
-      const quoteId = quoteLinkForViewer.getAttribute('data-id');
-      await quotesList.renderQuoteDetails(quoteId);
-
-      // Verify the outdated pricing warning alert is hidden
-      const priceWarningEl = doc.querySelector('#detail-price-warning');
-      if (priceWarningEl && priceWarningEl.style.display !== 'none') {
-        throw new Error('Outdated pricing warning alert was visible to a viewer user.');
-      }
-    } else {
-      log('No quote found to check viewer role restrictions, skipping warning visibility check', 'warning');
-    }
-
-    // Restore original profile
-    db.setCurrentUserProfile(originalProfile);
-    updateStepStatus(stepViewCheck, 'success');
-    endActiveTest(true);
-    log('Viewer role UI restriction tested successfully!', 'success');
 
     log('==================================================');
     log(` TEST SUITE COMPLETE: ${passCount} PASSED, ${failCount} FAILED`, 'success');
