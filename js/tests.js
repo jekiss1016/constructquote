@@ -341,7 +341,7 @@ async function runTestSuite() {
       const appScript = doc.querySelector('script[src*="js/app.js"]');
       const versionMatch = appScript ? appScript.src.match(/\?v=(\d+)/) : null;
       const version = versionMatch ? versionMatch[1] : '95';
-      const db = await win.eval(`import('./js/db.js?v=${version}')`);
+      const db = await win.eval(`import('/js/db.js?v=${version}')`);
       const profile = db.getCurrentUserProfile();
       if (profile && profile.company_id) {
         log(`User profile company_id: ${profile.company_id}, role: ${profile.role}`);
@@ -662,8 +662,8 @@ async function runTestSuite() {
     const appScript = doc.querySelector('script[src*="js/app.js"]');
     const versionMatch = appScript ? appScript.src.match(/\?v=(\d+)/) : null;
     const version = versionMatch ? versionMatch[1] : '95';
-    const db = await win.eval(`import('./js/db.js?v=${version}')`);
-    const quotesList = await win.eval(`import('./js/quotes-list.js?v=${version}')`);
+    const db = await win.eval(`import('/js/db.js?v=${version}')`);
+    const quotesList = await win.eval(`import('/js/quotes-list.js?v=${version}')`);
 
     // Get current profile
     const originalProfile = db.getCurrentUserProfile();
