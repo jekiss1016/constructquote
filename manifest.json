@@ -3,12 +3,12 @@
   "name": "MyBidBook Smart Estimating",
   "icons": [
     {
-      "src": "icon-192.png?v=95",
+      "src": "icon-192.png?v=96",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "icon-512.png?v=95",
+      "src": "icon-512.png?v=96",
       "type": "image/png",
       "sizes": "512x512"
     }
