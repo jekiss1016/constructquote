@@ -1,7 +1,7 @@
 // Quotes List & Dashboard management controller
-import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel } from './db.js?v=93';
-import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage, parseCombinedAddress } from './utils.js?v=93';
-import { navigateToView, editQuote, duplicateQuoteAsTemplate, openLightbox } from './app.js?v=93';
+import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel, getCustomerById, sendQuoteEmail, getQuoteEmailLogs, saveQuoteEmailLog } from './db.js?v=94';
+import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage, parseCombinedAddress } from './utils.js?v=94';
+import { navigateToView, editQuote, duplicateQuoteAsTemplate, openLightbox } from './app.js?v=94';
 
 
 let activeStatusFilter = 'pending';
@@ -319,6 +319,12 @@ export async function renderQuoteDetails(id) {
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6.72 13.82l-.24-2.28H5a3 3 0 01-3-3V5.41a3 3 0 013-3h14a3 3 0 013 3v3.13a3 3 0 01-3 3h-1.48l-.24 2.28M14 13h2a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4a2 2 0 012-2h6z" />
         </svg>
         Print / PDF
+      </button>
+      <button type="button" class="btn btn-success" id="detail-email-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="16" height="16">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+        Email Quote
       </button>
       <button type="button" class="btn btn-secondary" id="detail-duplicate-btn">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="16" height="16">
@@ -714,6 +720,7 @@ export async function renderQuoteDetails(id) {
   renderDetailReceipts(quote);
 
   await renderVersionHistoryList(quote);
+  await renderEmailCorrespondenceList(quote);
 }
 
 // Render PDF Contracts list inside Quote preview sidebar
@@ -832,6 +839,174 @@ async function renderVersionHistoryList(activeQuote) {
       </div>
     `;
   }).join('');
+}
+
+// Draw the email correspondence list for the selected quote
+async function renderEmailCorrespondenceList(activeQuote) {
+  const emailLogList = document.getElementById('detail-email-log-list');
+  if (!emailLogList) return;
+
+  const quotes = await getQuotes();
+  const coreId = activeQuote.parentQuoteId || activeQuote.id;
+  const versionChain = quotes.filter(q => q.id === coreId || q.parentQuoteId === coreId);
+  const versionIds = versionChain.map(q => q.id);
+
+  try {
+    const logs = await getQuoteEmailLogs(versionIds);
+    if (logs.length === 0) {
+      emailLogList.innerHTML = `<p style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">No emails sent yet.</p>`;
+      return;
+    }
+
+    emailLogList.innerHTML = logs.map(log => {
+      return `
+        <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); padding: 0.5rem; border-radius: var(--radius-sm); font-size: 0.75rem; display: flex; flex-direction: column; gap: 0.25rem;">
+          <div style="display: flex; justify-content: space-between; font-weight: bold; color: var(--text-primary);">
+            <span>Version ${log.quote_version}</span>
+            <span style="color: var(--text-muted); font-weight: normal;">${formatDateTime(log.sent_at)}</span>
+          </div>
+          <div><strong style="color: var(--text-secondary);">To:</strong> ${escapeHtml(log.to_email)}</div>
+          <div><strong style="color: var(--text-secondary);">CC:</strong> ${escapeHtml(log.cc_emails || 'None')}</div>
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error('Failed to load email correspondence logs:', err);
+    emailLogList.innerHTML = `<p style="font-size: 0.75rem; color: var(--danger); font-style: italic;">Error loading email history.</p>`;
+  }
+}
+
+// Open Email Quote Modal
+async function handleOpenEmailModal(quoteId) {
+  const quote = await getQuoteById(quoteId);
+  if (!quote) return;
+
+  const customer = await getCustomerById(quote.customerId);
+  const primaryEmail = customer ? customer.email : quote.customerEmail;
+  if (!primaryEmail || !primaryEmail.trim()) {
+    alert('Please setup a customer email to use the email functionality.');
+    return;
+  }
+
+  // Populate To:
+  const toInput = document.getElementById('email-quote-to');
+  if (toInput) toInput.value = primaryEmail.trim();
+
+  // Populate CC:
+  const ccContainer = document.getElementById('email-quote-cc-container');
+  if (ccContainer) {
+    ccContainer.innerHTML = '';
+    const contacts = customer && customer.contacts ? customer.contacts.filter(c => c.email && c.email.trim()) : [];
+    if (contacts.length === 0) {
+      ccContainer.innerHTML = '<span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">No contacts with emails found.</span>';
+    } else {
+      contacts.forEach((c, idx) => {
+        const div = document.createElement('div');
+        div.style.display = 'flex';
+        div.style.alignItems = 'center';
+        div.style.gap = '0.5rem';
+        div.innerHTML = `
+          <input type="checkbox" class="cc-contact-checkbox" id="cc-contact-${idx}" value="${escapeHtml(c.email)}" style="cursor: pointer;">
+          <label for="cc-contact-${idx}" style="font-size: 0.75rem; color: var(--text-primary); cursor: pointer;">
+            ${escapeHtml(c.name || 'Unnamed')} (${escapeHtml(c.email)}) ${c.role ? `- ${escapeHtml(c.role)}` : ''}
+          </label>
+        `;
+        ccContainer.appendChild(div);
+      });
+    }
+  }
+
+  // Populate Subject: [Job ID] Quotation for [Customer Name]
+  const subjectInput = document.getElementById('email-quote-subject');
+  if (subjectInput) {
+    const customerName = customer ? customer.name : quote.customerName;
+    subjectInput.value = `${quote.jobId} Quotation for ${customerName}`;
+  }
+
+  // Populate Body:
+  const bodyInput = document.getElementById('email-quote-body');
+  if (bodyInput) {
+    const settings = await getSettings();
+    const defaultBody = (customer && customer.quoteEmailBodyDefault) ? customer.quoteEmailBodyDefault : (settings.quoteEmailBodyDefault || '');
+    bodyInput.value = defaultBody;
+  }
+
+  // Open modal
+  const modal = document.getElementById('email-quote-modal');
+  if (modal) modal.classList.add('active');
+}
+
+// Close Email Quote Modal
+function closeEmailQuoteModal() {
+  const modal = document.getElementById('email-quote-modal');
+  if (modal) modal.classList.remove('active');
+}
+
+// Handle Submit of Email Quote
+async function handleEmailQuoteSubmit(e) {
+  e.preventDefault();
+  
+  if (!selectedQuoteId) return;
+  const quote = await getQuoteById(selectedQuoteId);
+  if (!quote) return;
+
+  const settings = await getSettings();
+  
+  const toEmail = document.getElementById('email-quote-to').value.trim();
+  const subject = document.getElementById('email-quote-subject').value.trim();
+  const message = document.getElementById('email-quote-body').value.trim();
+  const ccEmails = Array.from(document.querySelectorAll('.cc-contact-checkbox:checked')).map(cb => cb.value);
+
+  const companyName = settings.companyName || 'MyBidBook';
+  const companyEmail = settings.companyEmail;
+
+  if (!companyEmail || !companyEmail.trim()) {
+    showToast('Company settings email is required to send emails.', 'danger');
+    return;
+  }
+
+  // Show loading state
+  const submitBtn = document.getElementById('email-quote-modal-submit-btn');
+  const originalText = submitBtn.textContent;
+  submitBtn.textContent = 'Sending...';
+  submitBtn.disabled = true;
+
+  try {
+    const res = await sendQuoteEmail({
+      companyName,
+      companyEmail,
+      toEmail,
+      ccEmails,
+      subject,
+      message
+    });
+
+    if (res.success) {
+      showToast('Quote emailed successfully!', 'success');
+      
+      // Save log entry to DB
+      await saveQuoteEmailLog({
+        quoteId: quote.id,
+        toEmail: toEmail,
+        ccEmails: ccEmails.join(', '),
+        quoteVersion: quote.version
+      });
+
+      // Refresh log in UI
+      await renderEmailCorrespondenceList(quote);
+      
+      // Close modal
+      closeEmailQuoteModal();
+    } else {
+      showToast(res.error || res.message || 'Failed to email quote.', 'danger');
+    }
+  } catch (err) {
+    console.error('Email Quote dispatch error:', err);
+    showToast(err.message, 'danger');
+  } finally {
+    submitBtn.textContent = originalText;
+    submitBtn.disabled = false;
+  }
 }
 
 // Executes price mismatch archiving and updates active quote prices to catalog
@@ -1112,6 +1287,7 @@ function setupListListeners() {
     detailActions.addEventListener('click', async (e) => {
       const backBtn = e.target.closest('#detail-back-btn');
       const printBtn = e.target.closest('#detail-print-btn');
+      const emailBtn = e.target.closest('#detail-email-btn');
       const dupBtn = e.target.closest('#detail-duplicate-btn');
       const editBtn = e.target.closest('#detail-edit-btn');
       const pendingBtn = e.target.closest('#detail-pending-btn');
@@ -1123,6 +1299,7 @@ function setupListListeners() {
 
       if (backBtn) navigateToView('quotes-view');
       if (printBtn) window.print();
+      if (emailBtn && !isViewer) await handleOpenEmailModal(selectedQuoteId);
       if (dupBtn && !isViewer) duplicateQuoteAsTemplate(selectedQuoteId);
       if (editBtn && !isViewer) editQuote(selectedQuoteId);
       if (pendingBtn && !isViewer) await promptStatusChange('Pending');
@@ -1423,6 +1600,17 @@ function setupListListeners() {
         }
       }
     });
+  }
+
+  // Email Quote Modal Listeners
+  const emailQuoteCancel = document.getElementById('email-quote-modal-cancel-btn');
+  const emailQuoteClose = document.getElementById('email-quote-modal-close-btn');
+  const emailQuoteForm = document.getElementById('email-quote-form');
+
+  if (emailQuoteCancel) emailQuoteCancel.addEventListener('click', closeEmailQuoteModal);
+  if (emailQuoteClose) emailQuoteClose.addEventListener('click', closeEmailQuoteModal);
+  if (emailQuoteForm) {
+    emailQuoteForm.addEventListener('submit', handleEmailQuoteSubmit);
   }
 }
 

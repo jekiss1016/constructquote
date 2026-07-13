@@ -1,6 +1,6 @@
 // Database management using Supabase Cloud & LocalStorage fallbacks
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { showToast } from './utils.js?v=93';
+import { showToast } from './utils.js?v=94';
 
 const KEYS = {
   SUPABASE_CONFIG: 'cq_supabase_config'
@@ -14,7 +14,8 @@ const DEFAULT_SETTINGS = {
   companyEmail: 'billing@mybidbook.com',
   defaultTaxRate: 8.8,
   defaultMarkupPercent: 15,
-  companyLogo: ''
+  companyLogo: '',
+  quoteEmailBodyDefault: ''
 };
 
 let supabase = null;
@@ -450,7 +451,8 @@ export async function getCustomers() {
       defaultTermsNotes: c.default_terms_notes || '',
       defaultMarkupPercent: parseFloat(c.default_markup_percent) || 0,
       defaultTaxRate: parseFloat(c.default_tax_rate) || 0,
-      defaultTaxPlusApplicable: c.default_tax_plus_applicable || false
+      defaultTaxPlusApplicable: c.default_tax_plus_applicable || false,
+      quoteEmailBodyDefault: c.quote_email_body_default || ''
     };
   });
 }
@@ -479,7 +481,8 @@ export async function saveCustomer(customer) {
     default_terms_notes: customer.defaultTermsNotes || '',
     default_markup_percent: parseFloat(customer.defaultMarkupPercent) || 0,
     default_tax_rate: parseFloat(customer.defaultTaxRate) || 0,
-    default_tax_plus_applicable: customer.defaultTaxPlusApplicable || false
+    default_tax_plus_applicable: customer.defaultTaxPlusApplicable || false,
+    quote_email_body_default: customer.quoteEmailBodyDefault || ''
   };
   
   if (customer.id) {
@@ -928,7 +931,8 @@ export async function getSettings() {
     companyLogo: row.company_logo,
     theme: row.theme || 'light',
     defaultTermsNotes: row.default_terms_notes || '',
-    defaultTaxPlusApplicable: row.default_tax_plus_applicable || false
+    defaultTaxPlusApplicable: row.default_tax_plus_applicable || false,
+    quoteEmailBodyDefault: row.quote_email_body_default || ''
   };
 }
 
@@ -946,6 +950,7 @@ export async function saveSettings(settingsObj) {
   if (settingsObj.theme !== undefined) mapped.theme = settingsObj.theme;
   if (settingsObj.defaultTermsNotes !== undefined) mapped.default_terms_notes = settingsObj.defaultTermsNotes;
   if (settingsObj.defaultTaxPlusApplicable !== undefined) mapped.default_tax_plus_applicable = settingsObj.defaultTaxPlusApplicable;
+  if (settingsObj.quoteEmailBodyDefault !== undefined) mapped.quote_email_body_default = settingsObj.quoteEmailBodyDefault;
   
   mapped.company_id = currentUserProfile.company_id;
   
@@ -1169,4 +1174,65 @@ export function getSubscriptionStatus() {
     return currentUserProfile.companies.subscription_status || 'active';
   }
   return 'active';
+}
+
+/* ==================== QUOTE EMAIL LOGS & DISPATCH ==================== */
+export async function getQuoteEmailLogs(quoteIds) {
+  if (!quoteIds || quoteIds.length === 0) return [];
+  const sb = getSupabase();
+  if (!sb || !currentUserProfile) return [];
+  console.log('getQuoteEmailLogs -> Querying logs for quoteIds:', quoteIds);
+  // PostgREST IN syntax: quote_id=in.(uuid1,uuid2,...)
+  const data = await rawDbQuery('quote_email_logs', `quote_id=in.(${quoteIds.join(',')})&order=sent_at.desc`);
+  return data || [];
+}
+
+export async function saveQuoteEmailLog(logObj) {
+  if (!currentUserProfile) return { success: false, error: 'Not authenticated' };
+  const mapped = {
+    company_id: currentUserProfile.company_id,
+    quote_id: logObj.quoteId,
+    to_email: logObj.toEmail,
+    cc_emails: logObj.ccEmails,
+    quote_version: logObj.quoteVersion
+  };
+  const { data, error } = await rawDbWrite('quote_email_logs', 'POST', mapped);
+  if (error) return { success: false, error: error.message };
+  return { success: true, log: data ? data[0] : null };
+}
+
+export async function sendQuoteEmail(emailData) {
+  const config = await getSupabaseConfig();
+  if (!config) return { success: false, error: 'Supabase configuration missing.' };
+  const token = await getAccessToken();
+  if (!token) return { success: false, error: 'Authentication session not found.' };
+
+  try {
+    const res = await fetch(`${config.url}/rest/v1/rpc/send_quote_email`, {
+      method: 'POST',
+      headers: {
+        'apikey': config.key,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        p_company_name: emailData.companyName,
+        p_company_email: emailData.companyEmail,
+        p_to_email: emailData.toEmail,
+        p_cc_emails: emailData.ccEmails,
+        p_subject: emailData.subject,
+        p_msg: emailData.message
+      })
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      return data;
+    } else {
+      const data = await res.json();
+      return { success: false, error: data.message || `HTTP error ${res.status}` };
+    }
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
 }

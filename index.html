@@ -46,15 +46,15 @@
   <title>MyBidBook | Smart Construction Estimation</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#4f46e5">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=93">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=94">
 
   <!-- iOS PWA capability meta tags -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="MyBidBook">
 
-  <link rel="stylesheet" href="css/styles.css?v=93">
-  <link rel="stylesheet" href="css/print.css?v=93">
+  <link rel="stylesheet" href="css/styles.css?v=94">
+  <link rel="stylesheet" href="css/print.css?v=94">
 </head>
 <body>
 
@@ -963,6 +963,19 @@
                 <!-- JavaScript generated versions -->
               </div>
             </div>
+
+            <div class="widget-card hide-in-print" style="margin-top: 1rem;" id="detail-email-correspondence-card">
+              <div class="widget-header">
+                <h3 class="widget-title">Email Correspondence</h3>
+              </div>
+              <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: -0.5rem; margin-bottom: 0.75rem;">
+                History of emails sent directly to the customer for this quote.
+              </p>
+              <div id="detail-email-log-list" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 250px; overflow-y: auto; padding-right: 0.25rem;">
+                <!-- JavaScript generated email logs -->
+                <p style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">No emails sent yet.</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -1106,6 +1119,11 @@
             <div class="form-group" style="margin-bottom: 1.25rem;">
               <label class="form-label" for="settings-default-terms-notes">Default Terms & Notes</label>
               <textarea class="form-input" id="settings-default-terms-notes" rows="3" placeholder="Default payment terms, validations, etc."></textarea>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.25rem;">
+              <label class="form-label" for="settings-quote-email-body-default">Customer Quote Email Body Default</label>
+              <textarea class="form-input" id="settings-quote-email-body-default" rows="4" placeholder="Default email body text when sending quotes to customers"></textarea>
             </div>
 
             <button type="button" class="btn btn-primary" id="settings-save-btn" style="align-self: flex-start;">Save Profile</button>
@@ -1258,7 +1276,7 @@
       <!-- Global Footer -->
       <footer class="hide-in-print" style="margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); text-align: center; font-size: 0.8rem; color: var(--text-muted); padding-bottom: 1.5rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; width: 100%; box-sizing: border-box; align-self: center;">
         <img src="banner.png" style="max-height: 50px; max-width: 320px; object-fit: contain; width: auto; opacity: 0.85;" alt="MyBidBook Banner">
-        <span>© 2026 MyBidBook | v1.93</span>
+        <span>© 2026 MyBidBook | v1.94</span>
       </footer>
     </main>
   </div>
@@ -1537,6 +1555,10 @@
                 <label class="form-label" for="customer-form-default-terms-notes">Default Terms & Notes</label>
                 <textarea class="form-input" id="customer-form-default-terms-notes" rows="3" placeholder="Enter default payment terms, validations, etc. for this customer"></textarea>
               </div>
+              <div class="form-group" style="margin-top: 0.5rem;">
+                <label class="form-label" for="customer-form-quote-email-body-default">Customer Quote Email Body Default</label>
+                <textarea class="form-input" id="customer-form-quote-email-body-default" rows="4" placeholder="Enter default email body text for this customer"></textarea>
+              </div>
             </div>
           </form>
 
@@ -1564,6 +1586,46 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" id="customer-modal-cancel-btn">Cancel</button>
         <button type="submit" form="customer-form" class="btn btn-primary" id="customer-modal-submit-btn">Save Customer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== EMAIL QUOTE MODAL ==================== -->
+  <div class="modal-overlay" id="email-quote-modal">
+    <div class="modal-container" style="max-width: 550px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Email Quote to Customer</h3>
+        <button type="button" class="modal-close" id="email-quote-modal-close-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="email-quote-form">
+          <div class="form-group">
+            <label class="form-label" for="email-quote-to">To: <span style="color: var(--danger);">*</span></label>
+            <input type="email" class="form-input" id="email-quote-to" required placeholder="customer@example.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">CC: (Select contacts to copy)</label>
+            <div id="email-quote-cc-container" style="display: flex; flex-direction: column; gap: 0.5rem; border: 1px solid var(--border-color); padding: 0.75rem; border-radius: var(--radius-sm); max-height: 120px; overflow-y: auto; background: var(--bg-secondary);">
+              <!-- Checkboxes for contacts with emails will inject here -->
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="email-quote-subject">Subject <span style="color: var(--danger);">*</span></label>
+            <input type="text" class="form-input" id="email-quote-subject" required placeholder="Quotation Subject">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="email-quote-body">Email Body <span style="color: var(--danger);">*</span></label>
+            <textarea class="form-input" id="email-quote-body" rows="6" required placeholder="Type email message here..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="email-quote-modal-cancel-btn">Cancel</button>
+        <button type="submit" form="email-quote-form" class="btn btn-success" id="email-quote-modal-submit-btn">Send Email</button>
       </div>
     </div>
   </div>
@@ -1839,7 +1901,7 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Javascript Modules -->
-  <script type="module" src="js/app.js?v=93"></script>
+  <script type="module" src="js/app.js?v=94"></script>
 
 </body>
 </html>

@@ -601,6 +601,52 @@ async function runTestSuite() {
     endActiveTest(true);
     log('Dashboard expiration threshold dropdown tested successfully!', 'success');
 
+    // -------------------------------------------------------------
+    // TEST 7: Email Quote Modal Verification
+    // -------------------------------------------------------------
+    createTestCard('7. Email Quote Modal Verification');
+    const stepEmailNav = addStep('Navigating to Quotes View');
+    doc.querySelector('.nav-item[data-target="quotes-view"]').click();
+    await wait(1000);
+    updateStepStatus(stepEmailNav, 'success');
+
+    const stepEmailOpen = addStep('Opening first quote preview');
+    const quoteLink = doc.querySelector('.view-quote-job-link');
+    if (!quoteLink) throw new Error('No quote link found to preview');
+    quoteLink.click();
+    await wait(1500);
+    updateStepStatus(stepEmailOpen, 'success');
+
+    const stepEmailBtn = addStep('Checking and clicking Email Quote button');
+    const emailBtn = doc.querySelector('#detail-email-btn');
+    if (!emailBtn) throw new Error('Email Quote button not found in preview');
+    emailBtn.click();
+    await wait(1000);
+    updateStepStatus(stepEmailBtn, 'success');
+
+    const stepEmailModal = addStep('Verifying Email modal inputs populate correctly');
+    const emailModal = doc.querySelector('#email-quote-modal');
+    if (!emailModal || !emailModal.classList.contains('active')) throw new Error('Email Quote modal is not active');
+    
+    const toInput = doc.querySelector('#email-quote-to');
+    const subjectInput = doc.querySelector('#email-quote-subject');
+
+    if (!toInput || !toInput.value) throw new Error('To field is empty or missing');
+    if (!subjectInput || !subjectInput.value) throw new Error('Subject field is empty or missing');
+    
+    log(`Modal populated: To="${toInput.value}", Subject="${subjectInput.value}"`);
+    updateStepStatus(stepEmailModal, 'success');
+
+    const stepEmailClose = addStep('Closing Email modal');
+    const closeBtn = doc.querySelector('#email-quote-modal-close-btn');
+    if (closeBtn) closeBtn.click();
+    await wait(500);
+    if (emailModal.classList.contains('active')) throw new Error('Email Quote modal failed to close');
+    updateStepStatus(stepEmailClose, 'success');
+
+    endActiveTest(true);
+    log('Email Quote modal validation tested successfully!', 'success');
+
     log('==================================================');
     log(` TEST SUITE COMPLETE: ${passCount} PASSED, ${failCount} FAILED`, 'success');
     log('==================================================');

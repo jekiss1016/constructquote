@@ -1,7 +1,7 @@
 // Customer management controller
-import { getCustomers, saveCustomer, deleteCustomer, getQuotes, getSupabase, getCurrentUserProfile, uploadFileToStorage, getCustomerById, getSettings } from './db.js?v=93';
-import { formatCurrency, formatDateTime, showToast, formatPhoneNumber } from './utils.js?v=93';
-import { navigateToView, viewQuoteDetails } from './app.js?v=93';
+import { getCustomers, saveCustomer, deleteCustomer, getQuotes, getSupabase, getCurrentUserProfile, uploadFileToStorage, getCustomerById, getSettings } from './db.js?v=94';
+import { formatCurrency, formatDateTime, showToast, formatPhoneNumber } from './utils.js?v=94';
+import { navigateToView, viewQuoteDetails } from './app.js?v=94';
 
 
 let activeSearchQuery = '';
@@ -189,6 +189,7 @@ export async function openCustomerModalInline(callback = null) {
   const settings = await getSettings();
   document.getElementById('customer-form-default-markup').value = settings.defaultMarkupPercent !== undefined ? settings.defaultMarkupPercent : 15;
   document.getElementById('customer-form-default-terms-notes').value = settings.defaultTermsNotes || '';
+  document.getElementById('customer-form-quote-email-body-default').value = settings.quoteEmailBodyDefault || '';
   
   const isPlusTax = settings.defaultTaxPlusApplicable || false;
   const plusTaxCheck = document.getElementById('customer-form-default-tax-plus-applicable');
@@ -477,7 +478,8 @@ function setupCustomerListeners() {
           defaultMarkupPercent: parseFloat(document.getElementById('customer-form-default-markup').value) || 0,
           defaultTaxRate: parseFloat(document.getElementById('customer-form-default-tax').value) || 0,
           defaultTermsNotes: document.getElementById('customer-form-default-terms-notes').value.trim(),
-          defaultTaxPlusApplicable: document.getElementById('customer-form-default-tax-plus-applicable').checked
+          defaultTaxPlusApplicable: document.getElementById('customer-form-default-tax-plus-applicable').checked,
+          quoteEmailBodyDefault: document.getElementById('customer-form-quote-email-body-default').value.trim()
         };
 
         const markupVal = document.getElementById('customer-form-default-markup').value;
@@ -565,6 +567,9 @@ function setupCustomerListeners() {
           
           document.getElementById('customer-form-default-markup').value = c.defaultMarkupPercent !== undefined ? c.defaultMarkupPercent : '';
           document.getElementById('customer-form-default-terms-notes').value = c.defaultTermsNotes || '';
+          
+          const settings = await getSettings();
+          document.getElementById('customer-form-quote-email-body-default').value = c.quoteEmailBodyDefault || settings.quoteEmailBodyDefault || '';
           
           const isPlusTax = c.defaultTaxPlusApplicable || false;
           document.getElementById('customer-form-default-tax-plus-applicable').checked = isPlusTax;

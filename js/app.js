@@ -19,12 +19,12 @@ import {
   uploadFileToStorage,
   rawDbWrite,
   getSubscriptionLevel
-} from './db.js?v=93';
-import { showToast, fileToBase64, formatPhoneNumber } from './utils.js?v=93';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=93';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=93';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=93';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=93';
+} from './db.js?v=94';
+import { showToast, fileToBase64, formatPhoneNumber } from './utils.js?v=94';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=94';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=94';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=94';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=94';
 
 let activeChallengeId = null;
 let activeFactorId = null;
@@ -1188,6 +1188,12 @@ async function loadDefaultSettingsToUI() {
     termsTextarea.disabled = isViewer;
   }
 
+  const quoteEmailBodyInput = document.getElementById('settings-quote-email-body-default');
+  if (quoteEmailBodyInput) {
+    quoteEmailBodyInput.value = settings.quoteEmailBodyDefault || '';
+    quoteEmailBodyInput.disabled = isViewer;
+  }
+
 
 
   const saveBtn = document.getElementById('settings-save-btn');
@@ -1253,7 +1259,8 @@ function setupSettingsHandlers() {
         defaultMarkupPercent: parseFloat(document.getElementById('settings-default-markup').value) || 0,
         defaultTaxRate: parseFloat(document.getElementById('settings-default-tax').value) || 0,
         defaultTaxPlusApplicable: document.getElementById('settings-default-tax-plus-applicable').checked,
-        defaultTermsNotes: document.getElementById('settings-default-terms-notes').value.trim()
+        defaultTermsNotes: document.getElementById('settings-default-terms-notes').value.trim(),
+        quoteEmailBodyDefault: document.getElementById('settings-quote-email-body-default').value.trim()
       };
 
       const res = await saveSettings(updated);
