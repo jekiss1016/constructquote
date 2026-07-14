@@ -18,13 +18,16 @@ import {
   switchUserCompany,
   uploadFileToStorage,
   rawDbWrite,
-  getSubscriptionLevel
-} from './db.js?v=97';
-import { showToast, fileToBase64, formatPhoneNumber, parseCompanyAddress } from './utils.js?v=97';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=97';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=97';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=97';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=97';
+  getSubscriptionLevel,
+  getSubscriptionStatus,
+  getCheckoutUrl,
+  getBillingPortalUrl
+} from './db.js?v=98';
+import { showToast, fileToBase64, formatPhoneNumber, parseCompanyAddress } from './utils.js?v=98';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=98';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=98';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=98';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=98';
 
 let activeChallengeId = null;
 let activeFactorId = null;
@@ -773,6 +776,7 @@ export async function navigateToView(viewId) {
     await loadDefaultSettingsToUI();
     await loadTeamManagementUI();
     await loadMfaSettingsUI();
+    await loadSubscriptionBillingUI();
   }
 }
 
@@ -1970,5 +1974,94 @@ function updateOnlineStatus() {
       }
       showToast('You are back online.', 'success');
     }
+  }
+}
+
+let isSubscriptionListenersSetup = false;
+
+async function loadSubscriptionBillingUI() {
+  const level = getSubscriptionLevel();
+  const status = getSubscriptionStatus();
+  const profile = getCurrentUserProfile();
+
+  const planNameEl = document.getElementById('billing-plan-name');
+  const statusRowEl = document.getElementById('billing-status-row');
+  const statusEl = document.getElementById('billing-plan-status');
+  const trialOptionsEl = document.getElementById('billing-trial-options');
+  const manageOptionsEl = document.getElementById('billing-manage-options');
+
+  if (planNameEl) {
+    if (level === 'pro_perpetual') {
+      planNameEl.textContent = 'Pro Perpetual';
+      if (statusRowEl) statusRowEl.style.display = 'flex';
+      if (statusEl) statusEl.textContent = status;
+      if (trialOptionsEl) trialOptionsEl.style.display = 'none';
+      if (manageOptionsEl) manageOptionsEl.style.display = 'none';
+    } else if (level === 'pro') {
+      planNameEl.textContent = 'Pro';
+      if (statusRowEl) statusRowEl.style.display = 'flex';
+      if (statusEl) statusEl.textContent = status;
+      if (trialOptionsEl) trialOptionsEl.style.display = 'none';
+      if (manageOptionsEl) manageOptionsEl.style.display = 'block';
+    } else {
+      planNameEl.textContent = 'Trial';
+      if (statusRowEl) statusRowEl.style.display = 'none';
+      if (trialOptionsEl) trialOptionsEl.style.display = 'flex';
+      if (manageOptionsEl) manageOptionsEl.style.display = 'none';
+    }
+  }
+
+  // Idempotent Event Listener setup
+  if (isSubscriptionListenersSetup) return;
+  isSubscriptionListenersSetup = true;
+
+  const monthlyBtn = document.getElementById('subscribe-monthly-btn');
+  const yearlyBtn = document.getElementById('subscribe-yearly-btn');
+  const manageBtn = document.getElementById('manage-billing-btn');
+  const config = await getSupabaseConfig();
+
+  if (monthlyBtn && profile) {
+    monthlyBtn.addEventListener('click', async () => {
+      try {
+        const checkoutUrl = await getCheckoutUrl(config.lemonSqueezyMonthlyVariant, profile.company_id, profile.email);
+        if (checkoutUrl) {
+          window.open(checkoutUrl, '_blank');
+        } else {
+          showToast('Failed to generate checkout link.', 'danger');
+        }
+      } catch (err) {
+        console.error('Error opening monthly checkout:', err);
+      }
+    });
+  }
+
+  if (yearlyBtn && profile) {
+    yearlyBtn.addEventListener('click', async () => {
+      try {
+        const checkoutUrl = await getCheckoutUrl(config.lemonSqueezyAnnualVariant, profile.company_id, profile.email);
+        if (checkoutUrl) {
+          window.open(checkoutUrl, '_blank');
+        } else {
+          showToast('Failed to generate checkout link.', 'danger');
+        }
+      } catch (err) {
+        console.error('Error opening yearly checkout:', err);
+      }
+    });
+  }
+
+  if (manageBtn) {
+    manageBtn.addEventListener('click', async () => {
+      try {
+        const portalUrl = await getBillingPortalUrl();
+        if (portalUrl) {
+          window.open(portalUrl, '_blank');
+        } else {
+          showToast('Failed to open billing portal.', 'danger');
+        }
+      } catch (err) {
+        console.error('Error opening portal:', err);
+      }
+    });
   }
 }

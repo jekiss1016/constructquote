@@ -462,9 +462,36 @@ async function runTestSuite() {
     await wait(1000);
 
     // -------------------------------------------------------------
-    // TEST 5: Quote Calculator Verification
+    // TEST 5: Subscription & Billing Widget Verification
     // -------------------------------------------------------------
-    createTestCard('5. Quote Calculator Verification');
+    createTestCard('5. Subscription & Billing Widget Check');
+    const stepSubNav = addStep('Checking Settings View for Subscription widget');
+    
+    // Ensure we are in Settings view
+    doc.querySelector('.nav-item[data-target="settings-view"]').click();
+    await wait(500);
+    updateStepStatus(stepSubNav, 'success');
+
+    const stepSubVerify = addStep('Verifying Subscription elements in DOM');
+    const subCard = await waitForSelector('#settings-subscription-card');
+    const planName = doc.querySelector('#billing-plan-name');
+    const monthlyBtn = doc.querySelector('#subscribe-monthly-btn');
+    const yearlyBtn = doc.querySelector('#subscribe-yearly-btn');
+    
+    if (!subCard) throw new Error('Subscription widget card missing.');
+    if (!planName) throw new Error('Subscription plan name text missing.');
+    if (!monthlyBtn || !yearlyBtn) throw new Error('Subscription upgrade buttons missing.');
+    
+    updateStepStatus(stepSubVerify, 'success');
+    endActiveTest(true);
+    log('Subscription & Billing widget rendered correctly.', 'success');
+    
+    await wait(1000);
+
+    // -------------------------------------------------------------
+    // TEST 6: Quote Calculator Verification
+    // -------------------------------------------------------------
+    createTestCard('6. Quote Calculator Verification');
     const stepBldNav = addStep('Opening Quote Builder');
     
     // Go to dashboard first, then click Create New Quote
