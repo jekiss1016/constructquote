@@ -46,15 +46,15 @@
   <title>MyBidBook | Smart Construction Estimation</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#4f46e5">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=97">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=99">
 
   <!-- iOS PWA capability meta tags -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="MyBidBook">
 
-  <link rel="stylesheet" href="css/styles.css?v=97">
-  <link rel="stylesheet" href="css/print.css?v=97">
+  <link rel="stylesheet" href="css/styles.css?v=99">
+  <link rel="stylesheet" href="css/print.css?v=99">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
@@ -1342,6 +1342,45 @@
                 <input type="file" id="db-restore-upload" accept=".json" style="display: none;">
               </div>
             </div>
+
+            <!-- Subscription & Billing Widget -->
+            <div class="widget-card" id="settings-subscription-card">
+              <div class="widget-header">
+                <h3 class="widget-title">Subscription & Billing</h3>
+              </div>
+              <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: -0.5rem; margin-bottom: 1rem;">
+                Manage your MyBidBook plan and subscription details.
+              </p>
+              
+              <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+                  <span style="font-weight: 500; color: var(--text-secondary);">Current Plan:</span>
+                  <span id="billing-plan-name" style="font-weight: 700; color: var(--primary);">Trial</span>
+                </div>
+                
+                <div id="billing-status-row" style="display: flex; justify-content: space-between; font-size: 0.85rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; display: none;">
+                  <span style="font-weight: 500; color: var(--text-secondary);">Status:</span>
+                  <span id="billing-plan-status" style="font-weight: 700; text-transform: capitalize;">Active</span>
+                </div>
+
+                <!-- Trial Upgrade Options -->
+                <div id="billing-trial-options" style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.25rem;">
+                  <button type="button" class="btn btn-primary" id="subscribe-monthly-btn" style="justify-content: center; font-size: 0.8rem; padding: 0.5rem; width: 100%;">
+                    Upgrade to Pro Monthly ($19/mo)
+                  </button>
+                  <button type="button" class="btn btn-secondary" id="subscribe-yearly-btn" style="justify-content: center; font-size: 0.8rem; padding: 0.5rem; width: 100%;">
+                    Upgrade to Pro Annual ($199/yr)
+                  </button>
+                </div>
+
+                <!-- Manage Billing Link -->
+                <div id="billing-manage-options" style="display: none; margin-top: 0.25rem;">
+                  <button type="button" class="btn btn-secondary" id="manage-billing-btn" style="width: 100%; justify-content: center; font-size: 0.8rem; padding: 0.5rem;">
+                    Manage Billing Portal
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -1564,7 +1603,7 @@
       <!-- Global Footer -->
       <footer class="hide-in-print" style="margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); text-align: center; font-size: 0.8rem; color: var(--text-muted); padding-bottom: 1.5rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; width: 100%; box-sizing: border-box; align-self: center;">
         <img src="banner.png" style="max-height: 50px; max-width: 320px; object-fit: contain; width: auto; opacity: 0.85;" alt="MyBidBook Banner">
-        <span>© 2026 MyBidBook | v1.97</span>
+        <span>© 2026 MyBidBook | v1.98</span>
       </footer>
     </main>
   </div>
@@ -1997,7 +2036,7 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Javascript Modules -->
-  <script type="module" src="js/app.js?v=97"></script>
+  <script type="module" src="js/app.js?v=99"></script>
 
 </body>
 </html>

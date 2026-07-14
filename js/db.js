@@ -1,6 +1,6 @@
 // Database management using Supabase Cloud & LocalStorage fallbacks
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { showToast } from './utils.js?v=97';
+import { showToast } from './utils.js?v=98';
 
 const KEYS = {
   SUPABASE_CONFIG: 'cq_supabase_config'
@@ -41,7 +41,13 @@ export async function loadRuntimeConfig() {
     if (response.ok) {
       const config = await response.json();
       if (config.supabaseUrl && config.supabaseKey) {
-        cachedConfig = { url: config.supabaseUrl, key: config.supabaseKey };
+        cachedConfig = { 
+          url: config.supabaseUrl, 
+          key: config.supabaseKey,
+          lemonSqueezyStore: config.lemonSqueezyStore || 'mybidbook',
+          lemonSqueezyMonthlyVariant: config.lemonSqueezyMonthlyVariant || '1909120',
+          lemonSqueezyAnnualVariant: config.lemonSqueezyAnnualVariant || '1909159'
+        };
         return cachedConfig;
       }
     }
@@ -1068,12 +1074,12 @@ export async function importDB(jsonStr) {
 /* ==================== SYSADMIN MULTI-TENANT HELPERS ==================== */
 export async function getAllCompanies() {
   console.log('getAllCompanies -> Starting raw fetch...');
-  const data = await rawDbQuery('settings', 'select=company_id,company_name&order=company_name.asc');
+  const data = await rawDbQuery('companies', 'select=id,name&order=name.asc');
   console.log('getAllCompanies -> Companies fetched. Data length:', data ? data.length : 0);
   if (!data) return [];
   return data.map(s => ({
-    id: s.company_id,
-    name: s.company_name || 'Unnamed Company'
+    id: s.id,
+    name: s.name || 'Unnamed Company'
   }));
 }
 
@@ -1237,4 +1243,18 @@ export async function sendQuoteEmail(emailData) {
   } catch (err) {
     return { success: false, error: err.message };
   }
+}
+
+export async function getCheckoutUrl(variantId, companyId, email) {
+  const config = await getSupabaseConfig();
+  if (!config) return null;
+  const store = config.lemonSqueezyStore || 'mybidbook';
+  return `https://${store}.lemonsqueezy.com/checkout/buy/${variantId}?checkout[custom][company_id]=${companyId}&checkout[email]=${encodeURIComponent(email)}`;
+}
+
+export async function getBillingPortalUrl() {
+  const config = await getSupabaseConfig();
+  if (!config) return null;
+  const store = config.lemonSqueezyStore || 'mybidbook';
+  return `https://${store}.lemonsqueezy.com/billing`;
 }
