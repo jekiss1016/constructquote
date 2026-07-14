@@ -397,10 +397,10 @@
         </svg>
         Customer Manager
       </h2>
-      <p>The Customer Manager houses details for clients, developers, and project sites.</p>
+      <p>The Customer Manager houses details for clients, developers, and project sites. When creating or editing a customer record, the form opens in a full-screen editor view in the middle of the screen, ensuring optimal layout space on both mobile and desktop devices.</p>
       
       <h3>Proposals History</h3>
-      <p>When inspecting a customer record, a table at the bottom will automatically list all historical and active proposals linked to that client, along with status badges and pricing summaries.</p>
+      <p>When inspecting a customer record in the edit view, the application dynamically displays a timeline grid showing all historical and active proposals linked to that client in a right-hand panel, alongside the form on the left.</p>
 
       <h3>Customer Email Body Defaults</h3>
       <p>On each customer record, you can set a <strong>Customer Quote Email Body Default</strong> template. This is pre-populated with the company-wide default template, but can be customized for specific clients. When emailing a quote to the customer, this client-specific template will automatically prefill the email body, allowing you to customize it further before sending.</p>
@@ -422,6 +422,9 @@
 
       <h3>Local Database Backups</h3>
       <p>Under the settings view, you can export a full backup of all products, categories, customers, and quote configurations as a single, compressed JSON file. This can be re-imported later if you move devices or want to restore a past project archive.</p>
+
+      <h3>Company Address Fields & Validation</h3>
+      <p>Under Company Settings, the company address is split into Address Line 1, Address Line 2, City, State, and Zip Code fields. The state selector provides a convenient list of all U.S. states, and the zip code field enforces a strict 5-digit number verification pattern. These fields are combined dynamically into a clean postal address structure for printed proposals.</p>
 
       <h3>Customer Quote Email Default Templates</h3>
       <p>Under Company Settings, you can configure a global <strong>Customer Quote Email Body Default</strong> template. This body text defaults down to any new or existing customer record, ensuring a consistent brand voice when sending quotes.</p>

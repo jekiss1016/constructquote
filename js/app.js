@@ -19,12 +19,12 @@ import {
   uploadFileToStorage,
   rawDbWrite,
   getSubscriptionLevel
-} from './db.js?v=96';
-import { showToast, fileToBase64, formatPhoneNumber } from './utils.js?v=96';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=96';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=96';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=96';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=96';
+} from './db.js?v=97';
+import { showToast, fileToBase64, formatPhoneNumber, parseCompanyAddress } from './utils.js?v=97';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=97';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=97';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=97';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=97';
 
 let activeChallengeId = null;
 let activeFactorId = null;
@@ -1108,7 +1108,11 @@ async function loadDefaultSettingsToUI() {
   console.log('loadDefaultSettingsToUI -> Settings loaded:', settings);
   
   const nameInput = document.getElementById('settings-co-name');
-  const addrInput = document.getElementById('settings-co-address');
+  const addr1Input = document.getElementById('settings-co-address1');
+  const addr2Input = document.getElementById('settings-co-address2');
+  const cityInput = document.getElementById('settings-co-city');
+  const stateSelect = document.getElementById('settings-co-state');
+  const zipInput = document.getElementById('settings-co-zip');
   const phoneInput = document.getElementById('settings-co-phone');
   const emailInput = document.getElementById('settings-co-email');
   const markupInput = document.getElementById('settings-default-markup');
@@ -1155,9 +1159,26 @@ async function loadDefaultSettingsToUI() {
     nameInput.value = settings.companyName || '';
     nameInput.disabled = isViewer;
   }
-  if (addrInput) {
-    addrInput.value = settings.companyAddress || '';
-    addrInput.disabled = isViewer;
+  const parsedAddr = parseCompanyAddress(settings.companyAddress || '');
+  if (addr1Input) {
+    addr1Input.value = parsedAddr.address1 || '';
+    addr1Input.disabled = isViewer;
+  }
+  if (addr2Input) {
+    addr2Input.value = parsedAddr.address2 || '';
+    addr2Input.disabled = isViewer;
+  }
+  if (cityInput) {
+    cityInput.value = parsedAddr.city || '';
+    cityInput.disabled = isViewer;
+  }
+  if (stateSelect) {
+    stateSelect.value = parsedAddr.state || '';
+    stateSelect.disabled = isViewer;
+  }
+  if (zipInput) {
+    zipInput.value = parsedAddr.zip || '';
+    zipInput.disabled = isViewer;
   }
   if (phoneInput) {
     phoneInput.value = formatPhoneNumber(settings.companyPhone || '');
@@ -1248,12 +1269,35 @@ function setupSettingsHandlers() {
     });
   }
 
+  const settingsCoZip = document.getElementById('settings-co-zip');
+  if (settingsCoZip) {
+    settingsCoZip.addEventListener('input', (e) => {
+      e.target.value = e.target.value.replace(/\D/g, '').slice(0, 5);
+    });
+  }
+
   if (saveBtn) {
     saveBtn.addEventListener('click', async () => {
       if (isViewer) return;
+      
+      const addr1 = document.getElementById('settings-co-address1')?.value.trim() || '';
+      const addr2 = document.getElementById('settings-co-address2')?.value.trim() || '';
+      const city = document.getElementById('settings-co-city')?.value.trim() || '';
+      const state = document.getElementById('settings-co-state')?.value || '';
+      const zip = document.getElementById('settings-co-zip')?.value.trim() || '';
+
+      let combinedAddress = addr1;
+      if (addr2) {
+        combinedAddress += '\n' + addr2;
+      }
+      if (city || state || zip) {
+        combinedAddress += '\n' + city + ', ' + state + ' ' + zip;
+      }
+      combinedAddress = combinedAddress.trim();
+
       const updated = {
         companyName: document.getElementById('settings-co-name').value.trim(),
-        companyAddress: document.getElementById('settings-co-address').value.trim(),
+        companyAddress: combinedAddress,
         companyPhone: document.getElementById('settings-co-phone').value.trim(),
         companyEmail: document.getElementById('settings-co-email').value.trim(),
         defaultMarkupPercent: parseFloat(document.getElementById('settings-default-markup').value) || 0,

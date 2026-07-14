@@ -302,10 +302,21 @@ async function runTestSuite() {
     await wait(500);
     updateStepStatus(stepSetNav, 'success');
     
-    const stepSetChange = addStep('Updating company name');
+    const stepSetChange = addStep('Updating company name and address');
     const testCoName = 'Rogue Construction ' + Math.floor(Math.random() * 1000);
     const coNameInput = await waitForSelector('#settings-co-name');
     triggerInput(coNameInput, testCoName);
+    
+    const coAddress1 = doc.querySelector('#settings-co-address1');
+    const coCity = doc.querySelector('#settings-co-city');
+    const coState = doc.querySelector('#settings-co-state');
+    const coZip = doc.querySelector('#settings-co-zip');
+    
+    if (coAddress1) triggerInput(coAddress1, '500 Contractor Way');
+    if (coCity) triggerInput(coCity, 'Seattle');
+    if (coState) triggerInput(coState, 'WA');
+    if (coZip) triggerInput(coZip, '98101abc'); // Enforces zip mask (digits only)
+    
     updateStepStatus(stepSetChange, 'success');
     
     const stepSetSave = addStep('Saving settings');
@@ -338,7 +349,10 @@ async function runTestSuite() {
 
     // Database verification: query the Supabase endpoint directly to check what is in the tables
     try {
-      const db = await win.eval("import('./js/db.js?v=93')");
+      const appScript = doc.querySelector('script[src*="js/app.js"]');
+      const versionMatch = appScript ? appScript.src.match(/\?v=(\d+)/) : null;
+      const version = versionMatch ? versionMatch[1] : '95';
+      const db = await win.eval(`import('/js/db.js?v=${version}')`);
       const profile = db.getCurrentUserProfile();
       if (profile && profile.company_id) {
         log(`User profile company_id: ${profile.company_id}, role: ${profile.role}`);
@@ -646,6 +660,118 @@ async function runTestSuite() {
 
     endActiveTest(true);
     log('Email Quote modal validation tested successfully!', 'success');
+
+    await wait(1000);
+
+    // -------------------------------------------------------------
+    // TEST 8: Customer Manager Operations
+    // -------------------------------------------------------------
+    createTestCard('8. Customer Manager Operations');
+    const stepCustNav = addStep('Navigating to Customers View');
+    doc.querySelector('.nav-item[data-target="customers-view"]').click();
+    await wait(1000);
+    updateStepStatus(stepCustNav, 'success');
+
+    const stepCustAddBtn = addStep('Clicking Add New Customer button');
+    const addCustBtn = await waitForSelector('#customers-new-btn');
+    addCustBtn.click();
+    await wait(1000);
+    updateStepStatus(stepCustAddBtn, 'success');
+
+    const stepCustForm = addStep('Filling out customer profile & address');
+    const custNameInput = doc.querySelector('#customer-form-name');
+    const custEmailInput = doc.querySelector('#customer-form-email');
+    const custPhoneInput = doc.querySelector('#customer-form-phone');
+    const custAddr1Input = doc.querySelector('#customer-form-address1');
+    const custCityInput = doc.querySelector('#customer-form-city');
+    const custStateSelect = doc.querySelector('#customer-form-state');
+    const custZipInput = doc.querySelector('#customer-form-zip');
+
+    const testCustomerName = 'Alex Test Customer ' + Date.now();
+    triggerInput(custNameInput, testCustomerName);
+    triggerInput(custEmailInput, 'alex.test@example.com');
+    triggerInput(custPhoneInput, '(555) 555-9999');
+    triggerInput(custAddr1Input, '789 Client Blvd');
+    triggerInput(custCityInput, 'Tacoma');
+    triggerInput(custStateSelect, 'WA');
+    triggerInput(custZipInput, '98402');
+    updateStepStatus(stepCustForm, 'success');
+
+    const stepCustContact = addStep('Adding a contact row and filling details');
+    const addContactBtn = doc.querySelector('#customer-add-contact-btn');
+    if (!addContactBtn) throw new Error('Add Contact button not found');
+    addContactBtn.click();
+    await wait(500);
+
+    const contactRow = doc.querySelector('.contact-entry-row');
+    if (!contactRow) throw new Error('Contact entry row was not created');
+    const cName = contactRow.querySelector('.contact-name');
+    const cRole = contactRow.querySelector('.contact-role');
+    const cEmail = contactRow.querySelector('.contact-email');
+    const cPhone = contactRow.querySelector('.contact-phone');
+
+    triggerInput(cName, 'Jane Contact');
+    triggerInput(cRole, 'Lead Architect');
+    triggerInput(cEmail, 'jane@architects.com');
+    triggerInput(cPhone, '(555) 555-8888');
+    updateStepStatus(stepCustContact, 'success');
+
+    const stepCustSave = addStep('Saving customer profile');
+    const saveCustBtn = doc.querySelector('#customer-modal-submit-btn');
+    saveCustBtn.click();
+    await wait(2000); // Wait for database write
+
+    // Verify returning to table list and customer is present
+    const custTableHtml = doc.querySelector('#customers-table-body').innerHTML;
+    if (!custTableHtml.includes(testCustomerName)) {
+      throw new Error(`Customer "${testCustomerName}" was not found in table after saving.`);
+    }
+    updateStepStatus(stepCustSave, 'success');
+    endActiveTest(true);
+    log(`Customer "${testCustomerName}" created successfully!`, 'success');
+
+    await wait(1000);
+
+    // -------------------------------------------------------------
+    // TEST 9: Viewer Role UI Restriction Verification
+    // -------------------------------------------------------------
+    createTestCard('9. Viewer Role UI Restriction');
+    const stepViewCheck = addStep('Simulating viewer role and checking warning visibility');
+
+    // Get active app script to dynamically extract cache-busting version query parameter
+    const appScript = doc.querySelector('script[src*="js/app.js"]');
+    const versionMatch = appScript ? appScript.src.match(/\?v=(\d+)/) : null;
+    const version = versionMatch ? versionMatch[1] : '95';
+    const db = await win.eval(`import('/js/db.js?v=${version}')`);
+    const quotesList = await win.eval(`import('/js/quotes-list.js?v=${version}')`);
+
+    // Get current profile
+    const originalProfile = db.getCurrentUserProfile();
+    
+    // Switch profile to view-only user
+    db.setCurrentUserProfile({ ...originalProfile, role: 'viewer' });
+    
+    // Find a quote in the system (or the one we just saved or first quote)
+    const quoteLinkForViewer = doc.querySelector('.view-quote-job-link');
+    if (quoteLinkForViewer) {
+      // Re-render quote details view under the viewer role
+      const quoteId = quoteLinkForViewer.getAttribute('data-id');
+      await quotesList.renderQuoteDetails(quoteId);
+
+      // Verify the outdated pricing warning alert is hidden
+      const priceWarningEl = doc.querySelector('#detail-price-warning');
+      if (priceWarningEl && priceWarningEl.style.display !== 'none') {
+        throw new Error('Outdated pricing warning alert was visible to a viewer user.');
+      }
+    } else {
+      log('No quote found to check viewer role restrictions, skipping warning visibility check', 'warning');
+    }
+
+    // Restore original profile
+    db.setCurrentUserProfile(originalProfile);
+    updateStepStatus(stepViewCheck, 'success');
+    endActiveTest(true);
+    log('Viewer role UI restriction tested successfully!', 'success');
 
     log('==================================================');
     log(` TEST SUITE COMPLETE: ${passCount} PASSED, ${failCount} FAILED`, 'success');

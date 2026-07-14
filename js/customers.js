@@ -1,7 +1,7 @@
 // Customer management controller
-import { getCustomers, saveCustomer, deleteCustomer, getQuotes, getSupabase, getCurrentUserProfile, uploadFileToStorage, getCustomerById, getSettings } from './db.js?v=96';
-import { formatCurrency, formatDateTime, showToast, formatPhoneNumber } from './utils.js?v=96';
-import { navigateToView, viewQuoteDetails } from './app.js?v=96';
+import { getCustomers, saveCustomer, deleteCustomer, getQuotes, getSupabase, getCurrentUserProfile, uploadFileToStorage, getCustomerById, getSettings } from './db.js?v=97';
+import { formatCurrency, formatDateTime, showToast, formatPhoneNumber } from './utils.js?v=97';
+import { navigateToView, viewQuoteDetails } from './app.js?v=97';
 
 
 let activeSearchQuery = '';
@@ -112,10 +112,14 @@ async function renderCustomerQuoteHistory(customerId) {
 
   if (quotes.length === 0) {
     section.style.display = 'none';
+    const grid = document.getElementById('customer-editor-grid');
+    if (grid) grid.style.gridTemplateColumns = '1fr';
     return;
   }
 
   section.style.display = 'block';
+  const grid = document.getElementById('customer-editor-grid');
+  if (grid) grid.style.gridTemplateColumns = '2fr 1.2fr';
   tbody.innerHTML = quotes.map(q => {
     const subtotal = q.sections.reduce((secSum, sec) => {
       const secSub = sec.items.reduce((sum, item) => sum + (item.qty * (item.price + item.laborRate)), 0);
@@ -179,12 +183,11 @@ export async function openCustomerModalInline(callback = null) {
   inlineSaveCallback = callback;
   activeCustomerDocs = [];
   
-  const modal = document.getElementById('customer-modal');
   const form = document.getElementById('customer-form');
   
   form.reset();
   document.getElementById('customer-form-id').value = '';
-  document.getElementById('customer-modal-title').textContent = 'Add Database Customer';
+  document.getElementById('customer-view-title').textContent = 'Add Database Customer';
   
   const settings = await getSettings();
   document.getElementById('customer-form-default-markup').value = settings.defaultMarkupPercent !== undefined ? settings.defaultMarkupPercent : 15;
@@ -209,8 +212,10 @@ export async function openCustomerModalInline(callback = null) {
   
   // Hide history section on new customer creation
   document.getElementById('customer-quotes-history-section').style.display = 'none';
+  const grid = document.getElementById('customer-editor-grid');
+  if (grid) grid.style.gridTemplateColumns = '1fr';
 
-  modal.classList.add('active');
+  navigateToView('customer-editor-view');
 }
 
 // Generate HTML contact input block
@@ -255,7 +260,6 @@ function applyPhoneMask(inputEl) {
 
 // Set up UI Event Listeners for Customers Tab
 function setupCustomerListeners() {
-  const modal = document.getElementById('customer-modal');
   const addBtn = document.getElementById('customers-new-btn');
   const closeBtn = document.getElementById('customer-modal-close-btn');
   const cancelBtn = document.getElementById('customer-modal-cancel-btn');
@@ -424,14 +428,13 @@ function setupCustomerListeners() {
       if (link) {
         e.preventDefault();
         const quoteId = link.getAttribute('data-id');
-        modal.classList.remove('active');
         viewQuoteDetails(quoteId);
       }
     });
   }
 
   const closeModal = () => {
-    modal.classList.remove('active');
+    navigateToView('customers-view');
     inlineSaveCallback = null;
   };
   if (closeBtn) closeBtn.addEventListener('click', closeModal);
@@ -610,8 +613,8 @@ function setupCustomerListeners() {
 
           await renderCustomerQuoteHistory(c.id);
 
-          document.getElementById('customer-modal-title').textContent = isViewer ? 'View Customer Profile' : 'Edit Customer Profile';
-          modal.classList.add('active');
+          document.getElementById('customer-view-title').textContent = isViewer ? 'View Customer Profile' : 'Edit Customer Profile';
+          navigateToView('customer-editor-view');
         }
       }
 
