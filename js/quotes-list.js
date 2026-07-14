@@ -1,7 +1,7 @@
 // Quotes List & Dashboard management controller
-import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel, getCustomerById, sendQuoteEmail, getQuoteEmailLogs, saveQuoteEmailLog } from './db.js?v=96';
-import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage, parseCombinedAddress } from './utils.js?v=96';
-import { navigateToView, editQuote, duplicateQuoteAsTemplate, openLightbox } from './app.js?v=96';
+import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel, getCustomerById, sendQuoteEmail, getQuoteEmailLogs, saveQuoteEmailLog } from './db.js?v=97';
+import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage, parseCombinedAddress, parseCompanyAddress } from './utils.js?v=97';
+import { navigateToView, editQuote, duplicateQuoteAsTemplate, openLightbox } from './app.js?v=97';
 
 
 let activeStatusFilter = 'pending';
@@ -418,7 +418,24 @@ export async function renderQuoteDetails(id) {
   }
 
   document.getElementById('paper-co-name').textContent = settings.companyName || 'Construction Quoting Co.';
-  document.getElementById('paper-co-address').textContent = settings.companyAddress || '100 Contractor Blvd';
+  const parsedCoAddr = parseCompanyAddress(settings.companyAddress || '');
+  const paperCoAddr1 = document.getElementById('paper-co-address-street1');
+  const paperCoAddr2 = document.getElementById('paper-co-address-street2');
+  const paperCoCityStateZip = document.getElementById('paper-co-address-citystatezip');
+  if (paperCoAddr1) paperCoAddr1.textContent = parsedCoAddr.address1 || '';
+  if (paperCoAddr2) {
+    if (parsedCoAddr.address2) {
+      paperCoAddr2.textContent = parsedCoAddr.address2;
+      paperCoAddr2.style.display = 'block';
+    } else {
+      paperCoAddr2.textContent = '';
+      paperCoAddr2.style.display = 'none';
+    }
+  }
+  if (paperCoCityStateZip) {
+    const cityStateZipParts = [parsedCoAddr.city, [parsedCoAddr.state, parsedCoAddr.zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+    paperCoCityStateZip.textContent = cityStateZipParts || '';
+  }
   document.getElementById('paper-co-contact').textContent = `${settings.companyEmail || 'billing@company.com'} | ${settings.companyPhone || ''}`;
 
   document.getElementById('paper-meta-job-id').innerHTML = `

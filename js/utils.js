@@ -218,3 +218,68 @@ export function parseCombinedAddress(addrStr) {
 
   return { street, city, state, zip };
 }
+
+export function parseCompanyAddress(addrStr) {
+  if (!addrStr) return { address1: '', address2: '', city: '', state: '', zip: '' };
+  
+  const lines = addrStr.split('\n').map(l => l.trim()).filter(l => l !== '');
+  if (lines.length >= 3) {
+    const address1 = lines[0];
+    const address2 = lines[1];
+    const lastLine = lines.slice(2).join(', ');
+    const { city, state, zip } = parseCityStateZip(lastLine);
+    return { address1, address2, city, state, zip };
+  } else if (lines.length === 2) {
+    const address1 = lines[0];
+    const lastLine = lines[1];
+    const { city, state, zip } = parseCityStateZip(lastLine);
+    return { address1, address2: '', city, state, zip };
+  } else {
+    const parts = addrStr.split(',').map(p => p.trim()).filter(Boolean);
+    if (parts.length >= 3) {
+      const address1 = parts[0];
+      const city = parts[1];
+      const stateZipPart = parts.slice(2).join(', ');
+      const { state, zip } = parseStateZip(stateZipPart);
+      return { address1, address2: '', city, state, zip };
+    } else if (parts.length === 2) {
+      const address1 = parts[0];
+      const stateZipPart = parts[1];
+      const { state, zip } = parseStateZip(stateZipPart);
+      return { address1, address2: '', city: '', state, zip };
+    } else {
+      return { address1: addrStr, address2: '', city: '', state: '', zip: '' };
+    }
+  }
+}
+
+function parseCityStateZip(str) {
+  const parts = str.split(',').map(p => p.trim()).filter(Boolean);
+  if (parts.length >= 2) {
+    const city = parts[0];
+    const stateZipPart = parts.slice(1).join(', ');
+    const { state, zip } = parseStateZip(stateZipPart);
+    return { city, state, zip };
+  } else {
+    const { state, zip } = parseStateZip(str);
+    return { city: '', state, zip };
+  }
+}
+
+function parseStateZip(str) {
+  const stateZipMatch = str.match(/^([A-Z]{2})\s+(\d{5})$/i) || str.match(/^([A-Z]{2})$/i) || str.match(/^(\d{5})$/);
+  let state = '';
+  let zip = '';
+  if (stateZipMatch) {
+    if (stateZipMatch[1] && isNaN(stateZipMatch[1])) {
+      state = stateZipMatch[1].toUpperCase();
+    }
+    if (stateZipMatch[2]) {
+      zip = stateZipMatch[2];
+    } else if (stateZipMatch[1] && !isNaN(stateZipMatch[1])) {
+      zip = stateZipMatch[1];
+    }
+  }
+  return { state, zip };
+}
+

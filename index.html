@@ -46,15 +46,15 @@
   <title>MyBidBook | Smart Construction Estimation</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#4f46e5">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=96">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=97">
 
   <!-- iOS PWA capability meta tags -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="MyBidBook">
 
-  <link rel="stylesheet" href="css/styles.css?v=96">
-  <link rel="stylesheet" href="css/print.css?v=96">
+  <link rel="stylesheet" href="css/styles.css?v=97">
+  <link rel="stylesheet" href="css/print.css?v=97">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
@@ -777,7 +777,9 @@
               </div>
               <div class="paper-company-info">
                 <div class="paper-company-name" id="paper-co-name">Construction Quoting Co.</div>
-                <div id="paper-co-address">123 Builder Lane</div>
+                <div id="paper-co-address-street1">123 Builder Lane</div>
+                <div id="paper-co-address-street2">Suite A</div>
+                <div id="paper-co-address-citystatezip">City, State Zip</div>
                 <div id="paper-co-contact">email@company.com | (555) 555-5555</div>
               </div>
             </div>
@@ -1084,8 +1086,78 @@
             </div>
 
             <div class="form-group">
-              <label class="form-label" for="settings-co-address">Company Address</label>
-              <input type="text" class="form-input" id="settings-co-address" placeholder="123 Builder Lane, City, State ZIP">
+              <label class="form-label" for="settings-co-address1">Company Address</label>
+              <input type="text" class="form-input" id="settings-co-address1" placeholder="Address Line 1">
+            </div>
+            <div class="form-group">
+              <input type="text" class="form-input" id="settings-co-address2" placeholder="Address Line 2 (Optional)">
+            </div>
+            <div class="form-group-row">
+              <div class="form-group" style="flex: 2;">
+                <label class="form-label" for="settings-co-city">City</label>
+                <input type="text" class="form-input" id="settings-co-city" placeholder="City">
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label class="form-label" for="settings-co-state">State</label>
+                <select class="form-select" id="settings-co-state" style="padding: 0.55rem; height: 42px;">
+                  <option value="" disabled selected>State</option>
+                  <option value="AL">AL</option>
+                  <option value="AK">AK</option>
+                  <option value="AZ">AZ</option>
+                  <option value="AR">AR</option>
+                  <option value="CA">CA</option>
+                  <option value="CO">CO</option>
+                  <option value="CT">CT</option>
+                  <option value="DE">DE</option>
+                  <option value="DC">DC</option>
+                  <option value="FL">FL</option>
+                  <option value="GA">GA</option>
+                  <option value="HI">HI</option>
+                  <option value="ID">ID</option>
+                  <option value="IL">IL</option>
+                  <option value="IN">IN</option>
+                  <option value="IA">IA</option>
+                  <option value="KS">KS</option>
+                  <option value="KY">KY</option>
+                  <option value="LA">LA</option>
+                  <option value="ME">ME</option>
+                  <option value="MD">MD</option>
+                  <option value="MA">MA</option>
+                  <option value="MI">MI</option>
+                  <option value="MN">MN</option>
+                  <option value="MS">MS</option>
+                  <option value="MO">MO</option>
+                  <option value="MT">MT</option>
+                  <option value="NE">NE</option>
+                  <option value="NV">NV</option>
+                  <option value="NH">NH</option>
+                  <option value="NJ">NJ</option>
+                  <option value="NM">NM</option>
+                  <option value="NY">NY</option>
+                  <option value="NC">NC</option>
+                  <option value="ND">ND</option>
+                  <option value="OH">OH</option>
+                  <option value="OK">OK</option>
+                  <option value="OR">OR</option>
+                  <option value="PA">PA</option>
+                  <option value="RI">RI</option>
+                  <option value="SC">SC</option>
+                  <option value="SD">SD</option>
+                  <option value="TN">TN</option>
+                  <option value="TX">TX</option>
+                  <option value="UT">UT</option>
+                  <option value="VT">VT</option>
+                  <option value="VA">VA</option>
+                  <option value="WA">WA</option>
+                  <option value="WV">WV</option>
+                  <option value="WI">WI</option>
+                  <option value="WY">WY</option>
+                </select>
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label class="form-label" for="settings-co-zip">Zip Code</label>
+                <input type="text" class="form-input" id="settings-co-zip" placeholder="Zip" pattern="\d{5}" maxlength="5" title="5-digit zip code">
+              </div>
             </div>
 
             <div class="form-group-row">
@@ -1274,10 +1346,225 @@
         </div>
       </section>
 
+      <!-- ==================== CUSTOMER ADD/EDIT VIEW ==================== -->
+      <section id="customer-editor-view" class="view-section">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title" id="customer-view-title">Add Database Customer</h2>
+            <p class="page-description">Fill out the details below to save the customer to your database.</p>
+          </div>
+          <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <a href="help.html#customers" target="_blank" class="btn btn-secondary help-btn" style="padding: 0.35rem 0.65rem; gap: 0.25rem; font-size: 0.8rem;" title="View Help Documentation">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14" style="stroke-width: 2.5;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5h.008v.008H12V17z" />
+              </svg>
+              Help
+            </a>
+            <button type="button" class="btn btn-secondary" id="customer-modal-close-btn" style="padding: 0.35rem 0.65rem; gap: 0.25rem; font-size: 0.8rem; display: inline-flex; align-items: center;">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14" style="stroke-width: 2.5;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Back
+            </button>
+          </div>
+        </div>
+
+        <div id="customer-editor-grid" style="display: grid; grid-template-columns: 2fr 1.2fr; gap: 1.5rem; align-items: start;">
+          <!-- Left Panel: Form Details -->
+          <div class="widget-card">
+            <form id="customer-form">
+              <input type="hidden" id="customer-form-id">
+              
+              <div class="form-group">
+                <label class="form-label" for="customer-form-name">Company Name / Primary Client Name <span style="color: var(--danger);">*</span></label>
+                <input type="text" class="form-input" id="customer-form-name" placeholder="e.g. Pacific Rim Developers" required autocomplete="organization-title">
+              </div>
+
+              <div class="form-group-row">
+                <div class="form-group">
+                  <label class="form-label" for="customer-form-email">Primary Email</label>
+                  <input type="email" class="form-input" id="customer-form-email" placeholder="client@example.com">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="customer-form-phone">Primary Phone <span style="color: var(--danger);">*</span></label>
+                  <input type="tel" class="form-input" id="customer-form-phone" placeholder="(555) 555-0000" maxlength="14" required>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="customer-form-address1">Billing / Project Site Address <span style="color: var(--danger);">*</span></label>
+                <input type="text" class="form-input" id="customer-form-address1" placeholder="Address Line 1" required>
+              </div>
+              <div class="form-group">
+                <input type="text" class="form-input" id="customer-form-address2" placeholder="Address Line 2 (Optional)">
+              </div>
+              <div class="form-group-row">
+                <div class="form-group" style="flex: 2;">
+                  <label class="form-label" for="customer-form-city">City <span style="color: var(--danger);">*</span></label>
+                  <input type="text" class="form-input" id="customer-form-city" placeholder="City" required>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                  <label class="form-label" for="customer-form-state">State <span style="color: var(--danger);">*</span></label>
+                  <select class="form-select" id="customer-form-state" required style="padding: 0.55rem; height: 42px;">
+                    <option value="" disabled selected>State</option>
+                    <option value="AL">AL</option>
+                    <option value="AK">AK</option>
+                    <option value="AZ">AZ</option>
+                    <option value="AR">AR</option>
+                    <option value="CA">CA</option>
+                    <option value="CO">CO</option>
+                    <option value="CT">CT</option>
+                    <option value="DE">DE</option>
+                    <option value="DC">DC</option>
+                    <option value="FL">FL</option>
+                    <option value="GA">GA</option>
+                    <option value="HI">HI</option>
+                    <option value="ID">ID</option>
+                    <option value="IL">IL</option>
+                    <option value="IN">IN</option>
+                    <option value="IA">IA</option>
+                    <option value="KS">KS</option>
+                    <option value="KY">KY</option>
+                    <option value="LA">LA</option>
+                    <option value="ME">ME</option>
+                    <option value="MD">MD</option>
+                    <option value="MA">MA</option>
+                    <option value="MI">MI</option>
+                    <option value="MN">MN</option>
+                    <option value="MS">MS</option>
+                    <option value="MO">MO</option>
+                    <option value="MT">MT</option>
+                    <option value="NE">NE</option>
+                    <option value="NV">NV</option>
+                    <option value="NH">NH</option>
+                    <option value="NJ">NJ</option>
+                    <option value="NM">NM</option>
+                    <option value="NY">NY</option>
+                    <option value="NC">NC</option>
+                    <option value="ND">ND</option>
+                    <option value="OH">OH</option>
+                    <option value="OK">OK</option>
+                    <option value="OR">OR</option>
+                    <option value="PA">PA</option>
+                    <option value="RI">RI</option>
+                    <option value="SC">SC</option>
+                    <option value="SD">SD</option>
+                    <option value="TN">TN</option>
+                    <option value="TX">TX</option>
+                    <option value="UT">UT</option>
+                    <option value="VT">VT</option>
+                    <option value="VA">VA</option>
+                    <option value="WA">WA</option>
+                    <option value="WV">WV</option>
+                    <option value="WI">WI</option>
+                    <option value="WY">WY</option>
+                  </select>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                  <label class="form-label" for="customer-form-zip">Zip <span style="color: var(--danger);">*</span></label>
+                  <input type="text" class="form-input" id="customer-form-zip" placeholder="Zip" required pattern="\d{5}" maxlength="5" title="5-digit zip code">
+                </div>
+              </div>
+
+              <!-- Contacts Directory Builder -->
+              <div style="border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                  <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Contacts Directory</h4>
+                  <button type="button" class="btn btn-secondary" id="customer-add-contact-btn" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
+                    ➕ Add Contact
+                  </button>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;" id="customer-contacts-list">
+                  <!-- Dynamically populated contacts inputs list -->
+                </div>
+              </div>
+
+              <!-- Attached Documents (PDFs) -->
+              <div style="border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                  <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Attached Documents (PDFs)</h4>
+                  <div>
+                    <label for="customer-doc-upload" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; margin: 0; cursor: pointer;">
+                      ➕ Attach PDF
+                    </label>
+                    <input type="file" id="customer-doc-upload" accept="application/pdf" style="display: none;">
+                  </div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;" id="customer-documents-list">
+                  <!-- Dynamically populated PDF links -->
+                </div>
+              </div>
+
+              <!-- Quote Default Overrides -->
+              <div id="customer-form-defaults-section" style="border-top: 1px solid var(--border-color); padding-top: 1.25rem; margin-top: 1.5rem;">
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.75rem;">Quote Defaults & Overrides</h4>
+                
+                <div class="form-group-row">
+                  <div class="form-group">
+                    <label class="form-label" for="customer-form-default-markup">Default Markup Percentage (%)</label>
+                    <input type="number" class="form-input" id="customer-form-default-markup" placeholder="e.g. 15" min="0" step="0.1">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="customer-form-default-tax">Default Sales Tax Rate (%)</label>
+                    <input type="number" class="form-input" id="customer-form-default-tax" placeholder="e.g. 8.25" min="0" step="0.01">
+                    <div style="margin-top: 0.5rem;">
+                      <label class="form-checkbox-label" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); cursor: pointer; user-select: none;">
+                        <input type="checkbox" id="customer-form-default-tax-plus-applicable" style="cursor: pointer;">
+                        Do Not Show Sales Tax - Replace with "Plus Any Applicable Taxes"
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="form-group" style="margin-top: 0.5rem;">
+                  <label class="form-label" for="customer-form-default-terms-notes">Default Terms & Notes</label>
+                  <textarea class="form-input" id="customer-form-default-terms-notes" rows="3" placeholder="Enter default payment terms, validations, etc. for this customer"></textarea>
+                </div>
+                <div class="form-group" style="margin-top: 0.5rem;">
+                  <label class="form-label" for="customer-form-quote-email-body-default">Customer Quote Email Body Default</label>
+                  <textarea class="form-input" id="customer-form-quote-email-body-default" rows="4" placeholder="Enter default email body text for this customer"></textarea>
+                </div>
+              </div>
+
+              <div style="margin-top: 1.5rem; display: flex; gap: 0.75rem; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" id="customer-modal-cancel-btn">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="customer-modal-submit-btn">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                  </svg>
+                  Save Customer
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Right Panel: Related Quotes History -->
+          <div class="widget-card" id="customer-quotes-history-section" style="display: none;">
+            <h3 class="builder-section-title">Related Quotes Timeline</h3>
+            <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+              <table class="custom-table" style="font-size: 0.8rem;">
+                <thead>
+                  <tr>
+                    <th>Job ID</th>
+                    <th>Created</th>
+                    <th>Won/Lost</th>
+                    <th>Completed</th>
+                    <th style="text-align: right;">Total Price</th>
+                  </tr>
+                </thead>
+                <tbody id="customer-quotes-history-tbody">
+                  <!-- Dynamically listed quotes -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- Global Footer -->
       <footer class="hide-in-print" style="margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); text-align: center; font-size: 0.8rem; color: var(--text-muted); padding-bottom: 1.5rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; width: 100%; box-sizing: border-box; align-self: center;">
         <img src="banner.png" style="max-height: 50px; max-width: 320px; object-fit: contain; width: auto; opacity: 0.85;" alt="MyBidBook Banner">
-        <span>© 2026 MyBidBook | v1.96</span>
+        <span>© 2026 MyBidBook | v1.97</span>
       </footer>
     </main>
   </div>
@@ -1397,199 +1684,7 @@
 
 
 
-  <!-- ==================== CUSTOMER ADD/EDIT MODAL ==================== -->
-  <div class="modal-overlay" id="customer-modal">
-    <div class="modal-container" style="max-width: 600px;">
-      <div class="modal-header">
-        <h3 class="modal-title" id="customer-modal-title">Add Database Customer</h3>
-        <button type="button" class="modal-close" id="customer-modal-close-btn">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-      <div class="modal-body">
-        <form id="customer-form">
-          <input type="hidden" id="customer-form-id">
-          
-          <div class="form-group">
-            <label class="form-label" for="customer-form-name">Company Name / Primary Client Name <span style="color: var(--danger);">*</span></label>
-            <input type="text" class="form-input" id="customer-form-name" placeholder="e.g. Pacific Rim Developers" required autocomplete="organization-title">
-          </div>
 
-          <div class="form-group-row">
-            <div class="form-group">
-              <label class="form-label" for="customer-form-email">Primary Email</label>
-              <input type="email" class="form-input" id="customer-form-email" placeholder="client@example.com">
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="customer-form-phone">Primary Phone <span style="color: var(--danger);">*</span></label>
-              <input type="tel" class="form-input" id="customer-form-phone" placeholder="(555) 555-0000" maxlength="14" required>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="customer-form-address1">Billing / Project Site Address <span style="color: var(--danger);">*</span></label>
-            <input type="text" class="form-input" id="customer-form-address1" placeholder="Address Line 1" required>
-          </div>
-          <div class="form-group">
-            <input type="text" class="form-input" id="customer-form-address2" placeholder="Address Line 2 (Optional)">
-          </div>
-          <div class="form-group-row">
-            <div class="form-group" style="flex: 2;">
-              <label class="form-label" for="customer-form-city">City <span style="color: var(--danger);">*</span></label>
-              <input type="text" class="form-input" id="customer-form-city" placeholder="City" required>
-            </div>
-            <div class="form-group" style="flex: 1;">
-              <label class="form-label" for="customer-form-state">State <span style="color: var(--danger);">*</span></label>
-              <select class="form-select" id="customer-form-state" required style="padding: 0.55rem; height: 42px;">
-                <option value="" disabled selected>State</option>
-                <option value="AL">AL</option>
-                <option value="AK">AK</option>
-                <option value="AZ">AZ</option>
-                <option value="AR">AR</option>
-                <option value="CA">CA</option>
-                <option value="CO">CO</option>
-                <option value="CT">CT</option>
-                <option value="DE">DE</option>
-                <option value="DC">DC</option>
-                <option value="FL">FL</option>
-                <option value="GA">GA</option>
-                <option value="HI">HI</option>
-                <option value="ID">ID</option>
-                <option value="IL">IL</option>
-                <option value="IN">IN</option>
-                <option value="IA">IA</option>
-                <option value="KS">KS</option>
-                <option value="KY">KY</option>
-                <option value="LA">LA</option>
-                <option value="ME">ME</option>
-                <option value="MD">MD</option>
-                <option value="MA">MA</option>
-                <option value="MI">MI</option>
-                <option value="MN">MN</option>
-                <option value="MS">MS</option>
-                <option value="MO">MO</option>
-                <option value="MT">MT</option>
-                <option value="NE">NE</option>
-                <option value="NV">NV</option>
-                <option value="NH">NH</option>
-                <option value="NJ">NJ</option>
-                <option value="NM">NM</option>
-                <option value="NY">NY</option>
-                <option value="NC">NC</option>
-                <option value="ND">ND</option>
-                <option value="OH">OH</option>
-                <option value="OK">OK</option>
-                <option value="OR">OR</option>
-                <option value="PA">PA</option>
-                <option value="RI">RI</option>
-                <option value="SC">SC</option>
-                <option value="SD">SD</option>
-                <option value="TN">TN</option>
-                <option value="TX">TX</option>
-                <option value="UT">UT</option>
-                <option value="VT">VT</option>
-                <option value="VA">VA</option>
-                <option value="WA">WA</option>
-                <option value="WV">WV</option>
-                <option value="WI">WI</option>
-                <option value="WY">WY</option>
-              </select>
-            </div>
-            <div class="form-group" style="flex: 1;">
-              <label class="form-label" for="customer-form-zip">Zip <span style="color: var(--danger);">*</span></label>
-              <input type="text" class="form-input" id="customer-form-zip" placeholder="Zip" required pattern="\d{5}" maxlength="5" title="5-digit zip code">
-            </div>
-          </div>
-
-          <!-- Contacts Directory Builder -->
-          <div style="border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1.5rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-              <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Contacts Directory</h4>
-              <button type="button" class="btn btn-secondary" id="customer-add-contact-btn" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
-                ➕ Add Contact
-              </button>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 0.75rem;" id="customer-contacts-list">
-              <!-- Dynamically populated contacts inputs list -->
-            </div>
-          </div>
-
-          <!-- Attached Documents (PDFs) -->
-          <div style="border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1.5rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-              <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Attached Documents (PDFs)</h4>
-              <div>
-                <label for="customer-doc-upload" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; margin: 0; cursor: pointer;">
-                  ➕ Attach PDF
-                </label>
-                <input type="file" id="customer-doc-upload" accept="application/pdf" style="display: none;">
-              </div>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 0.5rem;" id="customer-documents-list">
-              <!-- Dynamically populated PDF links -->
-            </div>
-          </div>
-            <!-- Quote Default Overrides -->
-            <div id="customer-form-defaults-section" style="border-top: 1px solid var(--border-color); padding-top: 1.25rem; margin-top: 1.5rem;">
-              <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.75rem;">Quote Defaults & Overrides</h4>
-              
-              <div class="form-group-row">
-                <div class="form-group">
-                  <label class="form-label" for="customer-form-default-markup">Default Markup Percentage (%)</label>
-                  <input type="number" class="form-input" id="customer-form-default-markup" placeholder="e.g. 15" min="0" step="0.1">
-                </div>
-                <div class="form-group">
-                  <label class="form-label" for="customer-form-default-tax">Default Sales Tax Rate (%)</label>
-                  <input type="number" class="form-input" id="customer-form-default-tax" placeholder="e.g. 8.25" min="0" step="0.01">
-                  <div style="margin-top: 0.5rem;">
-                    <label class="form-checkbox-label" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); cursor: pointer; user-select: none;">
-                      <input type="checkbox" id="customer-form-default-tax-plus-applicable" style="cursor: pointer;">
-                      Do Not Show Sales Tax - Replace with "Plus Any Applicable Taxes"
-                    </label>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="form-group" style="margin-top: 0.5rem;">
-                <label class="form-label" for="customer-form-default-terms-notes">Default Terms & Notes</label>
-                <textarea class="form-input" id="customer-form-default-terms-notes" rows="3" placeholder="Enter default payment terms, validations, etc. for this customer"></textarea>
-              </div>
-              <div class="form-group" style="margin-top: 0.5rem;">
-                <label class="form-label" for="customer-form-quote-email-body-default">Customer Quote Email Body Default</label>
-                <textarea class="form-input" id="customer-form-quote-email-body-default" rows="4" placeholder="Enter default email body text for this customer"></textarea>
-              </div>
-            </div>
-          </form>
-
-        <!-- Related Quotes History -->
-        <div id="customer-quotes-history-section" style="border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1.5rem; display: none;">
-          <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.75rem;">Related Quotes Timeline</h4>
-          <div class="table-container" style="max-height: 200px; overflow-y: auto;">
-            <table class="custom-table" style="font-size: 0.8rem;">
-              <thead>
-                <tr>
-                  <th>Job ID</th>
-                  <th>Created</th>
-                  <th>Won/Lost</th>
-                  <th>Completed</th>
-                  <th style="text-align: right;">Total Price</th>
-                </tr>
-              </thead>
-              <tbody id="customer-quotes-history-tbody">
-                <!-- Dynamically listed quotes -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" id="customer-modal-cancel-btn">Cancel</button>
-        <button type="submit" form="customer-form" class="btn btn-primary" id="customer-modal-submit-btn">Save Customer</button>
-      </div>
-    </div>
-  </div>
 
   <!-- ==================== EMAIL QUOTE MODAL ==================== -->
   <div class="modal-overlay" id="email-quote-modal">
@@ -1902,7 +1997,7 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Javascript Modules -->
-  <script type="module" src="js/app.js?v=96"></script>
+  <script type="module" src="js/app.js?v=97"></script>
 
 </body>
 </html>
