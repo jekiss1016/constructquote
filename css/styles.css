@@ -1529,6 +1529,11 @@ body {
     border-radius: var(--radius-md);
   }
 
+  .mobile-toggle-btn * {
+    pointer-events: none;
+  }
+
+
   .mobile-toggle-btn:hover {
     background-color: var(--bg-tertiary);
   }
@@ -1638,6 +1643,7 @@ body {
     flex-direction: column;
     gap: 0.5rem;
     width: 100%;
+    align-items: stretch !important;
   }
 
   .page-header .btn {

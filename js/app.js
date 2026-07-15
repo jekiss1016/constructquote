@@ -22,12 +22,12 @@ import {
   getSubscriptionStatus,
   getCheckoutUrl,
   getBillingPortalUrl
-} from './db.js?v=98';
-import { showToast, fileToBase64, formatPhoneNumber, parseCompanyAddress } from './utils.js?v=98';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=98';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=98';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=98';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=98';
+} from './db.js?v=100';
+import { showToast, fileToBase64, formatPhoneNumber, parseCompanyAddress } from './utils.js?v=100';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=100';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=100';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=100';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=100';
 
 let activeChallengeId = null;
 let activeFactorId = null;
