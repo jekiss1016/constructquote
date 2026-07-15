@@ -811,6 +811,10 @@ body {
   align-items: start;
 }
 
+.single-column-layout {
+  grid-template-columns: 1fr !important;
+}
+
 @media (max-width: 992px) {
   .split-layout {
     grid-template-columns: 1fr;

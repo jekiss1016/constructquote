@@ -1,7 +1,7 @@
 // Customer management controller
-import { getCustomers, saveCustomer, deleteCustomer, getQuotes, getSupabase, getCurrentUserProfile, uploadFileToStorage, getCustomerById, getSettings } from './db.js?v=101';
-import { formatCurrency, formatDateTime, showToast, formatPhoneNumber } from './utils.js?v=101';
-import { navigateToView, viewQuoteDetails } from './app.js?v=101';
+import { getCustomers, saveCustomer, deleteCustomer, getQuotes, getSupabase, getCurrentUserProfile, uploadFileToStorage, getCustomerById, getSettings } from './db.js?v=2.1';
+import { formatCurrency, formatDateTime, showToast, formatPhoneNumber } from './utils.js?v=2.1';
+import { navigateToView, viewQuoteDetails } from './app.js?v=2.1';
 
 
 let activeSearchQuery = '';
@@ -113,13 +113,19 @@ async function renderCustomerQuoteHistory(customerId) {
   if (quotes.length === 0) {
     section.style.display = 'none';
     const grid = document.getElementById('customer-editor-grid');
-    if (grid) grid.style.gridTemplateColumns = '1fr';
+    if (grid) {
+      grid.classList.add('single-column-layout');
+      grid.style.gridTemplateColumns = '';
+    }
     return;
   }
 
   section.style.display = 'block';
   const grid = document.getElementById('customer-editor-grid');
-  if (grid) grid.style.gridTemplateColumns = '2fr 1.2fr';
+  if (grid) {
+    grid.classList.remove('single-column-layout');
+    grid.style.gridTemplateColumns = '';
+  }
   tbody.innerHTML = quotes.map(q => {
     const subtotal = q.sections.reduce((secSum, sec) => {
       const secSub = sec.items.reduce((sum, item) => sum + (item.qty * (item.price + item.laborRate)), 0);
@@ -213,7 +219,10 @@ export async function openCustomerModalInline(callback = null) {
   // Hide history section on new customer creation
   document.getElementById('customer-quotes-history-section').style.display = 'none';
   const grid = document.getElementById('customer-editor-grid');
-  if (grid) grid.style.gridTemplateColumns = '1fr';
+  if (grid) {
+    grid.classList.add('single-column-layout');
+    grid.style.gridTemplateColumns = '';
+  }
 
   navigateToView('customer-editor-view');
 }

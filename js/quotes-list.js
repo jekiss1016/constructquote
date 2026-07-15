@@ -1,7 +1,7 @@
 // Quotes List & Dashboard management controller
-import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel, getCustomerById, sendQuoteEmail, getQuoteEmailLogs, saveQuoteEmailLog } from './db.js?v=101';
-import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage, parseCombinedAddress, parseCompanyAddress } from './utils.js?v=101';
-import { navigateToView, editQuote, duplicateQuoteAsTemplate, openLightbox } from './app.js?v=101';
+import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel, getCustomerById, sendQuoteEmail, getQuoteEmailLogs, saveQuoteEmailLog } from './db.js?v=2.1';
+import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage, parseCombinedAddress, parseCompanyAddress } from './utils.js?v=2.1';
+import { navigateToView, editQuote, duplicateQuoteAsTemplate, openLightbox } from './app.js?v=2.1';
 
 
 let activeStatusFilter = 'pending';
