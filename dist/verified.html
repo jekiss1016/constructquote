@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account Verified | MyBidBook</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    /* Styling to center the success card and make it look premium */
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top right, var(--primary-light), transparent),
+                  radial-gradient(circle at bottom left, var(--info-light), transparent),
+                  var(--bg-primary);
+      font-family: var(--font-main);
+      color: var(--text-primary);
+      transition: background-color var(--transition-normal), color var(--transition-normal);
+    }
+
+    .verified-container {
+      width: 100%;
+      max-width: 460px;
+      padding: 1.5rem;
+      box-sizing: border-box;
+      animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .verified-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 2.5rem 2rem;
+      text-align: center;
+      box-shadow: var(--shadow-xl);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Decorative gradient bar at the top */
+    .verified-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 5px;
+      background: linear-gradient(90deg, var(--primary), var(--info));
+    }
+
+    .success-icon-wrapper {
+      width: 80px;
+      height: 80px;
+      border-radius: var(--radius-full);
+      background: var(--success-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.75rem;
+      color: var(--success);
+      position: relative;
+    }
+
+    .success-icon-wrapper svg {
+      width: 42px;
+      height: 42px;
+      stroke-dasharray: 100;
+      stroke-dashoffset: 100;
+      animation: drawCheck 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      animation-delay: 0.2s;
+    }
+
+    .success-pulse {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: var(--radius-full);
+      border: 2px solid var(--success);
+      opacity: 0;
+      animation: pulse 1.8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+      animation-delay: 0.8s;
+    }
+
+    .title {
+      font-size: 1.75rem;
+      font-weight: 800;
+      margin-bottom: 0.75rem;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, var(--text-primary) 30%, var(--text-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-bottom: 2rem;
+    }
+
+    .btn-login {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 0.85rem 1.5rem;
+      background: var(--primary);
+      color: white !important;
+      border: none;
+      border-radius: var(--radius-md);
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+      transition: all var(--transition-fast);
+      gap: 0.5rem;
+      box-sizing: border-box;
+    }
+
+    .btn-login:hover {
+      background: var(--primary-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(79, 70, 229, 0.3);
+    }
+
+    .btn-login:active {
+      transform: translateY(0);
+    }
+
+    .brand-footer {
+      margin-top: 1.5rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .brand-logo-mini {
+      width: 24px;
+      height: 24px;
+      border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, var(--primary), var(--info));
+      color: white;
+      font-weight: 800;
+      font-size: 0.7rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes drawCheck {
+      to { stroke-dashoffset: 0; }
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); opacity: 0.5; }
+      100% { transform: scale(1.4); opacity: 0; }
+    }
+  </style>
+  <script>
+    // Inherit system dark/light theme automatically
+    try {
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    } catch(e) {}
+  </script>
+</head>
+<body>
+
+  <div class="verified-container">
+    <div class="verified-card">
+      <div class="success-icon-wrapper">
+        <div class="success-pulse"></div>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+      </div>
+
+      <h1 class="title">Email Verified</h1>
+      <p class="subtitle">
+        Your email address has been successfully verified. Your account is now active and you are ready to log in.
+      </p>
+
+      <a href="index.html" class="btn-login">
+        Proceed to Login
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+        </svg>
+      </a>
+    </div>
+
+    <div class="brand-footer" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+      <div class="brand-logo-mini" style="background: transparent; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+        <img src="logo.jpg" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">
+      </div>
+      <span>MyBidBook</span>
+    </div>
+  </div>
+
+</body>
+</html>

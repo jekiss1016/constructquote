@@ -1,0 +1,21 @@
+{
+  "short_name": "MyBidBook",
+  "name": "MyBidBook Smart Estimating",
+  "icons": [
+    {
+      "src": "icon-192.png?v=2.2",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icon-512.png?v=2.2",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "./index.html",
+  "background_color": "#0f172a",
+  "theme_color": "#4f46e5",
+  "display": "standalone",
+  "orientation": "any"
+}

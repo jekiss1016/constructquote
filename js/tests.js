@@ -604,9 +604,9 @@ async function runTestSuite() {
     await wait(1000);
 
     // -------------------------------------------------------------
-    // TEST 6: Dashboard Expiration Filter Verification
+    // TEST 7: Dashboard Expiration Filter Verification
     // -------------------------------------------------------------
-    createTestCard('6. Dashboard Expiration Filter Verification');
+    createTestCard('7. Dashboard Expiration Filter Verification');
     const stepDashNav = addStep('Navigating to Dashboard View');
     doc.querySelector('.nav-item[data-target="dashboard-view"]').click();
     await wait(1000);
@@ -643,9 +643,9 @@ async function runTestSuite() {
     log('Dashboard expiration threshold dropdown tested successfully!', 'success');
 
     // -------------------------------------------------------------
-    // TEST 7: Email Quote Modal Verification
+    // TEST 8: Email Quote Modal Verification
     // -------------------------------------------------------------
-    createTestCard('7. Email Quote Modal Verification');
+    createTestCard('8. Email Quote Modal Verification');
     const stepEmailNav = addStep('Navigating to Quotes View');
     doc.querySelector('.nav-item[data-target="quotes-view"]').click();
     await wait(1000);
@@ -698,9 +698,9 @@ async function runTestSuite() {
     await wait(1000);
 
     // -------------------------------------------------------------
-    // TEST 8: Customer Manager Operations
+    // TEST 9: Customer Manager Operations
     // -------------------------------------------------------------
-    createTestCard('8. Customer Manager Operations');
+    createTestCard('9. Customer Manager Operations');
     const stepCustNav = addStep('Navigating to Customers View');
     doc.querySelector('.nav-item[data-target="customers-view"]').click();
     await wait(1000);
@@ -767,9 +767,9 @@ async function runTestSuite() {
     await wait(1000);
 
     // -------------------------------------------------------------
-    // TEST 9: Viewer Role UI Restriction Verification
+    // TEST 10: Viewer Role UI Restriction Verification
     // -------------------------------------------------------------
-    createTestCard('9. Viewer Role UI Restriction');
+    createTestCard('10. Viewer Role UI Restriction');
     const stepViewCheck = addStep('Simulating viewer role and checking warning visibility');
 
     // Get active app script to dynamically extract cache-busting version query parameter

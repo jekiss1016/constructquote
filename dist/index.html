@@ -1,0 +1,2046 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <script>
+    // Self-healing module cache-clearing routine
+    try {
+      if (!localStorage.getItem('cq-cache-cleared-v80')) {
+        localStorage.clear();
+        localStorage.setItem('cq-cache-cleared-v80', 'true');
+        window.location.reload(true);
+      }
+    } catch (e) {}
+
+    // Inline global logout utility (bypass ES Module loading sequence entirely)
+    function globalLogout() {
+      console.log('HTML globalLogout -> Triggered!');
+      try {
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const key = localStorage.key(i);
+          if (key && (key.includes('supabase.auth') || key.includes('auth-token') || key.includes('supabase-key'))) {
+            localStorage.removeItem(key);
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+      window.location.reload(true);
+    }
+
+    window.onerror = function(msg, url, line, col, error) {
+      const errDiv = document.createElement('div');
+      errDiv.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:red;color:white;padding:1rem;z-index:999999;font-family:monospace;white-space:pre-wrap;font-size:12px;box-shadow: 0 4px 6px rgba(0,0,0,0.1);';
+      errDiv.textContent = 'JS Load/Runtime Error: ' + msg + '\nFile: ' + url + '\nLine: ' + line + ':' + col + '\nStack: ' + (error ? error.stack : 'N/A');
+      document.documentElement.appendChild(errDiv);
+      return false;
+    };
+    window.addEventListener('unhandledrejection', function(event) {
+      const errDiv = document.createElement('div');
+      errDiv.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:orange;color:white;padding:1rem;z-index:999999;font-family:monospace;white-space:pre-wrap;font-size:12px;box-shadow: 0 4px 6px rgba(0,0,0,0.1);';
+      errDiv.textContent = 'Unhandled Rejection: ' + event.reason + '\nStack: ' + (event.reason && event.reason.stack ? event.reason.stack : 'N/A');
+      document.documentElement.appendChild(errDiv);
+    });
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyBidBook | Smart Construction Estimation</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4f46e5">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2.2">
+
+  <!-- iOS PWA capability meta tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MyBidBook">
+
+  <link rel="stylesheet" href="css/styles.css?v=2.2">
+  <link rel="stylesheet" href="css/print.css?v=2.2">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Mobile Header -->
+    <header class="mobile-header">
+      <button type="button" id="mobile-sidebar-toggle" class="mobile-toggle-btn" aria-label="Toggle Menu">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="24" height="24" style="stroke-width: 2.5;">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+        </svg>
+      </button>
+      <div class="mobile-brand">
+        <span class="mobile-brand-name">MyBidBook</span>
+      </div>
+      <div style="width: 32px;"></div>
+    </header>
+
+    <!-- Sidebar Overlay -->
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand-section" style="flex-direction: column; align-items: center; text-align: center; gap: 0.75rem; margin-bottom: 2rem;">
+        <div id="brand-logo-container" class="brand-logo-icon" style="width: 140px; height: 140px; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); display: flex; align-items: center; justify-content: center; overflow: hidden; background: transparent; color: white; font-weight: 800; font-size: 2.75rem; margin: 0 auto;">
+          <img src="logo.jpg" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center;">
+          <h1 class="brand-name" id="brand-company-name" style="font-size: 1.15rem; font-weight: 800; margin: 0; line-height: 1.25;">MyBidBook</h1>
+          <span class="brand-sub" id="brand-subscription-label" style="margin-top: 0.15rem;">Builder Edition</span>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <li class="nav-item active" data-target="dashboard-view">
+          <button type="button">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.2a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.2A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+            </svg>
+            Dashboard
+          </button>
+        </li>
+        <li class="nav-item" data-target="quotes-view">
+          <button type="button">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+            </svg>
+            Quotes Manager
+          </button>
+        </li>
+        <li class="nav-item" data-target="customers-view">
+          <button type="button">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.97 5.97 0 00-.75-2.906m-.18 3.099c-.047-.098-.08-.202-.1-.31m-.1-3.099A5.97 5.97 0 0012 11.5c-2.106 0-3.974 1.085-5.074 2.73m2.138 6.27c-.1-.1-.186-.214-.258-.328m0 0A5.998 5.998 0 007.5 17c0-2.3 1.29-4.3 3.208-5.334" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 5.25a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Customers
+          </button>
+        </li>
+        <li class="nav-item" data-target="catalog-view">
+          <button type="button">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v2.2c0 .621.504 1.125 1.125 1.125z" />
+            </svg>
+            Product Catalog
+          </button>
+        </li>
+        <li class="nav-item" data-target="settings-view">
+          <button type="button">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.43l-1.003.828c-.293.241-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.43l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.991l-1.004-.827a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.28z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Settings
+          </button>
+        </li>
+        <li class="nav-item" id="nav-item-support">
+          <button type="button" id="support-open-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            Contact Support
+          </button>
+        </li>
+        <li class="nav-item" id="nav-item-pwa-install" style="display: none;">
+          <button type="button" id="pwa-install-btn" class="pwa-install-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Get The App
+          </button>
+        </li>
+      </nav>
+
+      <div class="sidebar-footer" style="display: flex; flex-direction: column; gap: 0.5rem;">
+        <button type="button" class="theme-toggle-btn" id="theme-toggle-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="16" height="16">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+          </svg>
+          <span id="theme-toggle-label">Dark Theme</span>
+        </button>
+        <button type="button" class="theme-toggle-btn" id="auth-logout-btn" onclick="globalLogout()" style="background-color: var(--danger-light); color: var(--danger); border-color: rgba(239, 68, 68, 0.25); display: none;">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="16" height="16">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          <span>Log Out</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Panel -->
+    <main class="main-content">
+      
+      <!-- ==================== DASHBOARD VIEW ==================== -->
+      <section id="dashboard-view" class="view-section active">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title">Welcome Back</h2>
+            <p class="page-description">Here is an overview of your active projects and quotes.</p>
+          </div>
+          <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <a href="help.html#dashboard" target="_blank" class="btn btn-secondary help-btn" style="padding: 0.35rem 0.65rem; gap: 0.25rem; font-size: 0.8rem;" title="View Help Documentation">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14" style="stroke-width: 2.5;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5h.008v.008H12V17z" />
+              </svg>
+              Help
+            </a>
+            <button type="button" class="btn btn-primary" id="dashboard-new-quote-btn">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              Create New Quote
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Stats Grid -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon primary">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="24" height="24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div class="stat-info">
+              <span class="stat-value" id="stats-pending-value">$0.00</span>
+              <span class="stat-label">Pending Value</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon success">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="24" height="24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div class="stat-info">
+              <span class="stat-value" id="stats-won-count">0</span>
+              <span class="stat-label">Quotes Won</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon danger">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="24" height="24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div class="stat-info">
+              <span class="stat-value" id="stats-lost-count">0</span>
+              <span class="stat-label">Quotes Lost</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon warning">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="24" height="24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z" />
+              </svg>
+            </div>
+            <div class="stat-info">
+              <span class="stat-value" id="stats-conversion-rate">0%</span>
+              <span class="stat-label">Conversion Rate</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dashboard Grid Layout -->
+        <div class="dashboard-grid">
+          <!-- Approaching Expiration Panel -->
+          <div class="widget-card">
+            <div class="widget-header">
+              <h3 class="widget-title" style="display: flex; align-items: center; gap: 0.25rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20" style="color: var(--warning); margin-right: 0.25rem;">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                Approaching Expiration (Expiring ≤
+                <select id="dashboard-expiration-days" class="dashboard-expiry-select">
+                  <option value="10" selected>10 Days</option>
+                  <option value="20">20 Days</option>
+                  <option value="30">30 Days</option>
+                  <option value="40">40 Days</option>
+                  <option value="50">50 Days</option>
+                  <option value="60">60 Days</option>
+                  <option value="70">70 Days</option>
+                  <option value="80">80 Days</option>
+                  <option value="90">90 Days</option>
+                </select>)
+              </h3>
+              <span class="badge badge-pending" id="dashboard-expiration-count">0 Warning</span>
+            </div>
+            <div class="table-container">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Job ID</th>
+                    <th>Customer</th>
+                    <th>Date Created</th>
+                    <th>Expiration</th>
+                    <th>Total Value</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="dashboard-expiration-list">
+                  <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-muted);">No quotes expiring soon. Great job!</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== QUOTES LIST VIEW ==================== -->
+      <section id="quotes-view" class="view-section">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title">Quotes Manager</h2>
+            <p class="page-description">Find, monitor, and manage customer quotes.</p>
+          </div>
+          <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <a href="help.html#quotes" target="_blank" class="btn btn-secondary help-btn" style="padding: 0.35rem 0.65rem; gap: 0.25rem; font-size: 0.8rem;" title="View Help Documentation">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14" style="stroke-width: 2.5;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5h.008v.008H12V17z" />
+              </svg>
+              Help
+            </a>
+            <button type="button" class="btn btn-primary" id="list-new-quote-btn">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              Create New Quote
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter / Search Controls -->
+        <div class="list-controls">
+          <div class="search-input-wrapper">
+            <input type="text" class="search-input" id="quotes-search-input" placeholder="Search by Customer, Job ID, or Address...">
+            <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+
+          <div class="filter-tabs" id="quotes-status-tabs">
+            <button type="button" class="filter-tab active" data-status="pending">Active / Pending</button>
+            <button type="button" class="filter-tab" data-status="archived">Archived (Won/Lost)</button>
+            <button type="button" class="filter-tab" data-status="all">All Quotes</button>
+          </div>
+        </div>
+
+        <!-- Main Quotes Table -->
+        <div class="table-container">
+          <table class="custom-table" id="quotes-table">
+            <thead>
+              <tr>
+                <th>Job ID</th>
+                <th>Quote #</th>
+                <th>Customer</th>
+                <th>Project Address</th>
+                <th>Date</th>
+                <th>Expiration</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th style="text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="quotes-table-body">
+              <tr>
+                <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 2rem;">No quotes found. Create your first quote to get started!</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ==================== CUSTOMERS VIEW ==================== -->
+      <section id="customers-view" class="view-section">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title">Customer Manager</h2>
+            <p class="page-description">Manage customers, project sites, and client contacts.</p>
+          </div>
+          <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <a href="help.html#customers" target="_blank" class="btn btn-secondary help-btn" style="padding: 0.35rem 0.65rem; gap: 0.25rem; font-size: 0.8rem;" title="View Help Documentation">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14" style="stroke-width: 2.5;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5h.008v.008H12V17z" />
+              </svg>
+              Help
+            </a>
+            <button type="button" class="btn btn-primary" id="customers-new-btn">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              Add New Customer
+            </button>
+          </div>
+        </div>
+
+        <div class="list-controls">
+          <div class="search-input-wrapper">
+            <input type="text" class="search-input" id="customers-search-input" placeholder="Search customers by name, address, or email...">
+            <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="custom-table" id="customers-table">
+            <thead>
+              <tr>
+                <th>Customer Name</th>
+                <th>Primary Email</th>
+                <th>Phone Number</th>
+                <th>Project Address</th>
+                <th>Contacts Count</th>
+                <th>Status</th>
+                <th style="text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="customers-table-body">
+              <tr>
+                <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">No customers found. Click Add New Customer to begin.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ==================== QUOTE BUILDER VIEW ==================== -->
+      <section id="builder-view" class="view-section">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title" id="builder-title">New Construction Quote</h2>
+            <p class="page-description">Fill out the information below to compile your quote proposal.</p>
+          </div>
+          <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <a href="help.html#builder" target="_blank" class="btn btn-secondary help-btn" style="padding: 0.35rem 0.65rem; gap: 0.25rem; font-size: 0.8rem;" title="View Help Documentation">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14" style="stroke-width: 2.5;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5h.008v.008H12V17z" />
+              </svg>
+              Help
+            </a>
+            <button type="button" class="btn btn-secondary" id="builder-update-costs-btn" style="display: none;" title="Updates All Quote Items to Current Catalog Costs">Update Product Costs</button>
+            <button type="button" class="btn btn-secondary" id="builder-cancel-btn">Cancel</button>
+            <button type="button" class="btn btn-success" id="builder-save-btn">Save Quote</button>
+          </div>
+        </div>
+
+        <div class="builder-layout">
+          <!-- Left side: forms & item builder -->
+          <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            
+            <!-- Document Setup -->
+            <div class="builder-panel">
+              <h3 class="builder-section-title">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Project Identifiers & Dates
+              </h3>
+              
+              <div class="form-group-row">
+                <div class="form-group">
+                  <label class="form-label" for="builder-job-id">Job ID <span style="color: var(--danger);">*</span></label>
+                  <input type="text" class="form-input" id="builder-job-id" placeholder="e.g. JOB-2026-004A" required>
+                  <span class="form-error-msg" id="job-id-error">This Job ID is already assigned to an active quote. Job IDs must be unique.</span>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="builder-quote-number">Quote Number</label>
+                  <input type="text" class="form-input" id="builder-quote-number" placeholder="Generated automatically" disabled>
+                </div>
+              </div>
+
+              <div class="form-group-row">
+                <div class="form-group">
+                  <label class="form-label" for="builder-quote-date">Quote Date</label>
+                  <input type="date" class="form-input" id="builder-quote-date" readonly style="background-color: var(--border-color); cursor: not-allowed; opacity: 0.8;">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="builder-expiry-date">Expiration Date <span style="color: var(--danger);">*</span></label>
+                  <input type="date" class="form-input" id="builder-expiry-date" required>
+                </div>
+              </div>
+            </div>
+
+            <!-- Customer Details -->
+            <div class="builder-panel">
+              <h3 class="builder-section-title">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                Client Information
+              </h3>
+              
+              <div class="form-group">
+                <label class="form-label" for="builder-customer-select">Select Customer <span style="color: var(--danger);">*</span></label>
+                <select class="form-select" id="builder-customer-select" required>
+                  <option value="" disabled selected>-- Select Customer --</option>
+                </select>
+              </div>
+
+              <input type="hidden" id="builder-customer-name" required>
+
+              <div class="form-group-row">
+                <div class="form-group">
+                  <label class="form-label" for="builder-customer-email">Email Address</label>
+                  <input type="email" class="form-input" id="builder-customer-email" placeholder="client@example.com">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="builder-customer-phone">Phone Number</label>
+                  <input type="tel" class="form-input" id="builder-customer-phone" placeholder="(555) 000-0000">
+                </div>
+              </div>
+
+              <input type="hidden" id="builder-project-address">
+
+              <div class="form-group-row">
+                <div class="form-group" style="flex: 2;">
+                  <label class="form-label" for="builder-project-address-street">Project Address</label>
+                  <input type="text" class="form-input" id="builder-project-address-street" placeholder="Address Street">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                  <label class="form-label" for="builder-project-address-city">City</label>
+                  <input type="text" class="form-input" id="builder-project-address-city" placeholder="City">
+                </div>
+              </div>
+              <div class="form-group-row">
+                <div class="form-group">
+                  <label class="form-label" for="builder-project-address-state">State</label>
+                  <select class="form-select" id="builder-project-address-state" style="padding: 0.55rem; height: 42px;">
+                    <option value="" selected>State</option>
+                    <option value="AL">AL</option>
+                    <option value="AK">AK</option>
+                    <option value="AZ">AZ</option>
+                    <option value="AR">AR</option>
+                    <option value="CA">CA</option>
+                    <option value="CO">CO</option>
+                    <option value="CT">CT</option>
+                    <option value="DE">DE</option>
+                    <option value="DC">DC</option>
+                    <option value="FL">FL</option>
+                    <option value="GA">GA</option>
+                    <option value="HI">HI</option>
+                    <option value="ID">ID</option>
+                    <option value="IL">IL</option>
+                    <option value="IN">IN</option>
+                    <option value="IA">IA</option>
+                    <option value="KS">KS</option>
+                    <option value="KY">KY</option>
+                    <option value="LA">LA</option>
+                    <option value="ME">ME</option>
+                    <option value="MD">MD</option>
+                    <option value="MA">MA</option>
+                    <option value="MI">MI</option>
+                    <option value="MN">MN</option>
+                    <option value="MS">MS</option>
+                    <option value="MO">MO</option>
+                    <option value="MT">MT</option>
+                    <option value="NE">NE</option>
+                    <option value="NV">NV</option>
+                    <option value="NH">NH</option>
+                    <option value="NJ">NJ</option>
+                    <option value="NM">NM</option>
+                    <option value="NY">NY</option>
+                    <option value="NC">NC</option>
+                    <option value="ND">ND</option>
+                    <option value="OH">OH</option>
+                    <option value="OK">OK</option>
+                    <option value="OR">OR</option>
+                    <option value="PA">PA</option>
+                    <option value="RI">RI</option>
+                    <option value="SC">SC</option>
+                    <option value="SD">SD</option>
+                    <option value="TN">TN</option>
+                    <option value="TX">TX</option>
+                    <option value="UT">UT</option>
+                    <option value="VT">VT</option>
+                    <option value="VA">VA</option>
+                    <option value="WA">WA</option>
+                    <option value="WV">WV</option>
+                    <option value="WI">WI</option>
+                    <option value="WY">WY</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="builder-project-address-zip">Zip Code</label>
+                  <input type="text" class="form-input" id="builder-project-address-zip" placeholder="Zip" pattern="\d{5}" maxlength="5" title="5-digit zip code">
+                </div>
+              </div>
+            </div>
+
+
+            <!-- Sections Container Workspace -->
+            <div id="builder-sections-container" style="display: flex; flex-direction: column; gap: 1.5rem;">
+              <!-- Dynamically rendered section panels -->
+            </div>
+
+            <!-- Add Section Control -->
+            <div style="display: flex; justify-content: center; margin-top: 0.5rem; margin-bottom: 0.5rem;">
+              <button type="button" class="btn btn-secondary" id="builder-add-section-btn" style="width: 100%; border-style: dashed; border-width: 2px;">
+                ➕ Add Quote Section (e.g. Foundation, Framing)
+              </button>
+            </div>
+
+            <!-- Notes and Terms -->
+            <div class="builder-panel">
+              <h3 class="builder-section-title">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                </svg>
+                Notes & Terms and Conditions
+              </h3>
+              <div class="form-group">
+                <textarea class="form-textarea" id="builder-notes" rows="4" placeholder="Enter terms, payment schedules, or general notes for the client..."></textarea>
+              </div>
+            </div>
+
+            <!-- Project Gallery -->
+            <div class="builder-panel">
+              <h3 class="builder-section-title">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                </svg>
+                Project Photos Gallery (Before, During, After)
+              </h3>
+              
+              <div class="logo-uploader-container">
+                <div style="display: flex; flex-direction: column; gap: 0.5rem; flex-grow: 1;">
+                  <label for="builder-gallery-upload" class="btn btn-secondary" style="margin-bottom: 0;">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="16" height="16">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    Upload Project Photo
+                  </label>
+                  <input type="file" id="builder-gallery-upload" accept="image/*" style="display: none;">
+                  <span style="font-size: 0.75rem; color: var(--text-muted);">Format: JPG, PNG. Image sizes will be scaled down for storage efficiency.</span>
+                </div>
+              </div>
+
+              <!-- Upload form panel for active upload configuration -->
+              <div id="builder-photo-add-fields" style="display: none; padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md); background-color: var(--bg-tertiary); flex-direction: column; gap: 0.75rem;">
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                  <img id="builder-photo-temp-preview" src="" alt="Preview" style="width: 60px; height: 60px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+                  <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 0.35rem;">
+                    <span style="font-size: 0.8rem; font-weight: 600;">Configure Uploaded Photo</span>
+                  </div>
+                </div>
+                <div class="form-group-row">
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Category</label>
+                    <select class="form-select" id="builder-photo-category" style="padding: 0.45rem 0.6rem; font-size: 0.85rem;">
+                      <option value="before">Before</option>
+                      <option value="during">During</option>
+                      <option value="after">After</option>
+                    </select>
+                  </div>
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Photo Label / Caption</label>
+                    <input type="text" class="form-input" id="builder-photo-label" placeholder="e.g. Existing subfloor decay" style="padding: 0.45rem 0.6rem; font-size: 0.85rem;">
+                  </div>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.25rem;">
+                  <button type="button" class="btn btn-secondary" id="builder-photo-cancel" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Cancel</button>
+                  <button type="button" class="btn btn-success" id="builder-photo-save" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Attach Photo</button>
+                </div>
+              </div>
+
+              <!-- List of current quote photos categories -->
+              <div class="filter-tabs" style="align-self: flex-start; margin-top: 0.5rem;" id="builder-gallery-tabs">
+                <button type="button" class="filter-tab active" data-cat="all">All Photos (<span id="gallery-count-all">0</span>)</button>
+                <button type="button" class="filter-tab" data-cat="before">Before (<span id="gallery-count-before">0</span>)</button>
+                <button type="button" class="filter-tab" data-cat="during">During (<span id="gallery-count-during">0</span>)</button>
+                <button type="button" class="filter-tab" data-cat="after">After (<span id="gallery-count-after">0</span>)</button>
+              </div>
+
+              <!-- Photo grid display inside builder -->
+              <div id="builder-gallery-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 1rem; margin-top: 0.5rem;">
+                <!-- Dynamically loaded thumbnail figures -->
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Right side sticky summary card -->
+          <div class="builder-summary-panel">
+            <!-- Section 1: Quote Configuration -->
+            <h3 class="builder-section-title">Quote Configuration</h3>
+            <div class="form-group" style="margin-bottom: 0.5rem;">
+              <label class="form-label" for="builder-markup">Markup (%)</label>
+              <input type="number" class="form-input" id="builder-markup" value="0" min="0" step="1">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0.5rem;">
+              <label class="form-label" for="builder-tax">Sales Tax (%)</label>
+              <input type="number" class="form-input" id="builder-tax" value="0" min="0" step="0.1">
+              <div style="margin-top: 0.35rem;">
+                <label style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; font-weight: 500; color: var(--text-secondary); cursor: pointer; user-select: none;">
+                  <input type="checkbox" id="builder-tax-plus-applicable" style="cursor: pointer;">
+                  Do Not Show Sales Tax - Replace with "Plus Any Applicable Taxes"
+                </label>
+              </div>
+            </div>
+
+            <!-- Section 2: Print Visibility Controls -->
+            <div style="border-top: 1px solid var(--border-color); padding-top: 0.75rem; margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.45rem;">
+              <span class="form-label" style="margin-bottom: 0.15rem; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">Print Visibility Controls</span>
+              <div style="display: flex; align-items: center; gap: 0.35rem;">
+                <input type="checkbox" id="print-show-details" checked style="cursor: pointer;">
+                <label class="form-label" for="print-show-details" style="margin-bottom: 0; font-size: 0.75rem; font-weight: 500; cursor: pointer;">Show product line details</label>
+              </div>
+              <div id="print-show-pricing-wrapper" style="display: flex; align-items: center; gap: 0.35rem;">
+                <input type="checkbox" id="print-show-pricing" checked style="cursor: pointer;">
+                <label class="form-label" for="print-show-pricing" style="margin-bottom: 0; font-size: 0.75rem; font-weight: 500; cursor: pointer;">Show prices on detail lines</label>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.35rem;">
+                <input type="checkbox" id="print-show-quantities" checked style="cursor: pointer;">
+                <label class="form-label" for="print-show-quantities" style="margin-bottom: 0; font-size: 0.75rem; font-weight: 500; cursor: pointer;">Show quantities & unit costs</label>
+              </div>
+            </div>
+
+            <!-- Section 3: Price Summary -->
+            <div style="border-top: 1px solid var(--border-color); padding-top: 0.75rem; display: flex; flex-direction: column; gap: 0.65rem;">
+              <h3 class="builder-section-title" style="margin-bottom: 0.25rem; border-bottom: none; padding-bottom: 0;">Price Summary</h3>
+              
+              <div class="summary-row">
+                <span>Material Subtotal:</span>
+                <span id="builder-summary-materials">$0.00</span>
+              </div>
+              
+              <div class="summary-row">
+                <span>Labor Subtotal:</span>
+                <span id="builder-summary-labor">$0.00</span>
+              </div>
+
+              <div class="summary-row">
+                <span>Markup Subtotal:</span>
+                <span id="builder-summary-markup-val">$0.00</span>
+              </div>
+
+              <div class="summary-row" style="border-top: 1px solid var(--border-color); padding-top: 0.5rem; margin-top: 0.15rem; font-weight: 600;">
+                <span>Combined Subtotal:</span>
+                <span id="builder-summary-subtotal">$0.00</span>
+              </div>
+
+              <div class="summary-row">
+                <span>Tax Amount:</span>
+                <span id="builder-summary-tax-val">$0.00</span>
+              </div>
+
+              <div class="summary-row total">
+                <span>Total Price:</span>
+                <span id="builder-summary-total">$0.00</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== QUOTE DETAIL / VIEW ==================== -->
+      <section id="detail-view" class="view-section">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title">Quote Preview</h2>
+            <p class="page-description">Review, print, archive, or duplicate this quote proposal.</p>
+          </div>
+          <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <a href="help.html#preview" target="_blank" class="btn btn-secondary help-btn" style="padding: 0.35rem 0.65rem; gap: 0.25rem; font-size: 0.8rem;" title="View Help Documentation">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14" style="stroke-width: 2.5;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5h.008v.008H12V17z" />
+              </svg>
+              Help
+            </a>
+            <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;" id="detail-actions-bar">
+              <!-- Dynamic action buttons will inject here (Print, Edit, Won/Lost, Duplicate, Back) -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Mismatched prices alert -->
+        <div class="alert alert-warning" id="detail-price-warning" style="display: none;">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <div style="flex-grow: 1;">
+            <strong style="display: block; margin-bottom: 0.15rem;">Outdated Quote Pricing</strong>
+            Product prices in the catalog have changed since this quote was saved. You can update this quote to current pricing. The system will archive this version as a legacy copy before updating.
+          </div>
+          <button type="button" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; align-self: center;" id="detail-update-prices-btn">Update Pricing</button>
+        </div>
+
+        <div class="detail-view-container">
+          <!-- Left side: printable invoice card -->
+          <div class="quote-paper-view" id="quote-paper">
+            <!-- Paper Header -->
+            <div class="paper-header">
+              <div>
+                <img src="" alt="Company Logo" class="paper-company-logo" id="paper-logo" style="display: none;">
+                <div id="paper-logo-placeholder" style="font-weight: 800; font-size: 1.5rem; color: #1e293b; letter-spacing: -0.05em; display: block;">COMPANY LOGO</div>
+              </div>
+              <div class="paper-company-info">
+                <div class="paper-company-name" id="paper-co-name">Construction Quoting Co.</div>
+                <div id="paper-co-address-street1">123 Builder Lane</div>
+                <div id="paper-co-address-street2">Suite A</div>
+                <div id="paper-co-address-citystatezip">City, State Zip</div>
+                <div id="paper-co-contact">email@company.com | (555) 555-5555</div>
+              </div>
+            </div>
+
+            <!-- Quote Info -->
+            <div class="paper-quote-title-section">
+              <h3 class="paper-title">QUOTE</h3>
+              <div class="paper-meta-grid">
+                <span class="paper-meta-label">Job ID:</span>
+                <span class="paper-meta-value" id="paper-meta-job-id">JOB-XYZ</span>
+                
+                <span class="paper-meta-label">Quote Date:</span>
+                <span class="paper-meta-value" id="paper-meta-date">June 29, 2026</span>
+
+                <span class="paper-meta-label">Expiration Date:</span>
+                <span class="paper-meta-value" id="paper-meta-expiry">July 29, 2026</span>
+              </div>
+            </div>
+
+            <!-- Client block -->
+            <div class="paper-bill-to-grid">
+              <div>
+                <h4 class="paper-section-heading">PREPARED FOR:</h4>
+                <div class="paper-address-block">
+                  <div class="paper-address-name" id="paper-client-name">John Client</div>
+                  <div id="paper-client-address-street">456 Residential Way</div>
+                  <div id="paper-client-address-citystatezip">City, State Zip</div>
+                  <div id="paper-client-phone">(555) 123-4567</div>
+                  <div id="paper-client-email">john.client@example.com</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Proposal Items Table -->
+            <div class="table-container" style="border: none; border-radius: 0; background: transparent; box-shadow: none; margin-bottom: 1.5rem; width: 100%;">
+              <table class="paper-table">
+                <thead>
+                  <tr>
+                    <th style="text-align: left; width: 45%;">Item & Description</th>
+                    <th style="text-align: center; width: 10%;">Qty</th>
+                    <th style="text-align: center; width: 10%;">UOM</th>
+                    <th style="text-align: right; width: 15%;">Unit Price</th>
+                    <th style="text-align: right; width: 20%;">Total Price</th>
+                  </tr>
+                </thead>
+                <tbody id="paper-items-tbody">
+                  <!-- Javascript populated rows -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Totals & Notes -->
+            <div class="paper-totals-layout">
+              <div>
+                <h4 class="paper-section-heading" style="margin-bottom: 0.5rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.35rem;">Terms & Notes</h4>
+                
+                <div class="paper-notes-section" id="paper-notes">
+                  Standard construction contract guidelines apply. All pricing is finalized unless structural modifications are requested.
+                </div>
+              </div>
+              <div>
+                <table class="paper-totals-table">
+                  <tbody>
+                    <tr>
+                      <td style="text-align: left; font-weight: 500;">Subtotal:</td>
+                      <td style="text-align: right;" id="paper-subtotal">$0.00</td>
+                    </tr>
+                    <tr id="paper-markup-row">
+                      <td style="text-align: left; font-weight: 500;">Markup (<span id="paper-markup-label">0</span>%):</td>
+                      <td style="text-align: right;" id="paper-markup-amount">$0.00</td>
+                    </tr>
+                    <tr id="paper-tax-row">
+                      <td style="text-align: left; font-weight: 500;" id="paper-tax-label-wrapper">Sales Tax (<span id="paper-tax-label">0</span>%):</td>
+                      <td style="text-align: right;" id="paper-tax-amount">$0.00</td>
+                    </tr>
+                    <tr class="total-row">
+                      <td style="text-align: left;">Total Cost:</td>
+                      <td style="text-align: right;" id="paper-total">$0.00</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Signatures -->
+            <div class="paper-signature-block" style="margin-top: 3.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; font-size: 0.8rem;">
+              <div>
+                <p style="font-weight: bold; margin-bottom: 2.5rem; color: #1e293b;">Client Acceptance</p>
+                <div style="display: flex; gap: 1.5rem; align-items: flex-end;">
+                  <div style="flex: 2.5; border-top: 1.5px solid #64748b; padding-top: 0.25rem; text-align: left; color: #64748b; font-size: 0.75rem; font-weight: 500;">Client Signature</div>
+                  <div style="flex: 1; border-top: 1.5px solid #64748b; padding-top: 0.25rem; text-align: left; color: #64748b; font-size: 0.75rem; font-weight: 500;">Date</div>
+                </div>
+              </div>
+              <div>
+                <p style="font-weight: bold; margin-bottom: 2.5rem; color: #1e293b;"><span id="paper-sig-co-name">Company</span> Authorized Representative</p>
+                <div style="display: flex; gap: 1.5rem; align-items: flex-end;">
+                  <div style="flex: 2.5; border-top: 1.5px solid #64748b; padding-top: 0.25rem; text-align: left; color: #64748b; font-size: 0.75rem; font-weight: 500;">Authorized Signature</div>
+                  <div style="flex: 1; border-top: 1.5px solid #64748b; padding-top: 0.25rem; text-align: left; color: #64748b; font-size: 0.75rem; font-weight: 500;">Date</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Print Footer -->
+            <div id="print-footer" class="print-footer show-in-print-only" style="display: none;">
+              <span id="print-footer-text"></span>
+            </div>
+          </div>
+
+          <!-- Right side: versions history -->
+          <div class="detail-sidebar">
+            <!-- Project Gallery Manager Widget -->
+            <div class="widget-card hide-in-print" style="margin-bottom: 1rem;">
+              <div class="widget-header">
+                <h3 class="widget-title">Project Gallery Manager</h3>
+              </div>
+              <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: -0.5rem; margin-bottom: 0.75rem;">
+                Attach or remove project documentation photos at any time.
+              </p>
+              
+              <div class="form-group" style="margin-bottom: 0.75rem;">
+                <label class="form-label" style="font-size: 0.8rem;">Attach Photo</label>
+                <input type="file" class="form-input" id="detail-gallery-upload" accept="image/*" style="font-size: 0.75rem; padding: 0.25rem;">
+              </div>
+              
+              <!-- Popup details panel -->
+              <div id="detail-photo-add-fields" style="display: none; flex-direction: column; gap: 0.45rem; background: var(--bg-secondary); padding: 0.5rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); margin-bottom: 0.75rem;">
+                <img id="detail-photo-temp-preview" style="max-height: 80px; object-fit: contain; border-radius: var(--radius-sm); margin: 0 auto;">
+                <input type="text" class="form-input" id="detail-photo-label" placeholder="Photo Label (e.g. Finished Floor)" style="font-size: 0.75rem; padding: 0.35rem;">
+                <select class="form-select" id="detail-photo-category" style="font-size: 0.75rem; padding: 0.35rem;">
+                  <option value="before">Before</option>
+                  <option value="during">During</option>
+                  <option value="after">After</option>
+                </select>
+                <div style="display: flex; gap: 0.25rem; justify-content: flex-end; margin-top: 0.2rem;">
+                  <button type="button" class="btn btn-secondary" id="detail-photo-cancel" style="padding: 0.25rem 0.5rem; font-size: 0.7rem;">Cancel</button>
+                  <button type="button" class="btn btn-success" id="detail-photo-save" style="padding: 0.25rem 0.5rem; font-size: 0.7rem;">Attach</button>
+                </div>
+              </div>
+
+              <!-- Sidebar gallery list -->
+              <div id="detail-gallery-list" style="display: flex; flex-direction: column; gap: 0.4rem; max-height: 250px; overflow-y: auto; padding-right: 0.25rem;">
+                <!-- Listed files -->
+              </div>
+            </div>
+
+            <!-- Contracts & PO Documents Widget -->
+            <div class="widget-card hide-in-print" style="margin-bottom: 1rem;" id="detail-docs-widget">
+              <div class="widget-header">
+                <h3 class="widget-title">Contract & PO Documents</h3>
+              </div>
+              <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: -0.5rem; margin-bottom: 0.75rem;">
+                Attach contract PDFs or purchase orders to this quote.
+              </p>
+              <div class="form-group" style="margin-bottom: 0.75rem;">
+                <label class="form-label" style="font-size: 0.8rem;">Attach PDF Document</label>
+                <input type="file" class="form-input" id="detail-doc-upload" accept="application/pdf" style="font-size: 0.75rem; padding: 0.25rem;">
+              </div>
+              <div id="detail-docs-list" style="display: flex; flex-direction: column; gap: 0.4rem; max-height: 180px; overflow-y: auto; padding-right: 0.25rem;">
+                <!-- Listed PDF files -->
+              </div>
+            </div>
+
+            <!-- Receipts & Expense Photos Widget -->
+            <div class="widget-card hide-in-print" style="margin-bottom: 1rem;" id="detail-receipts-widget">
+              <div class="widget-header">
+                <h3 class="widget-title">Receipts & Expense Tracker</h3>
+              </div>
+              <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: -0.5rem; margin-bottom: 0.75rem;">
+                Upload photos of material receipts or job expenses.
+              </p>
+              <div class="form-group" style="margin-bottom: 0.75rem;">
+                <label class="form-label" style="font-size: 0.8rem;">Upload Receipt Image</label>
+                <input type="file" class="form-input" id="detail-receipt-upload" accept="image/*" style="font-size: 0.75rem; padding: 0.25rem;">
+              </div>
+              <div id="detail-receipts-list" style="display: flex; flex-direction: column; gap: 0.4rem; max-height: 200px; overflow-y: auto; padding-right: 0.25rem;">
+                <!-- Listed receipts -->
+              </div>
+            </div>
+
+            <div class="widget-card">
+              <div class="widget-header" style="border-bottom: none; padding-bottom: 0;">
+                <h3 class="widget-title">Version History</h3>
+              </div>
+              <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: -0.5rem; margin-bottom: 0.5rem;">
+                Historical snapshots preserved when catalog prices were updated. Click a legacy item to view.
+              </p>
+              <div class="version-history-list" id="detail-version-list">
+                <!-- JavaScript generated versions -->
+              </div>
+            </div>
+
+            <div class="widget-card hide-in-print" style="margin-top: 1rem;" id="detail-email-correspondence-card">
+              <div class="widget-header">
+                <h3 class="widget-title">Email Correspondence</h3>
+              </div>
+              <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: -0.5rem; margin-bottom: 0.75rem;">
+                History of emails sent directly to the customer for this quote.
+              </p>
+              <div id="detail-email-log-list" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 250px; overflow-y: auto; padding-right: 0.25rem;">
+                <!-- JavaScript generated email logs -->
+                <p style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">No emails sent yet.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== PRODUCT CATALOG VIEW ==================== -->
+      <section id="catalog-view" class="view-section">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title">Product Catalog</h2>
+            <p class="page-description">Maintain material prices, units of measure, and default labor rates.</p>
+          </div>
+          <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <a href="help.html#catalog" target="_blank" class="btn btn-secondary help-btn" style="padding: 0.35rem 0.65rem; gap: 0.25rem; font-size: 0.8rem;" title="View Help Documentation">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14" style="stroke-width: 2.5;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5h.008v.008H12V17z" />
+              </svg>
+              Help
+            </a>
+            <button type="button" class="btn btn-primary" id="catalog-new-product-btn">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              Add New Product
+            </button>
+          </div>
+        </div>
+
+        <div class="builder-layout">
+          <!-- Left side catalog table -->
+          <div class="widget-card" style="flex-grow: 1;">
+            <div class="list-controls">
+              <div class="search-input-wrapper">
+                <input type="text" class="search-input" id="catalog-search-input" placeholder="Search catalog...">
+                <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+            </div>
+
+            <div class="table-container">
+              <table class="custom-table" id="catalog-table">
+                <thead>
+                  <tr>
+                    <th>Product Name</th>
+                    <th>Category</th>
+                    <th>UOM</th>
+                    <th>Base Price ($)</th>
+                    <th>Labor Rate ($)</th>
+                    <th>Status</th>
+                    <th>Description</th>
+                    <th style="text-align: right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="catalog-table-body">
+                  <!-- JS populated catalog -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Right side category manager -->
+          <div class="widget-card">
+            <div class="widget-header">
+              <h3 class="widget-title">Product Categories</h3>
+            </div>
+            
+            <!-- Category form -->
+            <div style="display: flex; gap: 0.5rem;">
+              <input type="text" class="form-input" id="category-add-input" placeholder="Enter new category name" style="padding: 0.5rem 0.75rem; font-size: 0.85rem;">
+              <button type="button" class="btn btn-secondary" id="category-add-btn" style="padding: 0.5rem 1rem; font-size: 0.85rem;">Add</button>
+            </div>
+
+            <div style="margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem;" id="catalog-category-list">
+              <!-- Categories list generated dynamically -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== SETTINGS VIEW ==================== -->
+      <section id="settings-view" class="view-section">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title">Application Settings</h2>
+            <p class="page-description">Configure your contractor company profile and defaults.</p>
+          </div>
+          <div>
+            <a href="help.html#settings" target="_blank" class="btn btn-secondary help-btn" style="padding: 0.35rem 0.65rem; gap: 0.25rem; font-size: 0.8rem;" title="View Help Documentation">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14" style="stroke-width: 2.5;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5h.008v.008H12V17z" />
+              </svg>
+              Help
+            </a>
+          </div>
+        </div>
+
+        <div class="split-layout">
+          <!-- Left settings panel -->
+          <div class="widget-card">
+            <h3 class="builder-section-title">Company Profile & Defaults</h3>
+            
+            <div class="form-group">
+              <label class="form-label" for="settings-co-name">Company Name</label>
+              <input type="text" class="form-input" id="settings-co-name" placeholder="Construction Quoting Co." autocomplete="organization-title">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="settings-co-address1">Company Address</label>
+              <input type="text" class="form-input" id="settings-co-address1" placeholder="Address Line 1">
+            </div>
+            <div class="form-group">
+              <input type="text" class="form-input" id="settings-co-address2" placeholder="Address Line 2 (Optional)">
+            </div>
+            <div class="form-group-row">
+              <div class="form-group" style="flex: 2;">
+                <label class="form-label" for="settings-co-city">City</label>
+                <input type="text" class="form-input" id="settings-co-city" placeholder="City">
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label class="form-label" for="settings-co-state">State</label>
+                <select class="form-select" id="settings-co-state" style="padding: 0.55rem; height: 42px;">
+                  <option value="" disabled selected>State</option>
+                  <option value="AL">AL</option>
+                  <option value="AK">AK</option>
+                  <option value="AZ">AZ</option>
+                  <option value="AR">AR</option>
+                  <option value="CA">CA</option>
+                  <option value="CO">CO</option>
+                  <option value="CT">CT</option>
+                  <option value="DE">DE</option>
+                  <option value="DC">DC</option>
+                  <option value="FL">FL</option>
+                  <option value="GA">GA</option>
+                  <option value="HI">HI</option>
+                  <option value="ID">ID</option>
+                  <option value="IL">IL</option>
+                  <option value="IN">IN</option>
+                  <option value="IA">IA</option>
+                  <option value="KS">KS</option>
+                  <option value="KY">KY</option>
+                  <option value="LA">LA</option>
+                  <option value="ME">ME</option>
+                  <option value="MD">MD</option>
+                  <option value="MA">MA</option>
+                  <option value="MI">MI</option>
+                  <option value="MN">MN</option>
+                  <option value="MS">MS</option>
+                  <option value="MO">MO</option>
+                  <option value="MT">MT</option>
+                  <option value="NE">NE</option>
+                  <option value="NV">NV</option>
+                  <option value="NH">NH</option>
+                  <option value="NJ">NJ</option>
+                  <option value="NM">NM</option>
+                  <option value="NY">NY</option>
+                  <option value="NC">NC</option>
+                  <option value="ND">ND</option>
+                  <option value="OH">OH</option>
+                  <option value="OK">OK</option>
+                  <option value="OR">OR</option>
+                  <option value="PA">PA</option>
+                  <option value="RI">RI</option>
+                  <option value="SC">SC</option>
+                  <option value="SD">SD</option>
+                  <option value="TN">TN</option>
+                  <option value="TX">TX</option>
+                  <option value="UT">UT</option>
+                  <option value="VT">VT</option>
+                  <option value="VA">VA</option>
+                  <option value="WA">WA</option>
+                  <option value="WV">WV</option>
+                  <option value="WI">WI</option>
+                  <option value="WY">WY</option>
+                </select>
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label class="form-label" for="settings-co-zip">Zip Code</label>
+                <input type="text" class="form-input" id="settings-co-zip" placeholder="Zip" pattern="\d{5}" maxlength="5" title="5-digit zip code">
+              </div>
+            </div>
+
+            <div class="form-group-row">
+              <div class="form-group">
+                <label class="form-label" for="settings-co-phone">Company Phone</label>
+                <input type="text" class="form-input" id="settings-co-phone" placeholder="(555) 555-5555" maxlength="14">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="settings-co-email">Company Email</label>
+                <input type="email" class="form-input" id="settings-co-email" placeholder="contact@company.com">
+              </div>
+            </div>
+
+
+            <div class="form-group-row" style="border-top: 1px solid var(--border-color); padding-top: 1rem;">
+              <div class="form-group">
+                <label class="form-label" for="settings-default-markup">Default Markup Percentage (%)</label>
+                <input type="number" class="form-input" id="settings-default-markup" value="15" min="0">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="settings-default-tax">Default Sales Tax Rate (%)</label>
+                <input type="number" class="form-input" id="settings-default-tax" value="8.25" min="0" step="0.01">
+                <div style="margin-top: 0.5rem;">
+                  <label class="form-checkbox-label" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); cursor: pointer; user-select: none;">
+                    <input type="checkbox" id="settings-default-tax-plus-applicable" style="cursor: pointer;">
+                    Do Not Show Sales Tax - Replace with "Plus Any Applicable Taxes"
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.25rem;">
+              <label class="form-label" for="settings-default-terms-notes">Default Terms & Notes</label>
+              <textarea class="form-input" id="settings-default-terms-notes" rows="3" placeholder="Default payment terms, validations, etc."></textarea>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.25rem;">
+              <label class="form-label" for="settings-quote-email-body-default">Customer Quote Email Body Default</label>
+              <textarea class="form-input" id="settings-quote-email-body-default" rows="4" placeholder="Default email body text when sending quotes to customers"></textarea>
+            </div>
+
+            <button type="button" class="btn btn-primary" id="settings-save-btn" style="align-self: flex-start;">Save Profile</button>
+            
+            <!-- Team Management (Owners & Sysadmins Only) -->
+            <div id="settings-team-card" style="display: none; border-top: 1px solid var(--border-color); margin-top: 1.5rem; padding-top: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+              <div>
+                <h3 class="builder-section-title" style="margin-bottom: 0.25rem;">Manage Team & Users</h3>
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+                  Invite editors or read-only viewers to your company tenant.
+                </p>
+              </div>
+              
+              <form id="team-invite-form" style="display: flex; gap: 0.5rem; align-items: flex-end; width: 100%;">
+                <div style="flex-grow: 1;">
+                  <label class="form-label" style="font-size: 0.75rem;">Invitee Email</label>
+                  <input type="email" id="team-invite-email" class="form-input" placeholder="colleague@company.com" required style="padding: 0.45rem; font-size: 0.8rem;">
+                </div>
+                <div style="width: 130px; flex-shrink: 0;">
+                  <label class="form-label" style="font-size: 0.75rem;">Role Assigned</label>
+                  <select id="team-invite-role" class="form-select" style="padding: 0.45rem; font-size: 0.8rem;">
+                    <option value="editor">Editor</option>
+                    <option value="viewer">Viewer (Read-Only)</option>
+                  </select>
+                </div>
+                <button type="submit" class="btn btn-primary" style="padding: 0.45rem 1rem; font-size: 0.8rem; height: 34px;">Invite</button>
+              </form>
+
+              <div class="table-container" style="max-height: 200px; overflow-y: auto; width: 100%;">
+                <table class="custom-table" style="font-size: 0.8rem;">
+                  <thead>
+                    <tr>
+                      <th>Email</th>
+                      <th>Role</th>
+                      <th>Status</th>
+                      <th style="text-align: right;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="settings-team-tbody">
+                    <!-- Populated by JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right database tools and logo panel -->
+          <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <!-- User Profile & Password Widget -->
+            <div class="widget-card" id="settings-profile-card">
+              <div class="widget-header" style="border-bottom: none; padding-bottom: 0;">
+                <h3 class="widget-title">My Profile</h3>
+              </div>
+              <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: -0.5rem; margin-bottom: 0.75rem;">
+                Manage your account credentials.
+              </p>
+              
+              <!-- OAuth Notice (Hidden by default, shown for Google users) -->
+              <div id="profile-oauth-notice" style="display: none; padding: 0.75rem; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--radius-md); font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4;">
+                You are signed in via Google. Password updates are managed directly through your Google account.
+              </div>
+              
+              <!-- Local Password Form (Hidden for Google users) -->
+              <div id="profile-local-form" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label" style="font-size: 0.75rem;">Email Address</label>
+                  <input type="email" class="form-input" id="profile-email" disabled style="padding: 0.45rem; font-size: 0.8rem; background-color: var(--bg-tertiary); cursor: not-allowed; border-color: var(--border-color);">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                  <label class="form-label" style="font-size: 0.75rem;">New Password</label>
+                  <input type="password" class="form-input" id="profile-new-password" placeholder="Minimum 6 characters" required style="padding: 0.45rem; font-size: 0.8rem;">
+                </div>
+                <div class="form-group" style="margin-bottom: 0.25rem;">
+                  <label class="form-label" style="font-size: 0.75rem;">Confirm New Password</label>
+                  <input type="password" class="form-input" id="profile-confirm-password" placeholder="Confirm new password" required style="padding: 0.45rem; font-size: 0.8rem;">
+                </div>
+                <button type="button" class="btn btn-secondary" id="profile-change-password-btn" style="width: 100%; justify-content: center; font-size: 0.8rem; padding: 0.45rem;">
+                  Update Password
+                </button>
+              </div>
+            </div>
+
+            <!-- MFA Security Widget -->
+            <div class="widget-card" id="settings-mfa-card" style="display: none;">
+              <div class="widget-header" style="border-bottom: none; padding-bottom: 0;">
+                <h3 class="widget-title">Multi-Factor Security</h3>
+              </div>
+              <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: -0.5rem; margin-bottom: 0.75rem;">
+                Secure your account with Google Authenticator or Authy.
+              </p>
+              <div id="settings-mfa-status" style="font-size: 0.82rem; font-weight: 700; margin-bottom: 0.4rem;">
+                MFA Status: <span style="color: var(--danger);">Disabled</span>
+              </div>
+              <button type="button" class="btn btn-secondary" id="settings-mfa-enroll-btn" style="width: 100%; justify-content: center; font-size: 0.8rem; padding: 0.45rem;">
+                Enable Authenticator MFA
+              </button>
+              <button type="button" class="btn btn-danger" id="settings-mfa-disable-btn" style="width: 100%; justify-content: center; font-size: 0.8rem; padding: 0.45rem; display: none;">
+                Disable Authenticator MFA
+              </button>
+            </div>
+
+
+            <!-- Logo Preview Widget -->
+            <div class="widget-card">
+              <div class="widget-header">
+                <h3 class="widget-title">Default Company Logo</h3>
+              </div>
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 1rem 0;">
+                <div class="logo-preview-box" id="settings-logo-preview" style="width: 140px; height: 140px;">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                  <label for="settings-logo-upload" class="btn btn-secondary" style="padding: 0.45rem 1rem; font-size: 0.85rem; margin-bottom: 0;">Upload Logo</label>
+                  <input type="file" id="settings-logo-upload" accept="image/*" style="display: none;">
+                  <button type="button" class="btn btn-secondary" id="settings-logo-clear-btn" style="padding: 0.45rem; color: var(--danger);"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Database Backup/Restore Panel -->
+            <div class="widget-card">
+              <div class="widget-header">
+                <h3 class="widget-title">Database Utilities</h3>
+              </div>
+              <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: -0.5rem;">
+                Back up or migrate your product catalog and saved quotes.
+              </p>
+              <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.5rem;">
+                <button type="button" class="btn btn-secondary" style="justify-content: flex-start;" id="db-backup-btn">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18" style="color: var(--primary);">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Export Database (JSON)
+                </button>
+                <label for="db-restore-upload" class="btn btn-secondary" style="justify-content: flex-start; cursor: pointer; margin-bottom: 0;">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18" style="color: var(--success);">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  </svg>
+                  Import Database (JSON)
+                </label>
+                <input type="file" id="db-restore-upload" accept=".json" style="display: none;">
+              </div>
+            </div>
+
+            <!-- Subscription & Billing Widget -->
+            <div class="widget-card" id="settings-subscription-card">
+              <div class="widget-header">
+                <h3 class="widget-title">Subscription & Billing</h3>
+              </div>
+              <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: -0.5rem; margin-bottom: 1rem;">
+                Manage your MyBidBook plan and subscription details.
+              </p>
+              
+              <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+                  <span style="font-weight: 500; color: var(--text-secondary);">Current Plan:</span>
+                  <span id="billing-plan-name" style="font-weight: 700; color: var(--primary);">Trial</span>
+                </div>
+                
+                <div id="billing-status-row" style="display: flex; justify-content: space-between; font-size: 0.85rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; display: none;">
+                  <span style="font-weight: 500; color: var(--text-secondary);">Status:</span>
+                  <span id="billing-plan-status" style="font-weight: 700; text-transform: capitalize;">Active</span>
+                </div>
+
+                <!-- Trial Upgrade Options -->
+                <div id="billing-trial-options" style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.25rem;">
+                  <button type="button" class="btn btn-primary" id="subscribe-monthly-btn" style="justify-content: center; font-size: 0.8rem; padding: 0.5rem; width: 100%;">
+                    Upgrade to Pro Monthly ($19/mo)
+                  </button>
+                  <button type="button" class="btn btn-secondary" id="subscribe-yearly-btn" style="justify-content: center; font-size: 0.8rem; padding: 0.5rem; width: 100%;">
+                    Upgrade to Pro Annual ($199/yr)
+                  </button>
+                </div>
+
+                <!-- Manage Billing Link -->
+                <div id="billing-manage-options" style="display: none; margin-top: 0.25rem;">
+                  <button type="button" class="btn btn-secondary" id="manage-billing-btn" style="width: 100%; justify-content: center; font-size: 0.8rem; padding: 0.5rem;">
+                    Manage Billing Portal
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== CUSTOMER ADD/EDIT VIEW ==================== -->
+      <section id="customer-editor-view" class="view-section">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title" id="customer-view-title">Add Database Customer</h2>
+            <p class="page-description">Fill out the details below to save the customer to your database.</p>
+          </div>
+          <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <a href="help.html#customers" target="_blank" class="btn btn-secondary help-btn" style="padding: 0.35rem 0.65rem; gap: 0.25rem; font-size: 0.8rem;" title="View Help Documentation">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14" style="stroke-width: 2.5;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5h.008v.008H12V17z" />
+              </svg>
+              Help
+            </a>
+            <button type="button" class="btn btn-secondary" id="customer-modal-close-btn" style="padding: 0.35rem 0.65rem; gap: 0.25rem; font-size: 0.8rem; display: inline-flex; align-items: center;">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14" style="stroke-width: 2.5;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Back
+            </button>
+          </div>
+        </div>
+
+        <div id="customer-editor-grid" class="split-layout">
+          <!-- Left Panel: Form Details -->
+          <div class="widget-card">
+            <form id="customer-form">
+              <input type="hidden" id="customer-form-id">
+              
+              <div class="form-group">
+                <label class="form-label" for="customer-form-name">Company Name / Primary Client Name <span style="color: var(--danger);">*</span></label>
+                <input type="text" class="form-input" id="customer-form-name" placeholder="e.g. Pacific Rim Developers" required autocomplete="organization-title">
+              </div>
+
+              <div class="form-group-row">
+                <div class="form-group">
+                  <label class="form-label" for="customer-form-email">Primary Email</label>
+                  <input type="email" class="form-input" id="customer-form-email" placeholder="client@example.com">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="customer-form-phone">Primary Phone <span style="color: var(--danger);">*</span></label>
+                  <input type="tel" class="form-input" id="customer-form-phone" placeholder="(555) 555-0000" maxlength="14" required>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="customer-form-address1">Billing / Project Site Address <span style="color: var(--danger);">*</span></label>
+                <input type="text" class="form-input" id="customer-form-address1" placeholder="Address Line 1" required>
+              </div>
+              <div class="form-group">
+                <input type="text" class="form-input" id="customer-form-address2" placeholder="Address Line 2 (Optional)">
+              </div>
+              <div class="form-group-row">
+                <div class="form-group" style="flex: 2;">
+                  <label class="form-label" for="customer-form-city">City <span style="color: var(--danger);">*</span></label>
+                  <input type="text" class="form-input" id="customer-form-city" placeholder="City" required>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                  <label class="form-label" for="customer-form-state">State <span style="color: var(--danger);">*</span></label>
+                  <select class="form-select" id="customer-form-state" required style="padding: 0.55rem; height: 42px;">
+                    <option value="" disabled selected>State</option>
+                    <option value="AL">AL</option>
+                    <option value="AK">AK</option>
+                    <option value="AZ">AZ</option>
+                    <option value="AR">AR</option>
+                    <option value="CA">CA</option>
+                    <option value="CO">CO</option>
+                    <option value="CT">CT</option>
+                    <option value="DE">DE</option>
+                    <option value="DC">DC</option>
+                    <option value="FL">FL</option>
+                    <option value="GA">GA</option>
+                    <option value="HI">HI</option>
+                    <option value="ID">ID</option>
+                    <option value="IL">IL</option>
+                    <option value="IN">IN</option>
+                    <option value="IA">IA</option>
+                    <option value="KS">KS</option>
+                    <option value="KY">KY</option>
+                    <option value="LA">LA</option>
+                    <option value="ME">ME</option>
+                    <option value="MD">MD</option>
+                    <option value="MA">MA</option>
+                    <option value="MI">MI</option>
+                    <option value="MN">MN</option>
+                    <option value="MS">MS</option>
+                    <option value="MO">MO</option>
+                    <option value="MT">MT</option>
+                    <option value="NE">NE</option>
+                    <option value="NV">NV</option>
+                    <option value="NH">NH</option>
+                    <option value="NJ">NJ</option>
+                    <option value="NM">NM</option>
+                    <option value="NY">NY</option>
+                    <option value="NC">NC</option>
+                    <option value="ND">ND</option>
+                    <option value="OH">OH</option>
+                    <option value="OK">OK</option>
+                    <option value="OR">OR</option>
+                    <option value="PA">PA</option>
+                    <option value="RI">RI</option>
+                    <option value="SC">SC</option>
+                    <option value="SD">SD</option>
+                    <option value="TN">TN</option>
+                    <option value="TX">TX</option>
+                    <option value="UT">UT</option>
+                    <option value="VT">VT</option>
+                    <option value="VA">VA</option>
+                    <option value="WA">WA</option>
+                    <option value="WV">WV</option>
+                    <option value="WI">WI</option>
+                    <option value="WY">WY</option>
+                  </select>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                  <label class="form-label" for="customer-form-zip">Zip <span style="color: var(--danger);">*</span></label>
+                  <input type="text" class="form-input" id="customer-form-zip" placeholder="Zip" required pattern="\d{5}" maxlength="5" title="5-digit zip code">
+                </div>
+              </div>
+
+              <!-- Contacts Directory Builder -->
+              <div style="border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                  <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Contacts Directory</h4>
+                  <button type="button" class="btn btn-secondary" id="customer-add-contact-btn" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
+                    ➕ Add Contact
+                  </button>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;" id="customer-contacts-list">
+                  <!-- Dynamically populated contacts inputs list -->
+                </div>
+              </div>
+
+              <!-- Attached Documents (PDFs) -->
+              <div style="border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                  <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Attached Documents (PDFs)</h4>
+                  <div>
+                    <label for="customer-doc-upload" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; margin: 0; cursor: pointer;">
+                      ➕ Attach PDF
+                    </label>
+                    <input type="file" id="customer-doc-upload" accept="application/pdf" style="display: none;">
+                  </div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;" id="customer-documents-list">
+                  <!-- Dynamically populated PDF links -->
+                </div>
+              </div>
+
+              <!-- Quote Default Overrides -->
+              <div id="customer-form-defaults-section" style="border-top: 1px solid var(--border-color); padding-top: 1.25rem; margin-top: 1.5rem;">
+                <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.75rem;">Quote Defaults & Overrides</h4>
+                
+                <div class="form-group-row">
+                  <div class="form-group">
+                    <label class="form-label" for="customer-form-default-markup">Default Markup Percentage (%)</label>
+                    <input type="number" class="form-input" id="customer-form-default-markup" placeholder="e.g. 15" min="0" step="0.1">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="customer-form-default-tax">Default Sales Tax Rate (%)</label>
+                    <input type="number" class="form-input" id="customer-form-default-tax" placeholder="e.g. 8.25" min="0" step="0.01">
+                    <div style="margin-top: 0.5rem;">
+                      <label class="form-checkbox-label" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); cursor: pointer; user-select: none;">
+                        <input type="checkbox" id="customer-form-default-tax-plus-applicable" style="cursor: pointer;">
+                        Do Not Show Sales Tax - Replace with "Plus Any Applicable Taxes"
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="form-group" style="margin-top: 0.5rem;">
+                  <label class="form-label" for="customer-form-default-terms-notes">Default Terms & Notes</label>
+                  <textarea class="form-input" id="customer-form-default-terms-notes" rows="3" placeholder="Enter default payment terms, validations, etc. for this customer"></textarea>
+                </div>
+                <div class="form-group" style="margin-top: 0.5rem;">
+                  <label class="form-label" for="customer-form-quote-email-body-default">Customer Quote Email Body Default</label>
+                  <textarea class="form-input" id="customer-form-quote-email-body-default" rows="4" placeholder="Enter default email body text for this customer"></textarea>
+                </div>
+              </div>
+
+              <div style="margin-top: 1.5rem; display: flex; gap: 0.75rem; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" id="customer-modal-cancel-btn">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="customer-modal-submit-btn">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                  </svg>
+                  Save Customer
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Right Panel: Related Quotes History -->
+          <div class="widget-card" id="customer-quotes-history-section" style="display: none;">
+            <h3 class="builder-section-title">Related Quotes Timeline</h3>
+            <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+              <table class="custom-table" style="font-size: 0.8rem;">
+                <thead>
+                  <tr>
+                    <th>Job ID</th>
+                    <th>Created</th>
+                    <th>Won/Lost</th>
+                    <th>Completed</th>
+                    <th style="text-align: right;">Total Price</th>
+                  </tr>
+                </thead>
+                <tbody id="customer-quotes-history-tbody">
+                  <!-- Dynamically listed quotes -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Global Footer -->
+      <footer class="hide-in-print" style="margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); text-align: center; font-size: 0.8rem; color: var(--text-muted); padding-bottom: 1.5rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; width: 100%; box-sizing: border-box; align-self: center;">
+        <img src="banner.png" style="max-height: 50px; max-width: 320px; object-fit: contain; width: auto; opacity: 0.85;" alt="MyBidBook Banner">
+        <span>© 2026 MyBidBook | v2.2</span>
+      </footer>
+    </main>
+  </div>
+
+  <!-- ==================== PRODUCT ADD/EDIT MODAL ==================== -->
+  <div class="modal-overlay" id="product-modal">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title" id="product-modal-title">Add Catalog Product</h3>
+        <button type="button" class="modal-close" id="product-modal-close-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="product-form">
+          <input type="hidden" id="product-form-id">
+          
+          <div class="form-group">
+            <label class="form-label" for="product-form-name">Product Name <span style="color: var(--danger);">*</span></label>
+            <input type="text" class="form-input" id="product-form-name" placeholder="e.g. framing lumber 2x4x8" required>
+          </div>
+
+          <div class="form-group-row">
+            <div class="form-group">
+              <label class="form-label" for="product-form-category">Category <span style="color: var(--danger);">*</span></label>
+              <select class="form-select" id="product-form-category" required>
+                <!-- Categories populated by JS -->
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="product-form-uom">Unit of Measure (UOM) <span style="color: var(--danger);">*</span></label>
+              <select class="form-select" id="product-form-uom" required>
+                <option value="EA">EA (Each)</option>
+                <option value="LF">LF (Linear Foot)</option>
+                <option value="SF">SF (Square Foot)</option>
+                <option value="SY">SY (Square Yard)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group-row">
+            <div class="form-group">
+              <label class="form-label" for="product-form-price">Material Price per UOM ($) <span style="color: var(--danger);">*</span></label>
+              <input type="number" class="form-input" id="product-form-price" value="0.00" min="0" step="0.01" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="product-form-labor">Labor Rate per UOM ($)</label>
+              <input type="number" class="form-input" id="product-form-labor" value="0.00" min="0" step="0.01">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="product-form-desc">Description (Optional)</label>
+            <textarea class="form-textarea" id="product-form-desc" rows="3" placeholder="Brief description to print on the client invoice..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="product-modal-cancel-btn">Cancel</button>
+        <button type="submit" form="product-form" class="btn btn-primary" id="product-modal-submit-btn">Save Product</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== REACTIVATE EXPIRE DATE MODAL ==================== -->
+  <div class="modal-overlay" id="reactivate-modal">
+    <div class="modal-container" style="max-width: 420px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Reactivate Quote</h3>
+        <button type="button" class="modal-close" id="reactivate-modal-close-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="reactivate-modal-quote-id">
+        <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
+          To reactivate this legacy or archived quote, please set a new expiration date. This will open it for editing and mark its status as Pending.
+        </p>
+        <div class="form-group">
+          <label class="form-label" for="reactivate-expiry-date">New Expiration Date <span style="color: var(--danger);">*</span></label>
+          <input type="date" class="form-input" id="reactivate-expiry-date" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="reactivate-modal-cancel-btn">Cancel</button>
+        <button type="button" class="btn btn-primary" id="reactivate-modal-submit-btn">Reactivate & Edit</button>
+      </div>
+    </div>
+  </div>
+  <!-- ==================== STATUS CONFIRM MODAL ==================== -->
+  <div class="modal-overlay" id="status-confirm-modal">
+    <div class="modal-container" style="max-width: 420px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Confirm Status Change</h3>
+        <button type="button" class="modal-close" id="status-confirm-close-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="status-confirm-target-status">
+        <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1.25rem;" id="status-confirm-message">
+          Are you sure you want to change the status of this quote?
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="status-confirm-cancel-btn">Cancel</button>
+        <button type="button" class="btn btn-primary" id="status-confirm-submit-btn">Yes, Change Status</button>
+      </div>
+    </div>
+  </div>
+
+
+
+
+
+  <!-- ==================== EMAIL QUOTE MODAL ==================== -->
+  <div class="modal-overlay" id="email-quote-modal">
+    <div class="modal-container" style="max-width: 550px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Email Quote to Customer</h3>
+        <button type="button" class="modal-close" id="email-quote-modal-close-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="email-quote-form">
+          <div class="form-group">
+            <label class="form-label" for="email-quote-to">To: <span style="color: var(--danger);">*</span></label>
+            <input type="email" class="form-input" id="email-quote-to" required placeholder="customer@example.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">CC: (Select contacts to copy)</label>
+            <div id="email-quote-cc-container" style="display: flex; flex-direction: column; gap: 0.5rem; border: 1px solid var(--border-color); padding: 0.75rem; border-radius: var(--radius-sm); max-height: 120px; overflow-y: auto; background: var(--bg-secondary);">
+              <!-- Checkboxes for contacts with emails will inject here -->
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="email-quote-subject">Subject <span style="color: var(--danger);">*</span></label>
+            <input type="text" class="form-input" id="email-quote-subject" required placeholder="Quotation Subject">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="email-quote-body">Email Body <span style="color: var(--danger);">*</span></label>
+            <textarea class="form-input" id="email-quote-body" rows="6" required placeholder="Type email message here..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="email-quote-modal-cancel-btn">Cancel</button>
+        <button type="submit" form="email-quote-form" class="btn btn-success" id="email-quote-modal-submit-btn">Send Email</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== CONTACT SUPPORT MODAL ==================== -->
+  <div class="modal-overlay" id="support-modal">
+    <div class="modal-container" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Contact Support</h3>
+        <button type="button" class="modal-close" id="support-modal-close-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="support-form">
+          <div class="form-group">
+            <label class="form-label" for="support-email">Your Email Address <span style="color: var(--danger);">*</span></label>
+            <input type="email" class="form-input" id="support-email" required placeholder="name@company.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="support-subject">Subject <span style="color: var(--danger);">*</span></label>
+            <input type="text" class="form-input" id="support-subject" required placeholder="How can we help you?">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="support-message">Issue or Question <span style="color: var(--danger);">*</span></label>
+            <textarea class="form-input" id="support-message" rows="5" required placeholder="Please describe your issue or question in detail..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="support-modal-cancel-btn">Cancel</button>
+        <button type="submit" form="support-form" class="btn btn-primary" id="support-modal-submit-btn">Submit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SUPABASE SETUP MODAL ==================== -->
+  <div class="modal-overlay" id="supabase-setup-modal" style="z-index: 200;">
+    <div class="modal-container" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Connect to Supabase</h3>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
+          Provide your Supabase credentials to configure your cloud database. You can find these keys in your Supabase Dashboard under **Project Settings -> API**.
+        </p>
+        <form id="supabase-setup-form">
+          <div class="form-group">
+            <label class="form-label" for="setup-supabase-url">Supabase Project URL <span style="color: var(--danger);">*</span></label>
+            <input type="url" class="form-input" id="setup-supabase-url" placeholder="https://your-project-id.supabase.co" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="setup-supabase-key">Supabase Anon API Key <span style="color: var(--danger);">*</span></label>
+            <input type="text" class="form-input" id="setup-supabase-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." required>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" form="supabase-setup-form" class="btn btn-primary" style="width: 100%; justify-content: center;">Connect & Initialize</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== AUTHENTICATION OVERLAY ==================== -->
+  <div class="modal-overlay" id="auth-modal" style="z-index: 150;">
+    <div class="modal-container" style="max-width: 420px; background: var(--bg-secondary); border: 1px solid var(--border-color);">
+      <div class="modal-header" style="border-bottom: none; justify-content: center; padding-top: 1.5rem; padding-bottom: 0.5rem;">
+        <h3 class="modal-title" style="font-size: 1.5rem; font-weight: 800; color: var(--primary);" id="auth-modal-title">MyBidBook</h3>
+      </div>
+      <div class="modal-body" style="padding-top: 0;">
+        <!-- Main Auth Container -->
+        <div id="auth-main-container">
+          <!-- Auth tabs -->
+          <div style="display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 1.25rem; background: var(--bg-tertiary); border-radius: var(--radius-md); padding: 0.25rem; gap: 0.25rem;">
+            <button type="button" id="auth-tab-login" class="filter-tab active" style="flex: 1; padding: 0.5rem 0; font-weight: 700;">Login</button>
+            <button type="button" id="auth-tab-signup" class="filter-tab" style="flex: 1; padding: 0.5rem 0; font-weight: 600;">Sign Up</button>
+          </div>
+
+          <form id="auth-form">
+            <div class="form-group">
+              <label class="form-label" for="auth-email">Email Address</label>
+              <input type="email" class="form-input" id="auth-email" placeholder="contractor@company.com" required>
+            </div>
+            <div class="form-group" style="position: relative;">
+              <label class="form-label" for="auth-password">Password</label>
+              <input type="password" class="form-input" id="auth-password" placeholder="••••••••" required minlength="6">
+              <a href="#" id="auth-forgot-password-link" style="position: absolute; right: 0; top: 0; font-size: 0.75rem; color: var(--primary); font-weight: 600; text-decoration: none;">Forgot Password?</a>
+            </div>
+            <div class="form-group" id="auth-confirm-password-group" style="display: none;">
+              <label class="form-label" for="auth-confirm-password">Confirm Password</label>
+              <input type="password" class="form-input" id="auth-confirm-password" placeholder="••••••••" minlength="6">
+            </div>
+            
+            <button type="submit" class="btn btn-primary" id="auth-submit-btn" style="width: 100%; margin-top: 0.5rem; justify-content: center; font-size: 0.95rem; padding: 0.75rem;">Sign In</button>
+          </form>
+
+          <div style="text-align: center; margin: 1.25rem 0; color: var(--text-muted); font-size: 0.8rem; position: relative;">
+            <span style="background: var(--bg-secondary); padding: 0 0.5rem; position: relative; z-index: 2;">OR</span>
+            <div style="position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: var(--border-color); z-index: 1;"></div>
+          </div>
+
+          <button type="button" class="btn btn-secondary" id="auth-google-btn" style="width: 100%; justify-content: center; gap: 0.75rem; font-size: 0.9rem; padding: 0.65rem;">
+            <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.2h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.2C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
+            </svg>
+            Sign In with Google
+          </button>
+        </div>
+
+        <!-- Forgot Password Container -->
+        <div id="auth-forgot-container" style="display: none;">
+          <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem;">Reset Password</h4>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1.25rem;">Enter your email address and we'll send you a link to reset your password.</p>
+          
+          <form id="auth-forgot-form">
+            <div class="form-group">
+              <label class="form-label" for="auth-forgot-email">Email Address</label>
+              <input type="email" class="form-input" id="auth-forgot-email" placeholder="contractor@company.com" required>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" id="auth-forgot-submit-btn" style="width: 100%; margin-top: 0.5rem; justify-content: center; font-size: 0.95rem; padding: 0.65rem;">Send Reset Link</button>
+            <button type="button" id="auth-forgot-back-btn" class="btn btn-secondary" style="width: 100%; margin-top: 0.5rem; justify-content: center; font-size: 0.95rem; padding: 0.65rem;">Back to Login</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MFA VERIFICATION OVERLAY ==================== -->
+  <div class="modal-overlay" id="mfa-modal" style="z-index: 160;">
+    <div class="modal-container" style="max-width: 380px;">
+      <div class="modal-header" style="border-bottom: none; justify-content: center; padding-top: 1.5rem;">
+        <h3 class="modal-title" style="font-size: 1.3rem; font-weight: 700;">MFA Verification</h3>
+      </div>
+      <div class="modal-body" style="text-align: center;">
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
+          Enter the 6-digit verification code from your authenticator app to secure your sign in.
+        </p>
+        <form id="mfa-form">
+          <div class="form-group">
+            <input type="text" class="form-input" id="mfa-code-input" placeholder="000000" pattern="[0-9]{6}" maxlength="6" style="text-align: center; font-size: 1.5rem; letter-spacing: 0.25em; font-weight: 700;" required autocomplete="one-time-code">
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; font-size: 0.95rem; padding: 0.75rem;">Verify & Log In</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== PASSWORD RECOVERY OVERLAY ==================== -->
+  <div class="modal-overlay" id="recovery-modal" style="z-index: 170;">
+    <div class="modal-container" style="max-width: 400px; background: var(--bg-secondary); border: 1px solid var(--border-color);">
+      <div class="modal-header" style="border-bottom: none; justify-content: center; padding-top: 1.5rem; padding-bottom: 0.5rem;">
+        <h3 class="modal-title" style="font-size: 1.3rem; font-weight: 800; color: var(--primary);">Create New Password</h3>
+      </div>
+      <div class="modal-body" style="padding-top: 0;">
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1.25rem; text-align: center;">
+          Please enter your new secure password below to complete the reset process.
+        </p>
+        <form id="recovery-form">
+          <div class="form-group">
+            <label class="form-label" for="recovery-new-password">New Password</label>
+            <input type="password" class="form-input" id="recovery-new-password" placeholder="Minimum 6 characters" required minlength="6">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="recovery-confirm-password">Confirm Password</label>
+            <input type="password" class="form-input" id="recovery-confirm-password" placeholder="Confirm new password" required minlength="6">
+          </div>
+          <button type="submit" class="btn btn-primary" id="recovery-submit-btn" style="width: 100%; margin-top: 0.5rem; justify-content: center; font-size: 0.95rem; padding: 0.65rem;">Reset Password</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MFA SETUP MODAL ==================== -->
+  <div class="modal-overlay" id="mfa-setup-modal" style="z-index: 100;">
+    <div class="modal-container" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Enable Authenticator App</h3>
+        <button type="button" class="modal-close" id="mfa-setup-close-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body" style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.75rem;">
+        <p style="font-size: 0.85rem; color: var(--text-secondary);">
+          Scan the QR code below using your authenticator app (Google Authenticator, Authy, Microsoft Authenticator, etc.) to set up MFA.
+        </p>
+        
+        <!-- QR Code Container -->
+        <div id="mfa-qrcode-container" style="background: white; padding: 0.75rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); width: 180px; height: 180px; display: flex; align-items: center; justify-content: center;">
+          <!-- Dynamically populated QR Code img -->
+        </div>
+
+        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.25rem; max-width: 100%;">
+          Or enter this key manually: <code id="mfa-secret-key" style="background: var(--bg-tertiary); padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 700; color: var(--primary); font-size: 0.75rem; word-break: break-all; margin-top: 0.2rem; display: block;"></code>
+        </div>
+        
+        <form id="mfa-setup-form" style="width: 100%; border-top: 1px solid var(--border-color); padding-top: 1rem; margin-top: 0.5rem;">
+          <div class="form-group" style="margin-bottom: 0.75rem;">
+            <label class="form-label" style="text-align: left;">Verify 6-Digit Code</label>
+            <input type="text" class="form-input" id="mfa-setup-code-input" placeholder="000000" pattern="[0-9]{6}" maxlength="6" style="text-align: center; font-size: 1.25rem; font-weight: 700; letter-spacing: 0.2em;" required autocomplete="off">
+          </div>
+          <button type="submit" class="btn btn-success" style="width: 100%; justify-content: center;">Verify & Enable MFA</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SESSION TIMEOUT WARNING OVERLAY ==================== -->
+  <div class="modal-overlay" id="session-timeout-modal" style="z-index: 300;">
+    <div class="modal-container" style="max-width: 420px; background: var(--bg-secondary); border: 1px solid var(--border-color);">
+      <div class="modal-header" style="border-bottom: none; justify-content: center; padding-top: 1.5rem; padding-bottom: 0.5rem; flex-direction: column; align-items: center; text-align: center; gap: 0.75rem;">
+        <div style="width: 56px; height: 56px; border-radius: var(--radius-full); background: var(--warning-light); display: flex; align-items: center; justify-content: center; color: var(--warning); margin-bottom: 0.25rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" width="28" height="28">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <h3 class="modal-title" style="font-size: 1.35rem; font-weight: 800; color: var(--text-primary);">Session Expiring Soon</h3>
+      </div>
+      <div class="modal-body" style="padding-top: 0; text-align: center; display: flex; flex-direction: column; gap: 0.5rem;">
+        <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5; margin: 0;">
+          For your security, your session will automatically log out in <strong id="session-countdown" style="color: var(--warning); font-size: 1.15rem; font-weight: 800;">60</strong> seconds.
+        </p>
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">
+          Would you like to extend your session and stay signed in?
+        </p>
+      </div>
+      <div class="modal-footer" style="border-top: none; padding: 1.25rem; display: flex; gap: 0.75rem; width: 100%; box-sizing: border-box;">
+        <button type="button" class="btn btn-secondary" id="session-logout-btn" onclick="globalLogout()" style="flex: 1; justify-content: center; font-size: 0.9rem; padding: 0.65rem;">Sign Out</button>
+        <button type="button" class="btn btn-primary" id="session-extend-btn" style="flex: 1; justify-content: center; font-size: 0.9rem; padding: 0.65rem;">Stay Signed In</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== IMAGE LIGHTBOX MODAL ==================== -->
+  <div class="modal-overlay" id="lightbox-modal" style="background-color: rgba(0, 0, 0, 0.95); z-index: 1000; padding: 0;">
+    <div style="position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+      <!-- Close Button -->
+      <button type="button" id="lightbox-close-btn" style="position: absolute; top: 1rem; right: 1rem; background: rgba(0,0,0,0.5); border: none; color: white; width: 44px; height: 44px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 1010; font-size: 1.5rem;">✕</button>
+      
+      <!-- Left Arrow -->
+      <button type="button" id="lightbox-prev-btn" style="position: absolute; left: 1rem; background: rgba(0,0,0,0.5); border: none; color: white; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 1010; font-size: 2rem;">‹</button>
+      
+      <!-- Right Arrow -->
+      <button type="button" id="lightbox-next-btn" style="position: absolute; right: 1rem; background: rgba(0,0,0,0.5); border: none; color: white; width: 50px; height: 50px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 1010; font-size: 2rem;">›</button>
+      
+      <!-- Main Content Container -->
+      <div style="max-width: 90%; max-height: 80%; display: flex; flex-direction: column; align-items: center; gap: 1rem; color: white; text-align: center;">
+        <img id="lightbox-image" src="" alt="Full size view" style="max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: var(--radius-md); box-shadow: var(--shadow-xl);">
+        <div id="lightbox-caption" style="font-size: 1rem; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.8); word-break: break-word;">Photo Caption</div>
+        <div id="lightbox-category" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #94a3b8; margin-top: -0.5rem;">CATEGORY</div>
+        
+        <!-- Action Buttons -->
+        <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+          <a id="lightbox-download-btn" href="" download="mybidbook-attachment" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; padding: 0.5rem 1rem; font-size: 0.85rem;">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="16" height="16">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Download / Save
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast system notifications -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Javascript Modules -->
+  <script type="module" src="js/app.js?v=2.2"></script>
+
+</body>
+</html>
