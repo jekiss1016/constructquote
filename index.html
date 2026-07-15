@@ -46,15 +46,15 @@
   <title>MyBidBook | Smart Construction Estimation</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#4f46e5">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=100">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=101">
 
   <!-- iOS PWA capability meta tags -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="MyBidBook">
 
-  <link rel="stylesheet" href="css/styles.css?v=100">
-  <link rel="stylesheet" href="css/print.css?v=100">
+  <link rel="stylesheet" href="css/styles.css?v=101">
+  <link rel="stylesheet" href="css/print.css?v=101">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
@@ -117,7 +117,7 @@
         <li class="nav-item" data-target="catalog-view">
           <button type="button">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.100c0 .621.504 1.125 1.125 1.125z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.101c0 .621.504 1.125 1.125 1.125z" />
             </svg>
             Product Catalog
           </button>
@@ -1075,7 +1075,7 @@
           </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 2fr 1.2fr; gap: 1.5rem; align-items: start;">
+        <div class="split-layout">
           <!-- Left settings panel -->
           <div class="widget-card">
             <h3 class="builder-section-title">Company Profile & Defaults</h3>
@@ -1408,7 +1408,7 @@
           </div>
         </div>
 
-        <div id="customer-editor-grid" style="display: grid; grid-template-columns: 2fr 1.2fr; gap: 1.5rem; align-items: start;">
+        <div id="customer-editor-grid" class="split-layout">
           <!-- Left Panel: Form Details -->
           <div class="widget-card">
             <form id="customer-form">
@@ -1603,7 +1603,7 @@
       <!-- Global Footer -->
       <footer class="hide-in-print" style="margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); text-align: center; font-size: 0.8rem; color: var(--text-muted); padding-bottom: 1.5rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; width: 100%; box-sizing: border-box; align-self: center;">
         <img src="banner.png" style="max-height: 50px; max-width: 320px; object-fit: contain; width: auto; opacity: 0.85;" alt="MyBidBook Banner">
-        <span>© 2026 MyBidBook | v1.100</span>
+        <span>© 2026 MyBidBook | v1.101</span>
       </footer>
     </main>
   </div>
@@ -2036,7 +2036,7 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Javascript Modules -->
-  <script type="module" src="js/app.js?v=100"></script>
+  <script type="module" src="js/app.js?v=101"></script>
 
 </body>
 </html>
