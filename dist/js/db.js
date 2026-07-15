@@ -272,7 +272,7 @@ export async function loadUserSession(passedSession = null) {
 
   console.log('loadUserSession -> Initiating raw fetch to profiles endpoint for user ID:', user.id);
   const config = await getSupabaseConfig();
-  const url = `${config.url}/rest/v1/profiles?id=eq.${user.id}&select=*,companies(subscription_level,subscription_status,is_active)`;
+  const url = `${config.url}/rest/v1/profiles?id=eq.${user.id}&select=*,companies(subscription_level,subscription_status)`;
   
   let profile = null;
   let pError = null;
@@ -1074,22 +1074,13 @@ export async function importDB(jsonStr) {
 /* ==================== SYSADMIN MULTI-TENANT HELPERS ==================== */
 export async function getAllCompanies() {
   console.log('getAllCompanies -> Starting raw fetch...');
-  const data = await rawDbQuery('companies', 'select=id,name,is_active,settings(company_name)&order=id.asc');
+  const data = await rawDbQuery('companies', 'select=id,name&order=name.asc');
   console.log('getAllCompanies -> Companies fetched. Data length:', data ? data.length : 0);
   if (!data) return [];
-  return data
-    .filter(s => s.is_active !== false) // hide deactivated
-    .map(s => {
-      let displayName = s.name || 'Unnamed Company';
-      if (s.settings && s.settings.length > 0 && s.settings[0].company_name) {
-        displayName = s.settings[0].company_name;
-      }
-      return {
-        id: s.id,
-        name: displayName
-      };
-    })
-    .sort((a, b) => a.name.localeCompare(b.name));
+  return data.map(s => ({
+    id: s.id,
+    name: s.name || 'Unnamed Company'
+  }));
 }
 
 export async function switchUserCompany(companyId) {
