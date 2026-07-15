@@ -1081,8 +1081,12 @@ export async function getAllCompanies() {
     .filter(s => s.is_active !== false) // hide deactivated
     .map(s => {
       let displayName = s.name || 'Unnamed Company';
-      if (s.settings && s.settings.length > 0 && s.settings[0].company_name) {
-        displayName = s.settings[0].company_name;
+      if (s.settings) {
+        if (Array.isArray(s.settings) && s.settings.length > 0 && s.settings[0].company_name) {
+          displayName = s.settings[0].company_name;
+        } else if (!Array.isArray(s.settings) && s.settings.company_name) {
+          displayName = s.settings.company_name;
+        }
       }
       return {
         id: s.id,
