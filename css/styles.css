@@ -803,6 +803,21 @@ body {
   }
 }
 
+/* Split Layout for settings and customer views */
+.split-layout {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 992px) {
+  .split-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+
 .builder-panel {
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
@@ -1658,6 +1673,7 @@ body {
 
   /* Prevent horizontal layout breaks from grids and panels */
   .builder-layout,
+  .split-layout,
   .detail-view-container,
   .app-container,
   .main-content {
@@ -1667,6 +1683,7 @@ body {
   }
 
   .builder-layout > *,
+  .split-layout > *,
   .detail-view-container > * {
     min-width: 0;
     width: 100%;
