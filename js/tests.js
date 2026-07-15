@@ -658,6 +658,13 @@ async function runTestSuite() {
     await wait(1500);
     updateStepStatus(stepEmailOpen, 'success');
 
+    const stepPrintFooterCheck = addStep('Verifying custom print footer text');
+    const printFooterText = doc.querySelector('#print-footer-text');
+    if (!printFooterText || !printFooterText.textContent.includes('JOB-')) {
+      throw new Error('Print footer text was not properly populated during quote render');
+    }
+    updateStepStatus(stepPrintFooterCheck, 'success');
+
     const stepEmailBtn = addStep('Checking and clicking Email Quote button');
     const emailBtn = doc.querySelector('#detail-email-btn');
     if (!emailBtn) throw new Error('Email Quote button not found in preview');

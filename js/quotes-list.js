@@ -1,7 +1,7 @@
 // Quotes List & Dashboard management controller
-import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel, getCustomerById, sendQuoteEmail, getQuoteEmailLogs, saveQuoteEmailLog } from './db.js?v=2.1';
-import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage, parseCombinedAddress, parseCompanyAddress } from './utils.js?v=2.1';
-import { navigateToView, editQuote, duplicateQuoteAsTemplate, openLightbox } from './app.js?v=2.1';
+import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel, getCustomerById, sendQuoteEmail, getQuoteEmailLogs, saveQuoteEmailLog } from './db.js?v=2.2';
+import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage, parseCombinedAddress, parseCompanyAddress } from './utils.js?v=2.2';
+import { navigateToView, editQuote, duplicateQuoteAsTemplate, openLightbox } from './app.js?v=2.2';
 
 
 let activeStatusFilter = 'pending';
@@ -444,6 +444,11 @@ export async function renderQuoteDetails(id) {
   `;
   document.getElementById('paper-meta-date').textContent = formatDate(quote.date);
   document.getElementById('paper-meta-expiry').textContent = formatDate(quote.expirationDate);
+
+  const printFooterText = document.getElementById('print-footer-text');
+  if (printFooterText) {
+    printFooterText.textContent = `${quote.jobId} (V${quote.version}) - ${formatDate(quote.date)}`;
+  }
 
   document.getElementById('paper-client-name').textContent = quote.customerName;
   const parsedAddr = parseCombinedAddress(quote.projectAddress);
