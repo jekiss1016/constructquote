@@ -116,7 +116,7 @@
   /* Customize page margin settings */
   @page {
     size: letter;
-    margin: 15mm 15mm 15mm 15mm;
+    margin: 15mm 15mm 30mm 15mm; /* Increased bottom margin to enforce page break and protect footer */
   }
 
   /* Printable photo grids */
