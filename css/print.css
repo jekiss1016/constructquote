@@ -116,7 +116,7 @@
   /* Customize page margin settings */
   @page {
     size: letter;
-    margin: 15mm 15mm 30mm 15mm; /* Increased bottom margin to enforce page break and protect footer */
+    margin: 15mm 15mm 15mm 15mm; /* Reduced bottom margin to allow content expansion */
   }
 
   /* Printable photo grids */
@@ -155,8 +155,8 @@
   .print-footer {
     display: block !important;
     position: fixed;
-    bottom: 10mm;
-    right: 15mm;
+    bottom: 0;
+    right: 0;
     font-size: 8pt;
     color: #64748b;
     text-align: right;

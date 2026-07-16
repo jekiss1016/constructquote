@@ -133,6 +133,11 @@ async function setupAuthListener() {
         const profile = await loadUserSession(session);
         console.log('setupAuthListener -> Loaded profile:', profile);
         if (profile) {
+          if (profile.companies && profile.companies.is_active === false) {
+            alert('This company account has been deactivated. Please contact support.');
+            await getSupabase().auth.signOut();
+            return;
+          }
           hideAuthModal();
           applyUserRoleRestrictions(profile);
           if (!isAppInitialized) {
