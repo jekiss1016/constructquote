@@ -143,6 +143,15 @@
     display: block !important;
   }
 
+  .print-tfoot {
+    display: table-footer-group !important;
+  }
+
+  .print-layout-table {
+    width: 100% !important;
+    border: none !important;
+  }
+
   .print-footer {
     display: block !important;
     position: fixed;

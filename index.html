@@ -769,8 +769,13 @@
         <div class="detail-view-container">
           <!-- Left side: printable invoice card -->
           <div class="quote-paper-view" id="quote-paper">
-            <!-- Paper Header -->
-            <div class="paper-header">
+            <!-- Table wrapper to enforce footer space on every printed page -->
+            <table class="print-layout-table" style="width: 100%; border: none; border-collapse: collapse;">
+              <thead><tr><td></td></tr></thead>
+              <tbody><tr><td style="padding: 0;">
+                
+                <!-- Paper Header -->
+                <div class="paper-header">
               <div>
                 <img src="" alt="Company Logo" class="paper-company-logo" id="paper-logo" style="display: none;">
                 <div id="paper-logo-placeholder" style="font-weight: 800; font-size: 1.5rem; color: #1e293b; letter-spacing: -0.05em; display: block;">COMPANY LOGO</div>
@@ -882,6 +887,15 @@
                 </div>
               </div>
             </div>
+            
+              </td></tr></tbody>
+              <tfoot class="print-tfoot show-in-print-only" style="display: none;">
+                <tr><td>
+                  <!-- Spacer matches height of the fixed footer to reserve space -->
+                  <div class="print-footer-spacer" style="height: 15mm;"></div>
+                </td></tr>
+              </tfoot>
+            </table>
 
             <!-- Print Footer -->
             <div id="print-footer" class="print-footer show-in-print-only" style="display: none;">
