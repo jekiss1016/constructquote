@@ -1,9 +1,9 @@
 // Quote Builder view controller
-import { getProducts, getSettings, saveQuote, checkJobIdUnique, saveSettings, getCustomers, getSupabase, getCurrentUserProfile, uploadFileToStorage } from './db.js?v=2.4';
-import { formatCurrency, showToast, fileToBase64, generateJobIdSuggestion, compressImage, parseCombinedAddress } from './utils.js?v=2.4';
-import { navigateToView, viewQuoteDetails, getPreviousViewId, openLightbox } from './app.js?v=2.4';
-import { renderQuoteDetails } from './quotes-list.js?v=2.4';
-import { openCustomerModalInline } from './customers.js?v=2.4';
+import { getProducts, getSettings, saveQuote, checkJobIdUnique, saveSettings, getCustomers, getSupabase, getCurrentUserProfile, uploadFileToStorage } from './db.js?v=2.5';
+import { formatCurrency, showToast, fileToBase64, generateJobIdSuggestion, compressImage, parseCombinedAddress } from './utils.js?v=2.5';
+import { navigateToView, viewQuoteDetails, getPreviousViewId, openLightbox } from './app.js?v=2.5';
+import { renderQuoteDetails } from './quotes-list.js?v=2.5';
+import { openCustomerModalInline } from './customers.js?v=2.5';
 
 
 let currentQuote = {
@@ -266,13 +266,33 @@ function populateBuilderFields() {
 function updatePrintOptionsUI() {
   const detCheck = document.getElementById('print-show-details');
   const wrapper = document.getElementById('print-show-pricing-wrapper');
-  if (detCheck && wrapper) {
+  const qtyWrapper = document.getElementById('print-show-quantities-wrapper');
+  
+  if (detCheck) {
     if (detCheck.checked) {
-      wrapper.style.opacity = '1';
-      wrapper.querySelector('input').disabled = false;
+      if (wrapper) {
+        wrapper.style.opacity = '1';
+        wrapper.querySelector('input').disabled = false;
+      }
+      if (qtyWrapper) {
+        qtyWrapper.style.opacity = '1';
+        qtyWrapper.querySelector('input').disabled = false;
+      }
     } else {
-      wrapper.style.opacity = '0.5';
-      wrapper.querySelector('input').disabled = true;
+      if (wrapper) {
+        wrapper.style.opacity = '0.5';
+        const pricingInput = wrapper.querySelector('input');
+        pricingInput.disabled = true;
+        pricingInput.checked = false;
+        currentQuote.printShowDetailPricing = false;
+      }
+      if (qtyWrapper) {
+        qtyWrapper.style.opacity = '0.5';
+        const qtyInput = qtyWrapper.querySelector('input');
+        qtyInput.disabled = true;
+        qtyInput.checked = false;
+        currentQuote.printShowQuantities = false;
+      }
     }
   }
 }

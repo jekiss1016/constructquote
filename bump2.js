@@ -19,7 +19,7 @@ function walkDir(dir, callback) {
 
 walkDir('.', (filePath) => {
     let content = fs.readFileSync(filePath, 'utf8');
-    let newContent = content.replace(/\?v=[\d\.]+/g, '?v=2.4');
+    let newContent = content.replace(/\?v=[\d\.]+/g, '?v=2.5');
     if (filePath.endsWith('index.html')) {
         newContent = newContent.replace(/v1\.\d+/g, 'v2.1');
     }
