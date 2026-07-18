@@ -1,6 +1,6 @@
 // Database management using Supabase Cloud & LocalStorage fallbacks
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { showToast } from './utils.js?v=2.5';
+import { showToast } from './utils.js?v=2.6';
 
 const KEYS = {
   SUPABASE_CONFIG: 'cq_supabase_config'
@@ -27,9 +27,11 @@ export async function loadRuntimeConfig() {
   if (cachedConfig) return cachedConfig;
   try {
     let configFile = 'config.json';
+    const cb = '?v=' + new Date().getTime(); // cache buster
+    
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       try {
-        const devResponse = await fetch('config.dev.json');
+        const devResponse = await fetch('config.dev.json' + cb);
         if (devResponse.ok) {
           configFile = 'config.dev.json';
         }
@@ -37,7 +39,7 @@ export async function loadRuntimeConfig() {
         // Fall back to config.json
       }
     }
-    const response = await fetch(configFile);
+    const response = await fetch(configFile + cb);
     if (response.ok) {
       const config = await response.json();
       if (config.supabaseUrl && config.supabaseKey) {
