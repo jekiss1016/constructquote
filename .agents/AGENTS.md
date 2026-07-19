@@ -6,4 +6,6 @@
   1. The cache-busting version query parameter (`?v=N`) is incremented across all asset references (HTML files and ESM JavaScript imports) and the global footer version text is synchronized.
   2. The user guide (`help.html`) is updated with matching anchors and explanations for any modified/added views or layout changes.
   3. The local E2E test suite (`js/tests.js`) is updated to cover any selector/layout modifications and runs successfully.
+- **Feature Branch Workflow:** The active major feature branch must be kept in sync. Whenever changes are merged from `dev` to production (`main`), those same changes must also be merged into the feature branch.
+- **CRITICAL - Feature Branch Deployments:** Under NO circumstances should the feature branch be merged to production (`main`) without explicit user approval.
 

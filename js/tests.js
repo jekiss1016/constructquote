@@ -807,6 +807,38 @@ async function runTestSuite() {
     endActiveTest(true);
     log('Viewer role UI restriction tested successfully!', 'success');
 
+    // -------------------------------------------------------------
+    // TEST 11: Scheduling Engine Logic (Headless)
+    // -------------------------------------------------------------
+    createTestCard('11. Scheduling Engine Core Math');
+    const stepEngineLoad = addStep('Loading SchedulingEngine script');
+    const se = await win.eval(`import('/js/scheduling-engine.js?v=${version}')`).then(m => m.SchedulingEngine);
+    if (!se) throw new Error('Failed to load SchedulingEngine module');
+    updateStepStatus(stepEngineLoad, 'success');
+
+    const stepEngineWorkingDay = addStep('Testing isWorkingDay');
+    const pSettings = {
+      workdays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+      holidays: ["2026-07-04"],
+      custom_workdays: ["2026-07-05"] // A Sunday catch-up
+    };
+    if (!se.isWorkingDay("2026-07-03", pSettings)) throw new Error('Friday should be working day');
+    if (se.isWorkingDay("2026-07-04", pSettings)) throw new Error('Saturday/Holiday should not be working day');
+    if (!se.isWorkingDay("2026-07-05", pSettings)) throw new Error('Sunday (custom workday) should be working day');
+    updateStepStatus(stepEngineWorkingDay, 'success');
+
+    const stepEngineAddDay = addStep('Testing addWorkingDays');
+    let addedDate = se.addWorkingDays("2026-07-03", 1, pSettings);
+    let addedStr = se.formatDate(addedDate);
+    if (addedStr !== "2026-07-05") throw new Error(`addWorkingDays 1 day from 07-03 expected 07-05, got ${addedStr}`);
+    addedDate = se.addWorkingDays("2026-07-03", 2, pSettings);
+    addedStr = se.formatDate(addedDate);
+    if (addedStr !== "2026-07-06") throw new Error(`addWorkingDays 2 days from 07-03 expected 07-06, got ${addedStr}`);
+    updateStepStatus(stepEngineAddDay, 'success');
+    
+    endActiveTest(true);
+    log('Scheduling engine core math validated.', 'success');
+
     log('==================================================');
     log(` TEST SUITE COMPLETE: ${passCount} PASSED, ${failCount} FAILED`, 'success');
     log('==================================================');

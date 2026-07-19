@@ -22,13 +22,16 @@ import {
   getSubscriptionStatus,
   getCheckoutUrl,
   getBillingPortalUrl
-} from './db.js?v=2.6';
-import { showToast, fileToBase64, formatPhoneNumber, parseCompanyAddress } from './utils.js?v=2.6';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=2.6';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=2.6';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=2.6';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=2.6';
+} from './db.js?v=3.0.3';
+import { showToast, fileToBase64, formatPhoneNumber, parseCompanyAddress } from './utils.js?v=3.0.3';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=3.0.3';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=3.0.3';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=3.0.3';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=3.0.3';
+import { initSchedulingView } from './scheduling.js?v=3.0.3';
+import * as dbAPI from './db.js?v=3.0.3';
 
+window.db = dbAPI;
 let activeChallengeId = null;
 let activeFactorId = null;
 
@@ -651,7 +654,6 @@ async function proceedToApp() {
   const profile = await loadUserSession();
   if (profile) {
     hideAuthModal();
-    showToast(`Logged in as ${profile.email}`);
     await initAppViews();
   } else {
     showToast('Failed to load user company profile.', 'danger');
@@ -782,6 +784,8 @@ export async function navigateToView(viewId) {
     await loadTeamManagementUI();
     await loadMfaSettingsUI();
     await loadSubscriptionBillingUI();
+  } else if (viewId === 'scheduling-view') {
+    await initSchedulingView();
   }
 }
 

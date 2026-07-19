@@ -1,6 +1,6 @@
 // Database management using Supabase Cloud & LocalStorage fallbacks
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { showToast } from './utils.js?v=2.6';
+import { showToast } from './utils.js?v=3.0.3';
 
 const KEYS = {
   SUPABASE_CONFIG: 'cq_supabase_config'
@@ -15,7 +15,8 @@ const DEFAULT_SETTINGS = {
   defaultTaxRate: 8.8,
   defaultMarkupPercent: 15,
   companyLogo: '',
-  quoteEmailBodyDefault: ''
+  quoteEmailBodyDefault: '',
+  schedulingConfig: { workdays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], weekend_days: [0, 6], holidays: [], custom_workdays: [] }
 };
 
 let supabase = null;
@@ -675,7 +676,8 @@ export async function getQuotes() {
     photos: q.photos || [],
     documents: q.documents || [],
     receipts: q.receipts || [],
-    taxPlusApplicable: q.tax_plus_applicable === true
+    taxPlusApplicable: q.tax_plus_applicable === true,
+    scheduleTasks: q.schedule_tasks || []
   }));
 }
 
@@ -719,7 +721,7 @@ export async function saveQuote(quote) {
   }
   
   // Enforce Trial account limits (max 10 quotes)
-  if (!quote.id && getSubscriptionLevel() === 'trial') {
+  if (!quoteData.id && getSubscriptionLevel() === 'trial') {
     const existingQuotes = await getQuotes();
     if (existingQuotes && existingQuotes.length >= 10) {
       return {
@@ -729,70 +731,34 @@ export async function saveQuote(quote) {
     }
   }
   
-  if (!(await checkJobIdUnique(quote.jobId, quote.id))) {
-    return { success: false, error: `Job ID "${quote.jobId}" is already assigned to another active quote. Job IDs must be unique.` };
+  if (!(await checkJobIdUnique(payload.job_id, quoteData.id))) {
+    return { success: false, error: `Job ID "${payload.job_id}" is already assigned to another active quote. Job IDs must be unique.` };
   }
   
-  if (quote.status === 'Won' || quote.status === 'Lost' || quote.status === 'Inactive') {
-    if (!quote.dateWonLost) quote.dateWonLost = new Date().toISOString();
-  } else if (quote.status === 'Completed') {
-    if (!quote.dateCompleted) quote.dateCompleted = new Date().toISOString();
-    if (!quote.dateWonLost) quote.dateWonLost = new Date().toISOString();
-  } else if (quote.status === 'Pending') {
-    quote.dateWonLost = null;
-    quote.dateCompleted = null;
+  if (payload.status === 'Won' || payload.status === 'Lost' || payload.status === 'Inactive') {
+    if (!quoteData.dateWonLost) payload.date_won_lost = new Date().toISOString();
+  } else if (payload.status === 'Completed') {
+    if (!quoteData.dateCompleted) payload.date_completed = new Date().toISOString();
+    if (!quoteData.dateWonLost) payload.date_won_lost = new Date().toISOString();
+  } else if (payload.status === 'Pending') {
+    payload.date_won_lost = null;
+    payload.date_completed = null;
   }
   
-  const todayStr = new Date().toISOString().split('T')[0];
-  const mapped = {
-    company_id: currentUserProfile.company_id,
-    job_id: quote.jobId,
-    customer_id: quote.customerId,
-    customer_name: quote.customerName,
-    project_address: quote.projectAddress,
-    customer_phone: quote.customerPhone,
-    customer_email: quote.customerEmail,
-    date: quote.date || todayStr,
-    expiration_date: quote.expirationDate,
-    markup_percent: quote.markupPercent,
-    tax_rate: quote.taxRate,
-    notes: quote.notes,
-    status: quote.status || 'Pending',
-    version: quote.version || 1,
-    parent_quote_id: quote.parentQuoteId,
-    is_legacy: quote.isLegacy === true,
-    date_won_lost: quote.dateWonLost,
-    date_completed: quote.dateCompleted,
-    company_logo: quote.companyLogo || '',
-    print_show_details: quote.printShowDetails !== false,
-    print_show_detail_pricing: quote.printShowDetailPricing !== false,
-    print_show_quantities: quote.printShowQuantities !== false,
-    tax_plus_applicable: quote.taxPlusApplicable === true,
-    sections: quote.sections || [],
-    photos: quote.photos || [],
-    documents: quote.documents || [],
-    receipts: quote.receipts || []
-  };
-  
-  if (quote.id) {
-    const existing = await getQuoteById(quote.id);
+  if (quoteData.id) {
+    const existing = await getQuoteById(quoteData.id);
     if (existing) {
       const contentChanged = 
-        JSON.stringify(existing.notes) !== JSON.stringify(quote.notes) ||
-        JSON.stringify(existing.sections) !== JSON.stringify(quote.sections) ||
-        existing.customerName !== quote.customerName ||
-        existing.projectAddress !== quote.projectAddress ||
-        existing.customerPhone !== quote.customerPhone ||
-        existing.customerEmail !== quote.customerEmail ||
-        existing.markupPercent !== quote.markupPercent ||
-        existing.taxRate !== quote.taxRate ||
-        existing.expirationDate !== quote.expirationDate ||
-        existing.companyLogo !== quote.companyLogo ||
-        existing.printShowDetails !== quote.printShowDetails ||
-        existing.printShowDetailPricing !== quote.printShowDetailPricing ||
-        existing.printShowQuantities !== quote.printShowQuantities ||
-        existing.taxPlusApplicable !== quote.taxPlusApplicable ||
-        ((existing.status === 'Won' || existing.status === 'Lost') && quote.status === 'Pending');
+        JSON.stringify(existing.notes) !== JSON.stringify(payload.notes) ||
+        JSON.stringify(existing.sections) !== JSON.stringify(payload.sections) ||
+        existing.customerName !== payload.customer_name ||
+        existing.projectAddress !== payload.project_address ||
+        existing.customerPhone !== payload.customer_phone ||
+        existing.customerEmail !== payload.customer_email ||
+        existing.markupPercent !== payload.markup_percent ||
+        existing.taxRate !== payload.tax_rate ||
+        existing.expirationDate !== payload.expiration_date ||
+        ((existing.status === 'Won' || existing.status === 'Lost') && payload.status === 'Pending');
         
       if (contentChanged && !existing.isLegacy) {
         const legacyCopy = { ...existing };
@@ -820,42 +786,36 @@ export async function saveQuote(quote) {
           is_legacy: true,
           date_won_lost: legacyCopy.dateWonLost,
           date_completed: legacyCopy.dateCompleted,
-          company_logo: legacyCopy.companyLogo || '',
-          print_show_details: legacyCopy.printShowDetails !== false,
-          print_show_detail_pricing: legacyCopy.printShowDetailPricing !== false,
-          print_show_quantities: legacyCopy.printShowQuantities !== false,
-          tax_plus_applicable: legacyCopy.taxPlusApplicable === true,
           sections: legacyCopy.sections,
           photos: legacyCopy.photos,
           documents: legacyCopy.documents,
           receipts: legacyCopy.receipts,
-          created_date_time: legacyCopy.createdDateTime // Preserve the original timestamp on the archived copy
+          schedule_tasks: legacyCopy.scheduleTasks,
+          created_date_time: legacyCopy.createdDateTime
         });
         if (legError) return { success: false, error: 'Legacy archive failed: ' + legError.message };
         
-        mapped.version = (existing.version || 1) + 1;
-        mapped.parent_quote_id = existing.parentQuoteId || existing.id;
-        mapped.created_date_time = new Date().toISOString(); // Stamp the new active version with the current time
-        mapped.date = todayStr; // Update quote date for the new active version
-        quote.date = todayStr;  // Sync in-memory representation
+        payload.version = (existing.version || 1) + 1;
+        payload.parent_quote_id = existing.parentQuoteId || existing.id;
+        payload.created_date_time = new Date().toISOString();
       }
     }
     
     const { data, error } = await rawDbWrite(
       'quotes', 
       'PATCH', 
-      mapped, 
-      `id=eq.${quote.id}&company_id=eq.${currentUserProfile.company_id}`
+      payload, 
+      `id=eq.${quoteData.id}&company_id=eq.${currentUserProfile.company_id}`
     );
     if (error) return { success: false, error: error.message };
-    const returnedObj = data && data.length > 0 ? data[0] : quote;
+    const returnedObj = data && data.length > 0 ? data[0] : quoteData;
     return { success: true, quote: returnedObj };
   } else {
     const maxQ = await rawDbQuery('quotes', `company_id=eq.${currentUserProfile.company_id}&order=quote_number.desc&limit=1`);
     const nextNum = maxQ && maxQ.length > 0 ? (parseInt(maxQ[0].quote_number) || 1000) + 1 : 1001;
-    mapped.quote_number = nextNum;
+    payload.quote_number = nextNum;
     
-    const { data, error } = await rawDbWrite('quotes', 'POST', mapped);
+    const { data, error } = await rawDbWrite('quotes', 'POST', payload);
     if (error) return { success: false, error: error.message };
     const returnedObj = data && data.length > 0 ? data[0] : null;
     return { success: true, quote: returnedObj };
@@ -892,7 +852,8 @@ export async function saveQuotesRaw(quotesList) {
     sections: q.sections || [],
     photos: q.photos,
     documents: q.documents,
-    receipts: q.receipts
+    receipts: q.receipts,
+    schedule_tasks: q.scheduleTasks || []
   }));
   const config = await getSupabaseConfig();
   if (!config) return;
@@ -911,7 +872,14 @@ export async function saveQuotesRaw(quotesList) {
   });
 }
 
-export async function deleteQuote(id) {
+export async function updateQuoteSchedule(quoteId, tasksArray) {
+  if (!currentUserProfile) return { success: false, error: 'Not authenticated' };
+  const res = await rawDbWrite('quotes', 'PATCH', { schedule_tasks: tasksArray }, `id=eq.${quoteId}`);
+  if (res.error) return { success: false, error: res.error.message };
+  return { success: true };
+}
+
+export async function deleteQuote(quoteId) {
   return { success: false, error: 'Quotes cannot be deleted. You can mark them as Lost or Inactive to archive them instead.' };
 }
 
@@ -940,7 +908,8 @@ export async function getSettings() {
     theme: row.theme || 'light',
     defaultTermsNotes: row.default_terms_notes || '',
     defaultTaxPlusApplicable: row.default_tax_plus_applicable || false,
-    quoteEmailBodyDefault: row.quote_email_body_default || ''
+    quoteEmailBodyDefault: row.quote_email_body_default || '',
+    schedulingConfig: row.scheduling_config || DEFAULT_SETTINGS.schedulingConfig
   };
 }
 
@@ -1272,4 +1241,41 @@ export async function getBillingPortalUrl() {
   if (!config) return null;
   const store = config.lemonSqueezyStore || 'mybidbook';
   return `https://${store}.lemonsqueezy.com/billing`;
+}
+
+// ==========================================
+// SCHEDULE TEMPLATES
+// ==========================================
+
+export async function getScheduleTemplates() {
+  const sb = getSupabase();
+  if (!sb || !currentUserProfile || !currentUserProfile.company_id) return [];
+  
+  const data = await rawDbQuery('schedule_templates', `company_id=eq.${currentUserProfile.company_id}&order=name.asc`);
+  if (!data) return [];
+  
+  return data.map(t => ({
+    id: t.id,
+    name: t.name,
+    tasks: t.tasks || []
+  }));
+}
+
+export async function saveScheduleTemplate(template) {
+  if (!currentUserProfile) return { success: false, error: 'Not authenticated' };
+  
+  const payload = {
+    company_id: currentUserProfile.company_id,
+    name: template.name,
+    tasks: template.tasks
+  };
+
+  const method = template.id ? 'PATCH' : 'POST';
+  const params = template.id ? `id=eq.${template.id}` : '';
+
+  const { data, error } = await rawDbWrite('schedule_templates', method, payload, params);
+  if (error) {
+    return { success: false, error: error.message || 'Database request failed. Make sure you have run the scheduling sql setup file.' };
+  }
+  return { success: true };
 }
