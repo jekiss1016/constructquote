@@ -114,9 +114,7 @@ export const SchedulingEngine = {
                 if (task.start_date) {
                     const parts = task.start_date.split('-');
                     const firmDate = new Date(parts[0], parts[1] - 1, parts[2]);
-                    if (firmDate > targetStartDate) {
-                        targetStartDate = firmDate;
-                    }
+                    targetStartDate = firmDate; // Respect explicitly set start dates, even in the past
                 }
                 
                 // 3. Ensure start date is a working day

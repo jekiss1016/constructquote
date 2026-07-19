@@ -242,6 +242,8 @@ body {
 /* Main Content Area */
 .main-content {
   margin-left: var(--sidebar-width);
+  width: calc(100% - var(--sidebar-width));
+  min-width: 0;
   flex-grow: 1;
   min-height: 100vh;
   padding: 2rem;
@@ -1612,6 +1614,7 @@ body {
   /* Main Layout Adjustment */
   .main-content {
     margin-left: 0;
+    width: 100%;
     padding: 1rem;
     padding-top: calc(56px + 1.25rem); /* Space for mobile header */
     min-height: calc(100vh - 56px);
