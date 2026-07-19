@@ -1,6 +1,6 @@
 // Database management using Supabase Cloud & LocalStorage fallbacks
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { showToast } from './utils.js?v=3.0.19';
+import { showToast } from './utils.js?v=3.0.20';
 
 const KEYS = {
   SUPABASE_CONFIG: 'cq_supabase_config'
@@ -722,7 +722,7 @@ export async function saveQuote(quote) {
   }
   
   // Enforce Trial account limits (max 10 quotes)
-  if (!quoteData.id && getSubscriptionLevel() === 'trial') {
+  if (!quote.id && getSubscriptionLevel() === 'trial') {
     const existingQuotes = await getQuotes();
     if (existingQuotes && existingQuotes.length >= 10) {
       return {
@@ -732,22 +732,22 @@ export async function saveQuote(quote) {
     }
   }
   
-  if (!(await checkJobIdUnique(payload.job_id, quoteData.id))) {
+  if (!(await checkJobIdUnique(payload.job_id, quote.id))) {
     return { success: false, error: `Job ID "${payload.job_id}" is already assigned to another active quote. Job IDs must be unique.` };
   }
   
   if (payload.status === 'Won' || payload.status === 'Lost' || payload.status === 'Inactive') {
-    if (!quoteData.dateWonLost) payload.date_won_lost = new Date().toISOString();
+    if (!quote.dateWonLost) payload.date_won_lost = new Date().toISOString();
   } else if (payload.status === 'Completed') {
-    if (!quoteData.dateCompleted) payload.date_completed = new Date().toISOString();
-    if (!quoteData.dateWonLost) payload.date_won_lost = new Date().toISOString();
+    if (!quote.dateCompleted) payload.date_completed = new Date().toISOString();
+    if (!quote.dateWonLost) payload.date_won_lost = new Date().toISOString();
   } else if (payload.status === 'Pending') {
     payload.date_won_lost = null;
     payload.date_completed = null;
   }
   
-  if (quoteData.id) {
-    const existing = await getQuoteById(quoteData.id);
+  if (quote.id) {
+    const existing = await getQuoteById(quote.id);
     if (existing) {
       const contentChanged = 
         JSON.stringify(existing.notes) !== JSON.stringify(payload.notes) ||
@@ -806,10 +806,10 @@ export async function saveQuote(quote) {
       'quotes', 
       'PATCH', 
       payload, 
-      `id=eq.${quoteData.id}&company_id=eq.${currentUserProfile.company_id}`
+      `id=eq.${quote.id}&company_id=eq.${currentUserProfile.company_id}`
     );
     if (error) return { success: false, error: error.message };
-    const returnedObj = data && data.length > 0 ? data[0] : quoteData;
+    const returnedObj = data && data.length > 0 ? data[0] : quote;
     return { success: true, quote: returnedObj };
   } else {
     const maxQ = await rawDbQuery('quotes', `company_id=eq.${currentUserProfile.company_id}&order=quote_number.desc&limit=1`);
