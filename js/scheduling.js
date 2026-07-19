@@ -1,6 +1,6 @@
-import * as db from './db.js?v=3.0.16';
-import * as utils from './utils.js?v=3.0.16';
-import { SchedulingEngine } from './scheduling-engine.js?v=3.0.16';
+import * as db from './db.js?v=3.0.17';
+import * as utils from './utils.js?v=3.0.17';
+import { SchedulingEngine } from './scheduling-engine.js?v=3.0.17';
 
 let schedules = [];
 let companySettings = null;
@@ -300,6 +300,11 @@ function renderTaskListView(tasks) {
         
         if (t.start_date) startDisp = `<strong>${startDisp}</strong>`; // bold firm dates
         
+        // Check if project is completed to disable deletion
+        const sch = schedules.find(s => s.id === activeScheduleId);
+        const isProjectCompleted = sch && sch.status === 'Completed';
+        const delBtnHtml = isProjectCompleted ? '' : `<button type="button" class="btn btn-danger btn-sm" onclick="window.ganttDeleteTask(${t.id})" style="margin-left: 0.25rem;">Del</button>`;
+        
         html += `
             <tr>
                 <td><strong>${t.title}</strong></td>
@@ -310,7 +315,7 @@ function renderTaskListView(tasks) {
                 <td>${statusBadge}</td>
                 <td style="text-align: right;">
                     <button type="button" class="btn btn-secondary btn-sm" onclick="window.ganttOpenEditTask(${t.id})">Edit</button>
-                    <button type="button" class="btn btn-danger btn-sm" onclick="window.ganttDeleteTask(${t.id})" style="margin-left: 0.25rem;">Del</button>
+                    ${delBtnHtml}
                 </td>
             </tr>
         `;
@@ -473,18 +478,12 @@ function renderGanttChart(tasks) {
 
 window.completeProject = async function(schId) {
     if (confirm("Are you sure you want to mark this job as completed?")) {
-        // Find the numeric quote id. In the schedule list, schId starts with 'SCH-'
-        let numericId = schId;
-        if (typeof schId === 'string' && schId.startsWith('SCH-')) {
-            numericId = parseInt(schId.split('-')[1]);
-        } else {
-            // Might be a numeric ID from window.activeScheduleId (which is 'SCH-...') wait, activeScheduleId is 'SCH-...' too
-            numericId = parseInt(schId.replace('SCH-', ''));
-        }
+        // Find the schedule by either the passed ID or active schedule
+        const targetId = schId || window.activeScheduleId;
+        const sch = schedules.find(s => s.id === targetId);
         
-        const q = quotesData.find(qt => qt.id === numericId);
-        if (q) {
-            await window.db.updateQuoteStatus(q.id, 'Completed');
+        if (sch) {
+            await window.db.updateQuoteStatus(sch.quote_id, 'Completed');
             utils.showToast("Project marked as Completed!", "success");
             setTimeout(() => { location.reload(); }, 1500);
         } else {
@@ -904,6 +903,23 @@ document.getElementById('gantt-edit-task-form').addEventListener('submit', async
 window.ganttDeleteTask = async function(taskId) {
     const id = taskId || parseInt(document.getElementById('gantt-edit-id').value);
     if (!id) return;
+    
+    const sch = schedules.find(s => s.id === activeScheduleId);
+    if (sch && sch.status === 'Completed') {
+        utils.showToast("Cannot delete tasks from a completed project.", "warning");
+        return;
+    }
+    
+    const taskToDelete = currentTasks.find(t => t.id === id);
+    if (taskToDelete) {
+        const status = getDerivedTaskStatus(taskToDelete);
+        if (status === 'In Progress' || status === 'Completed') {
+            if (!confirm(`This task is currently ${status}. Are you sure you want to delete it?`)) {
+                return;
+            }
+        }
+    }
+
     // Remove task
     currentTasks = currentTasks.filter(t => t.id !== id);
     // Remove this task from other tasks' dependencies
