@@ -1,6 +1,6 @@
 // Product Catalog management controller
-import { getProducts, getCategories, saveProduct, deleteProduct, getProductById, saveCategory, deleteCategory, renameCategory, getQuotes, getCurrentUserProfile } from './db.js?v=3.0.30';
-import { formatCurrency, showToast } from './utils.js?v=3.0.30';
+import { getProducts, getCategories, saveProduct, deleteProduct, getProductById, saveCategory, deleteCategory, renameCategory, getQuotes, getCurrentUserProfile } from './db.js?v=3.0.33';
+import { formatCurrency, showToast } from './utils.js?v=3.0.33';
 
 
 let activeSearchQuery = '';

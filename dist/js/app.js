@@ -22,14 +22,14 @@ import {
   getSubscriptionStatus,
   getCheckoutUrl,
   getBillingPortalUrl
-} from './db.js?v=3.0.30';
-import { showToast, fileToBase64, formatPhoneNumber, parseCompanyAddress } from './utils.js?v=3.0.30';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=3.0.30';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=3.0.30';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=3.0.30';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=3.0.30';
-import { initSchedulingView } from './scheduling.js?v=3.0.30';
-import * as dbAPI from './db.js?v=3.0.30';
+} from './db.js?v=3.0.33';
+import { showToast, fileToBase64, formatPhoneNumber, parseCompanyAddress } from './utils.js?v=3.0.33';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=3.0.33';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=3.0.33';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=3.0.33';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=3.0.33';
+import { initSchedulingView } from './scheduling.js?v=3.0.33';
+import * as dbAPI from './db.js?v=3.0.33';
 
 window.db = dbAPI;
 let activeChallengeId = null;
@@ -454,6 +454,8 @@ function showAuthModal() {
     mode = newMode;
     const confirmGroup = document.getElementById('auth-confirm-password-group');
     const confirmInput = document.getElementById('auth-confirm-password');
+    const tosGroup = document.getElementById('auth-tos-group');
+    const tosCheckbox = document.getElementById('auth-tos-checkbox');
     const liveSubmitBtn = document.getElementById('auth-submit-btn');
     const forgotLink = document.getElementById('auth-forgot-password-link');
 
@@ -467,6 +469,11 @@ function showAuthModal() {
         confirmInput.removeAttribute('required');
         confirmInput.value = '';
       }
+      if (tosGroup) tosGroup.style.display = 'none';
+      if (tosCheckbox) {
+        tosCheckbox.removeAttribute('required');
+        tosCheckbox.checked = false;
+      }
       if (forgotLink) forgotLink.style.display = 'inline';
     } else {
       tabLogin.classList.remove('active');
@@ -479,6 +486,8 @@ function showAuthModal() {
       if (liveSubmitBtn) liveSubmitBtn.textContent = 'Register';
       if (confirmGroup) confirmGroup.style.display = 'block';
       if (confirmInput) confirmInput.setAttribute('required', 'required');
+      if (tosGroup) tosGroup.style.display = 'flex';
+      if (tosCheckbox) tosCheckbox.setAttribute('required', 'required');
       if (forgotLink) forgotLink.style.display = 'none';
     }
   };
