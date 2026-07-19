@@ -1,6 +1,6 @@
-import * as db from './db.js?v=3.0.25';
-import * as utils from './utils.js?v=3.0.25';
-import { SchedulingEngine } from './scheduling-engine.js?v=3.0.25';
+import * as db from './db.js?v=3.0.26';
+import * as utils from './utils.js?v=3.0.26';
+import { SchedulingEngine } from './scheduling-engine.js?v=3.0.26';
 
 let schedules = [];
 let companySettings = null;
@@ -146,7 +146,7 @@ function renderSchedulesTable(filterStatus) {
         else if (sch.status === 'Completed') statusBadge = '<span class="badge badge-won">Completed</span>';
         else statusBadge = `<span class="badge badge-default">${sch.status}</span>`;
         
-        let schStartDate = '--';
+        let schStartDate = '9999-12-31';
         let schEndDate = '--';
         if (sch.scheduleTasks && sch.scheduleTasks.length > 0) {
             let minD = null;
@@ -160,6 +160,32 @@ function renderSchedulesTable(filterStatus) {
             if (minD) schStartDate = minD;
             if (maxD) schEndDate = maxD;
         }
+        sch._startDateForSort = schStartDate;
+        sch._endDateForDisp = schEndDate;
+    });
+
+    filtered.sort((a, b) => {
+        const dateCmp = a._startDateForSort.localeCompare(b._startDateForSort);
+        if (dateCmp !== 0) return dateCmp;
+        const jobA = a.job_id || '';
+        const jobB = b.job_id || '';
+        return jobA.localeCompare(jobB);
+    });
+
+    filtered.forEach(sch => {
+        const tr = document.createElement('tr');
+        
+        let statusBadge = '';
+        if (sch.status === 'Ready to Schedule') statusBadge = '<span class="badge badge-pending">Ready to Schedule</span>';
+        else if (sch.status === 'Not Scheduled') statusBadge = '<span class="badge badge-pending">Not Scheduled</span>';
+        else if (sch.status === 'Scheduled') statusBadge = '<span class="badge badge-active" style="background-color: var(--primary); color: white;">Scheduled</span>';
+        else if (sch.status === 'In Progress') statusBadge = '<span class="badge badge-active">In Progress</span>';
+        else if (sch.status === 'Ready to Complete') statusBadge = '<span class="badge badge-won" style="background-color: #f59e0b; color: white;">Ready to Complete</span>';
+        else if (sch.status === 'Completed') statusBadge = '<span class="badge badge-won">Completed</span>';
+        else statusBadge = `<span class="badge badge-default">${sch.status}</span>`;
+        
+        let schStartDate = sch._startDateForSort === '9999-12-31' ? '--' : sch._startDateForSort;
+        let schEndDate = sch._endDateForDisp;
 
         let actionCell = '';
         if (!isViewer) {
@@ -253,26 +279,52 @@ window.viewTaskList = function(id) {
 window.viewGanttChart = function(id) {
     activeScheduleId = id;
     window.activeScheduleId = id;
-    
+        // Switch views
     document.getElementById('scheduling-view').classList.remove('active');
     document.getElementById('project-tasks-view').classList.remove('active');
     document.getElementById('gantt-view').classList.add('active');
     window.scrollTo(0, 0);
     
+    window.isGlobalGantt = false;
+    document.getElementById('gantt-actions-container').style.display = 'flex';
+    
     const sch = schedules.find(s => s.id === id);
-    if (!sch) return;
-    
-    document.getElementById('gantt-project-title').innerText = `${sch.customer_name} - ${sch.job_id} Timeline`;
-    
-    currentTasks = sch.scheduleTasks || [];
-    if (currentTasks.length > 0) {
-        const todayStr = SchedulingEngine.formatDate(new Date());
-        const mergedConfig = getMergedScheduleConfig(sch);
-        SchedulingEngine.cascadeSchedule(currentTasks, mergedConfig, todayStr);
+    if (sch) {
+        document.getElementById('gantt-project-title').innerText = `Project Timeline: ${sch.job_id} - ${sch.customer_name}`;
     }
     
+    // Check if project is completed
+    const isProjectCompleted = sch && sch.status === 'Completed';
+    
+    currentTasks = sch ? (sch.scheduleTasks || []) : [];
     renderGanttChart(currentTasks);
-};
+}
+
+window.viewGlobalGantt = function() {
+    document.getElementById('scheduling-view').classList.remove('active');
+    document.getElementById('project-tasks-view').classList.remove('active');
+    document.getElementById('gantt-view').classList.add('active');
+    window.scrollTo(0, 0);
+    
+    window.isGlobalGantt = true;
+    document.getElementById('gantt-actions-container').style.display = 'none';
+    document.getElementById('gantt-project-title').innerText = 'Global Company Schedule';
+    
+    let allActiveTasks = [];
+    schedules.filter(s => s.status !== 'Completed').forEach(sch => {
+        if (sch.scheduleTasks) {
+            sch.scheduleTasks.forEach(t => {
+                let clone = { ...t };
+                clone.title = `${sch.job_id} - ${t.title}`;
+                clone._projectId = sch.id;
+                allActiveTasks.push(clone);
+            });
+        }
+    });
+    
+    currentTasks = allActiveTasks;
+    renderGanttChart(currentTasks);
+}
 
 function renderTaskListView(tasks) {
     const tbody = document.getElementById('project-tasks-table-body');
@@ -416,7 +468,7 @@ function renderGanttChart(tasks) {
         let currentSegment = null;
         
         let d = new Date(tStart);
-        const currentSch = schedules.find(s => s.id === activeScheduleId);
+        const currentSch = schedules.find(s => s.id === (task._projectId || activeScheduleId));
         const mergedConfig = currentSch ? getMergedScheduleConfig(currentSch) : currentSchedulingConfig;
 
         while (d <= tEnd) {
@@ -438,10 +490,15 @@ function renderGanttChart(tasks) {
             }
             d.setDate(d.getDate() + 1);
         }
-        if (currentSegment) {
-            segments.push(currentSegment);
-        }
+        if (currentSegment) segments.push(currentSegment);
         
+        const row = document.createElement('div');
+        row.className = 'gantt-row';
+        
+        let schStatus = window.isGlobalGantt ? 'Active' : (currentSch ? currentSch.status : 'Active');
+        let clickable = schStatus === 'Completed' ? '' : `onclick="if(!window.isGlobalGantt) { window.ganttOpenEditTask(${task.id}); }" style="${window.isGlobalGantt ? 'cursor: default;' : ''}"`;
+        
+        row.innerHTML = `<div class="gantt-task-name" title="${task.title}" ${clickable}>${task.title}</div>`;        
         // Fallback if task is entirely on non-working days
         if (segments.length === 0) {
             const fallbackCol = Math.floor((tStart - minDate) / (1000 * 60 * 60 * 24)) + 1;
