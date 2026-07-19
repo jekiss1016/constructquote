@@ -1,6 +1,6 @@
 // Database management using Supabase Cloud & LocalStorage fallbacks
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { showToast } from './utils.js?v=3.0.21';
+import { showToast } from './utils.js?v=3.0.22';
 
 const KEYS = {
   SUPABASE_CONFIG: 'cq_supabase_config'
@@ -731,6 +731,39 @@ export async function saveQuote(quote) {
       };
     }
   }
+  
+  const todayStr = new Date().toISOString().split('T')[0];
+  const payload = {
+    company_id: currentUserProfile.company_id,
+    job_id: quote.jobId,
+    customer_id: quote.customerId,
+    customer_name: quote.customerName,
+    project_address: quote.projectAddress,
+    customer_phone: quote.customerPhone,
+    customer_email: quote.customerEmail,
+    date: quote.date || todayStr,
+    expiration_date: quote.expirationDate,
+    markup_percent: quote.markupPercent,
+    tax_rate: quote.taxRate,
+    notes: quote.notes,
+    status: quote.status || 'Pending',
+    version: quote.version || 1,
+    parent_quote_id: quote.parentQuoteId,
+    is_legacy: quote.isLegacy === true,
+    date_won_lost: quote.dateWonLost,
+    date_completed: quote.dateCompleted,
+    company_logo: quote.companyLogo || '',
+    print_show_details: quote.printShowDetails !== false,
+    print_show_detail_pricing: quote.printShowDetailPricing !== false,
+    print_show_quantities: quote.printShowQuantities !== false,
+    tax_plus_applicable: quote.taxPlusApplicable === true,
+    sections: quote.sections || [],
+    photos: quote.photos || [],
+    documents: quote.documents || [],
+    receipts: quote.receipts || [],
+    schedule_tasks: quote.scheduleTasks || [],
+    schedule_settings: quote.scheduleSettings || {}
+  };
   
   if (!(await checkJobIdUnique(payload.job_id, quote.id))) {
     return { success: false, error: `Job ID "${payload.job_id}" is already assigned to another active quote. Job IDs must be unique.` };

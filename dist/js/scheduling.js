@@ -1,6 +1,6 @@
-import * as db from './db.js?v=3.0.21';
-import * as utils from './utils.js?v=3.0.21';
-import { SchedulingEngine } from './scheduling-engine.js?v=3.0.21';
+import * as db from './db.js?v=3.0.22';
+import * as utils from './utils.js?v=3.0.22';
+import { SchedulingEngine } from './scheduling-engine.js?v=3.0.22';
 
 let schedules = [];
 let companySettings = null;
