@@ -1,6 +1,6 @@
 // Database management using Supabase Cloud & LocalStorage fallbacks
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { showToast } from './utils.js?v=3.0.12';
+import { showToast } from './utils.js?v=3.0.13';
 
 const KEYS = {
   SUPABASE_CONFIG: 'cq_supabase_config'
@@ -677,7 +677,8 @@ export async function getQuotes() {
     documents: q.documents || [],
     receipts: q.receipts || [],
     taxPlusApplicable: q.tax_plus_applicable === true,
-    scheduleTasks: q.schedule_tasks || []
+    scheduleTasks: q.schedule_tasks || [],
+    scheduleSettings: q.schedule_settings || {}
   }));
 }
 
@@ -853,7 +854,8 @@ export async function saveQuotesRaw(quotesList) {
     photos: q.photos,
     documents: q.documents,
     receipts: q.receipts,
-    schedule_tasks: q.scheduleTasks || []
+    schedule_tasks: q.scheduleTasks || [],
+    schedule_settings: q.scheduleSettings || {}
   }));
   const config = await getSupabaseConfig();
   if (!config) return;
@@ -875,6 +877,13 @@ export async function saveQuotesRaw(quotesList) {
 export async function updateQuoteSchedule(quoteId, tasksArray) {
   if (!currentUserProfile) return { success: false, error: 'Not authenticated' };
   const res = await rawDbWrite('quotes', 'PATCH', { schedule_tasks: tasksArray }, `id=eq.${quoteId}`);
+  if (res.error) return { success: false, error: res.error.message };
+  return { success: true };
+}
+
+export async function updateQuoteScheduleSettings(quoteId, settingsObj) {
+  if (!currentUserProfile) return { success: false, error: 'Not authenticated' };
+  const res = await rawDbWrite('quotes', 'PATCH', { schedule_settings: settingsObj }, `id=eq.${quoteId}`);
   if (res.error) return { success: false, error: res.error.message };
   return { success: true };
 }

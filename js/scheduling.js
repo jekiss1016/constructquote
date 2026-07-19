@@ -1,6 +1,6 @@
-import * as db from './db.js?v=3.0.12';
-import * as utils from './utils.js?v=3.0.12';
-import { SchedulingEngine } from './scheduling-engine.js?v=3.0.12';
+import * as db from './db.js?v=3.0.13';
+import * as utils from './utils.js?v=3.0.13';
+import { SchedulingEngine } from './scheduling-engine.js?v=3.0.13';
 
 let schedules = [];
 let companySettings = null;
@@ -194,6 +194,18 @@ let ganttStartDate = null;
 let ganttEndDate = null;
 window.activeScheduleId = null; // kept in sync below
 
+function getMergedScheduleConfig(sch) {
+    if (!currentSchedulingConfig) return null;
+    if (!sch.scheduleSettings) return currentSchedulingConfig;
+    
+    // Merge global settings with project-specific settings
+    return {
+        ...currentSchedulingConfig,
+        holidays: [...(currentSchedulingConfig.holidays || []), ...(sch.scheduleSettings.holidays || [])],
+        custom_workdays: [...(currentSchedulingConfig.custom_workdays || []), ...(sch.scheduleSettings.custom_workdays || [])]
+    };
+}
+
 window.viewTaskList = function(id) {
     activeScheduleId = id;
     window.activeScheduleId = id;
@@ -215,7 +227,8 @@ window.viewTaskList = function(id) {
     // Cascade to ensure dates are fresh based on current settings
     if (currentTasks.length > 0) {
         const todayStr = SchedulingEngine.formatDate(new Date());
-        SchedulingEngine.cascadeSchedule(currentTasks, currentSchedulingConfig, todayStr);
+        const mergedConfig = getMergedScheduleConfig(sch);
+        SchedulingEngine.cascadeSchedule(currentTasks, mergedConfig, todayStr);
     }
     
     renderTaskListView(currentTasks);
@@ -238,7 +251,8 @@ window.viewGanttChart = function(id) {
     currentTasks = sch.scheduleTasks || [];
     if (currentTasks.length > 0) {
         const todayStr = SchedulingEngine.formatDate(new Date());
-        SchedulingEngine.cascadeSchedule(currentTasks, currentSchedulingConfig, todayStr);
+        const mergedConfig = getMergedScheduleConfig(sch);
+        SchedulingEngine.cascadeSchedule(currentTasks, mergedConfig, todayStr);
     }
     
     renderGanttChart(currentTasks);
@@ -371,9 +385,12 @@ function renderGanttChart(tasks) {
         let currentSegment = null;
         
         let d = new Date(tStart);
+        const currentSch = schedules.find(s => s.id === activeScheduleId);
+        const mergedConfig = currentSch ? getMergedScheduleConfig(currentSch) : currentSchedulingConfig;
+
         while (d <= tEnd) {
             // Use SchedulingEngine to respect all exceptions, holidays, and custom workdays
-            let isWorking = SchedulingEngine.isWorkingDay(d, currentSchedulingConfig);
+            let isWorking = SchedulingEngine.isWorkingDay(d, mergedConfig);
             
             if (isWorking) {
                 let col = Math.floor((d - minDate) / (1000 * 60 * 60 * 24)) + 1;
@@ -962,7 +979,9 @@ window.ganttApplySelectedTemplate = async function() {
     document.getElementById('gantt-apply-template-modal').classList.remove('active');
     
     const todayStr = SchedulingEngine.formatDate(new Date());
-    SchedulingEngine.cascadeSchedule(currentTasks, currentSchedulingConfig, todayStr);
+    const sch = schedules.find(s => s.id === activeScheduleId);
+    const mergedConfig = sch ? getMergedScheduleConfig(sch) : currentSchedulingConfig;
+    SchedulingEngine.cascadeSchedule(currentTasks, mergedConfig, todayStr);
     renderGanttChart(currentTasks);
     renderTaskListView(currentTasks);
     await saveScheduleToDB();
@@ -992,5 +1011,83 @@ window.saveScheduleSettings = async function() {
         if (activeScheduleId && currentTasks.length > 0) {
             window.viewSchedule(activeScheduleId);
         }
+    }
+};
+
+// ==================== PROJECT-LEVEL SETTINGS ====================
+let tempProjectSettings = { holidays: [], custom_workdays: [] };
+
+window.openProjectScheduleSettings = function() {
+    if (!activeScheduleId) return;
+    const sch = schedules.find(s => s.id === activeScheduleId);
+    if (!sch) return;
+    
+    // Load existing or initialize
+    tempProjectSettings = JSON.parse(JSON.stringify(sch.scheduleSettings || { holidays: [], custom_workdays: [] }));
+    if (!tempProjectSettings.holidays) tempProjectSettings.holidays = [];
+    if (!tempProjectSettings.custom_workdays) tempProjectSettings.custom_workdays = [];
+    
+    window.renderScheduleList('project-holidays-list', tempProjectSettings.holidays, 'removeProjectHoliday');
+    window.renderScheduleList('project-custom-workdays-list', tempProjectSettings.custom_workdays, 'removeProjectCustomWorkday');
+    
+    document.getElementById('project-schedule-settings-modal').classList.add('active');
+};
+
+window.addProjectHoliday = function() {
+    const dateInput = document.getElementById('project-add-holiday-date');
+    if (!dateInput.value) return;
+    
+    if (!tempProjectSettings.holidays.includes(dateInput.value)) {
+        tempProjectSettings.holidays.push(dateInput.value);
+        window.renderScheduleList('project-holidays-list', tempProjectSettings.holidays, 'removeProjectHoliday');
+    }
+    dateInput.value = '';
+};
+
+window.removeProjectHoliday = function(dateStr) {
+    tempProjectSettings.holidays = tempProjectSettings.holidays.filter(d => d !== dateStr);
+    window.renderScheduleList('project-holidays-list', tempProjectSettings.holidays, 'removeProjectHoliday');
+};
+
+window.addProjectCustomWorkday = function() {
+    const dateInput = document.getElementById('project-add-custom-workday-date');
+    if (!dateInput.value) return;
+    
+    if (!tempProjectSettings.custom_workdays.includes(dateInput.value)) {
+        tempProjectSettings.custom_workdays.push(dateInput.value);
+        window.renderScheduleList('project-custom-workdays-list', tempProjectSettings.custom_workdays, 'removeProjectCustomWorkday');
+    }
+    dateInput.value = '';
+};
+
+window.removeProjectCustomWorkday = function(dateStr) {
+    tempProjectSettings.custom_workdays = tempProjectSettings.custom_workdays.filter(d => d !== dateStr);
+    window.renderScheduleList('project-custom-workdays-list', tempProjectSettings.custom_workdays, 'removeProjectCustomWorkday');
+};
+
+window.saveProjectScheduleSettings = async function() {
+    if (!activeScheduleId) return;
+    const sch = schedules.find(s => s.id === activeScheduleId);
+    if (!sch) return;
+    
+    sch.scheduleSettings = JSON.parse(JSON.stringify(tempProjectSettings));
+    
+    const res = await window.db.updateQuoteScheduleSettings(sch.quote_id, sch.scheduleSettings);
+    if (res.error) {
+        utils.showToast(res.error, 'danger');
+        return;
+    }
+    
+    utils.showToast('Project schedule settings saved', 'success');
+    document.getElementById('project-schedule-settings-modal').classList.remove('active');
+    
+    // Recalculate schedule based on new settings
+    if (currentTasks.length > 0) {
+        const todayStr = SchedulingEngine.formatDate(new Date());
+        const mergedConfig = getMergedScheduleConfig(sch);
+        SchedulingEngine.cascadeSchedule(currentTasks, mergedConfig, todayStr);
+        renderGanttChart(currentTasks);
+        renderTaskListView(currentTasks);
+        await saveScheduleToDB();
     }
 };
