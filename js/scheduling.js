@@ -1,6 +1,6 @@
-import * as db from './db.js?v=3.0.20';
-import * as utils from './utils.js?v=3.0.20';
-import { SchedulingEngine } from './scheduling-engine.js?v=3.0.20';
+import * as db from './db.js?v=3.0.21';
+import * as utils from './utils.js?v=3.0.21';
+import { SchedulingEngine } from './scheduling-engine.js?v=3.0.21';
 
 let schedules = [];
 let companySettings = null;
@@ -302,9 +302,10 @@ function renderTaskListView(tasks) {
         
         if (t.start_date) startDisp = `<strong>${startDisp}</strong>`; // bold firm dates
         
-        // Check if project is completed to disable deletion
+        // Check if project is completed to disable deletion and editing
         const sch = schedules.find(s => s.id === activeScheduleId);
         const isProjectCompleted = sch && sch.status === 'Completed';
+        const editBtnHtml = isProjectCompleted ? '' : `<button type="button" class="btn btn-secondary btn-sm" onclick="window.ganttOpenEditTask(${t.id})">Edit</button>`;
         const delBtnHtml = isProjectCompleted ? '' : `<button type="button" class="btn btn-danger btn-sm" onclick="window.ganttDeleteTask(${t.id})" style="margin-left: 0.25rem;">Del</button>`;
         
         html += `
@@ -316,7 +317,7 @@ function renderTaskListView(tasks) {
                 <td style="max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${deps}">${deps}</td>
                 <td>${statusBadge}</td>
                 <td style="text-align: right;">
-                    <button type="button" class="btn btn-secondary btn-sm" onclick="window.ganttOpenEditTask(${t.id})">Edit</button>
+                    ${editBtnHtml}
                     ${delBtnHtml}
                 </td>
             </tr>
@@ -844,6 +845,12 @@ document.getElementById('gantt-add-task-form').addEventListener('submit', async 
 
 // ==================== GANTT EDIT TASK ====================
 window.ganttOpenEditTask = function(taskId) {
+    const sch = schedules.find(s => s.id === activeScheduleId);
+    if (sch && sch.status === 'Completed') {
+        utils.showToast("Cannot edit tasks in a completed project.", "warning");
+        return;
+    }
+
     const task = currentTasks.find(t => t.id === taskId);
     if (!task) return;
     
