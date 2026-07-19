@@ -1,6 +1,6 @@
-import * as db from './db.js?v=3.0.18';
-import * as utils from './utils.js?v=3.0.18';
-import { SchedulingEngine } from './scheduling-engine.js?v=3.0.18';
+import * as db from './db.js?v=3.0.19';
+import * as utils from './utils.js?v=3.0.19';
+import { SchedulingEngine } from './scheduling-engine.js?v=3.0.19';
 
 let schedules = [];
 let companySettings = null;
@@ -83,7 +83,9 @@ async function loadSchedules() {
             const total = sub + markupVal + taxVal;
 
                 let derivedStatus = 'Ready to Schedule';
-                if (q.scheduleTasks && q.scheduleTasks.length > 0) {
+                if (q.status === 'Completed') {
+                    derivedStatus = 'Completed';
+                } else if (q.scheduleTasks && q.scheduleTasks.length > 0) {
                     const hasDates = q.scheduleTasks.some(t => t.start_date || t.calculated_start_date);
                     const allCompleted = q.scheduleTasks.every(t => getDerivedTaskStatus(t) === 'Completed');
                     const anyInProgress = q.scheduleTasks.some(t => getDerivedTaskStatus(t) === 'In Progress');
