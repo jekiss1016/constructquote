@@ -577,7 +577,9 @@ function renderGanttChart(tasks) {
     const profile = db.getCurrentUserProfile();
     const isViewer = profile && profile.role === 'viewer';
     
-    if (allCompleted && currentTasks.length > 0 && !isViewer && (!currentSch || currentSch.status !== 'Completed')) {
+    const activeSch = window.isGlobalGantt ? null : schedules.find(s => s.id === activeScheduleId);
+    
+    if (allCompleted && currentTasks.length > 0 && !isViewer && (!activeSch || activeSch.status !== 'Completed')) {
         if(completeBtn) completeBtn.style.display = 'block';
         if(listCompleteBtn) listCompleteBtn.style.display = 'block';
     } else {
