@@ -1,6 +1,6 @@
-import * as db from './db.js?v=3.0.15';
-import * as utils from './utils.js?v=3.0.15';
-import { SchedulingEngine } from './scheduling-engine.js?v=3.0.15';
+import * as db from './db.js?v=3.0.16';
+import * as utils from './utils.js?v=3.0.16';
+import { SchedulingEngine } from './scheduling-engine.js?v=3.0.16';
 
 let schedules = [];
 let companySettings = null;
@@ -82,14 +82,16 @@ async function loadSchedules() {
             const taxVal = q.taxPlusApplicable ? 0 : (sub + markupVal) * ((q.taxRate || 0) / 100);
             const total = sub + markupVal + taxVal;
 
-                let derivedStatus = 'Not Scheduled';
+                let derivedStatus = 'Ready to Schedule';
                 if (q.scheduleTasks && q.scheduleTasks.length > 0) {
+                    const hasDates = q.scheduleTasks.some(t => t.start_date || t.calculated_start_date);
                     const allCompleted = q.scheduleTasks.every(t => getDerivedTaskStatus(t) === 'Completed');
                     const anyInProgress = q.scheduleTasks.some(t => getDerivedTaskStatus(t) === 'In Progress');
+                    const anyCompleted = q.scheduleTasks.some(t => getDerivedTaskStatus(t) === 'Completed');
                     
                     if (allCompleted) derivedStatus = 'Ready to Complete';
-                    else if (anyInProgress) derivedStatus = 'In Progress';
-                    else derivedStatus = 'Scheduled';
+                    else if (anyInProgress || (anyCompleted && !allCompleted)) derivedStatus = 'In Progress';
+                    else if (hasDates) derivedStatus = 'Scheduled';
                 }
 
                 return {
@@ -134,7 +136,8 @@ function renderSchedulesTable(filterStatus) {
         const tr = document.createElement('tr');
         
         let statusBadge = '';
-        if (sch.status === 'Not Scheduled') statusBadge = '<span class="badge badge-pending">Not Scheduled</span>';
+        if (sch.status === 'Ready to Schedule') statusBadge = '<span class="badge badge-pending">Ready to Schedule</span>';
+        else if (sch.status === 'Not Scheduled') statusBadge = '<span class="badge badge-pending">Not Scheduled</span>';
         else if (sch.status === 'Scheduled') statusBadge = '<span class="badge badge-active" style="background-color: var(--primary); color: white;">Scheduled</span>';
         else if (sch.status === 'In Progress') statusBadge = '<span class="badge badge-active">In Progress</span>';
         else if (sch.status === 'Ready to Complete') statusBadge = '<span class="badge badge-won" style="background-color: #f59e0b; color: white;">Ready to Complete</span>';
