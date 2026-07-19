@@ -363,7 +363,7 @@ function renderGanttChart(tasks) {
         let tStart = parseLocalDate(startStr);
         let tEnd = parseLocalDate(endStr);
         
-        let taskClass = task.status.toLowerCase().replace(' ', '-');
+        let taskClass = (task.status || 'Pending').toLowerCase().replace(' ', '-');
         if (task.is_no_dependency) taskClass = 'no-dependency';
         
         // Find continuous working day segments so we don't draw over weekends
@@ -943,7 +943,7 @@ window.ganttApplySelectedTemplate = async function() {
     const newTasks = template.tasks.map(t => {
         const newId = Date.now() + Math.floor(Math.random() * 10000);
         idMapping[t.id] = newId;
-        return { ...t, id: newId, dependencies: [] };
+        return { ...t, id: newId, status: t.status || 'Pending', dependencies: [] };
     });
     
     // Remap dependencies
