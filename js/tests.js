@@ -192,6 +192,29 @@ async function runTestSuite() {
     let emailInput = await waitForSelector('#auth-email');
     updateStepStatus(stepAuthNav, 'success');
     
+    // Verify Sign Up tab shows TOS checkbox
+    const stepTosCheck = addStep('Verifying TOS checkbox on Sign Up tab');
+    const signupTabBtn = doc.querySelector('#auth-tab-signup');
+    const loginTabBtn = doc.querySelector('#auth-tab-login');
+    const tosGroup = doc.querySelector('#auth-tos-group');
+    const tosCheckbox = doc.querySelector('#auth-tos-checkbox');
+    
+    if (signupTabBtn && tosGroup && tosCheckbox) {
+      signupTabBtn.click();
+      await wait(300);
+      if (tosGroup.style.display === 'none' || !tosCheckbox.hasAttribute('required')) {
+        throw new Error('TOS checkbox is not visible or not required on Sign Up tab.');
+      }
+      loginTabBtn.click();
+      await wait(300);
+      if (tosGroup.style.display !== 'none' || tosCheckbox.hasAttribute('required')) {
+        throw new Error('TOS checkbox is not hidden or still required on Login tab.');
+      }
+    } else {
+      throw new Error('TOS checkbox elements not found.');
+    }
+    updateStepStatus(stepTosCheck, 'success');
+
     const stepAuthFill = addStep('Filling credentials');
     const pwdInput = doc.querySelector('#auth-password');
     triggerInput(emailInput, 'test123@test.com');
