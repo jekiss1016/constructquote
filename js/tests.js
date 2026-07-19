@@ -866,7 +866,7 @@ async function runTestSuite() {
     updateStepStatus(stepSchNav, 'success');
 
     const stepGlobalGantt = addStep('Testing Global Gantt & Pagination');
-    const globalBtn = doc.querySelector('#scheduling-view .page-header button.btn-success');
+    const globalBtn = doc.querySelector('#scheduling-view .page-header button[onclick="window.viewGlobalGantt()"]');
     if (!globalBtn) throw new Error('Global Gantt button not found');
     globalBtn.click();
     await wait(500);
