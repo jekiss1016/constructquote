@@ -1,6 +1,6 @@
-import * as db from './db.js?v=3.0.23';
-import * as utils from './utils.js?v=3.0.23';
-import { SchedulingEngine } from './scheduling-engine.js?v=3.0.23';
+import * as db from './db.js?v=3.0.24';
+import * as utils from './utils.js?v=3.0.24';
+import { SchedulingEngine } from './scheduling-engine.js?v=3.0.24';
 
 let schedules = [];
 let companySettings = null;
@@ -281,8 +281,15 @@ function renderTaskListView(tasks) {
         return;
     }
     
+    // Sort tasks by start date
+    const sortedTasks = [...tasks].sort((a, b) => {
+        const startA = a.start_date || a.calculated_start_date || '9999-12-31';
+        const startB = b.start_date || b.calculated_start_date || '9999-12-31';
+        return startA.localeCompare(startB);
+    });
+    
     let html = '';
-    tasks.forEach(t => {
+    sortedTasks.forEach(t => {
         let statusBadge = '';
         const derivedStatus = getDerivedTaskStatus(t);
         if (derivedStatus === 'Completed') statusBadge = '<span class="badge badge-won">Completed</span>';
