@@ -22,14 +22,14 @@ import {
   getSubscriptionStatus,
   getCheckoutUrl,
   getBillingPortalUrl
-} from './db.js?v=3.0.24';
-import { showToast, fileToBase64, formatPhoneNumber, parseCompanyAddress } from './utils.js?v=3.0.24';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=3.0.24';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=3.0.24';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=3.0.24';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=3.0.24';
-import { initSchedulingView } from './scheduling.js?v=3.0.24';
-import * as dbAPI from './db.js?v=3.0.24';
+} from './db.js?v=3.0.25';
+import { showToast, fileToBase64, formatPhoneNumber, parseCompanyAddress } from './utils.js?v=3.0.25';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=3.0.25';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=3.0.25';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=3.0.25';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=3.0.25';
+import { initSchedulingView } from './scheduling.js?v=3.0.25';
+import * as dbAPI from './db.js?v=3.0.25';
 
 window.db = dbAPI;
 let activeChallengeId = null;

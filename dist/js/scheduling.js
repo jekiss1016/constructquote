@@ -1,6 +1,6 @@
-import * as db from './db.js?v=3.0.24';
-import * as utils from './utils.js?v=3.0.24';
-import { SchedulingEngine } from './scheduling-engine.js?v=3.0.24';
+import * as db from './db.js?v=3.0.25';
+import * as utils from './utils.js?v=3.0.25';
+import { SchedulingEngine } from './scheduling-engine.js?v=3.0.25';
 
 let schedules = [];
 let companySettings = null;
@@ -830,6 +830,17 @@ document.getElementById('gantt-add-task-form').addEventListener('submit', async 
         }
     }
     
+    if (startDateOverride && depId) {
+        const depTask = currentTasks.find(t => t.id === parseInt(depId));
+        if (depTask) {
+            const depEnd = depTask.end_date || depTask.calculated_end_date;
+            if (depEnd && startDateOverride < depEnd) {
+                utils.showToast(`Cannot schedule before predecessor "${depTask.title}" completes (Expected on or after: ${depEnd})`, "error");
+                return;
+            }
+        }
+    }
+    
     const newTask = {
         id: Date.now(),
         title: name,
@@ -901,6 +912,19 @@ document.getElementById('gantt-edit-task-form').addEventListener('submit', async
         const todayStr = SchedulingEngine.formatDate(new Date());
         if (overrideStart < todayStr) {
             utils.showToast("Warning: You are scheduling a task with a start date in the past.", "warning");
+        }
+    }
+    
+    if (overrideStart && task.dependencies.length > 0) {
+        for (const did of task.dependencies) {
+            const depTask = currentTasks.find(t => t.id === did);
+            if (depTask) {
+                const depEnd = depTask.end_date || depTask.calculated_end_date;
+                if (depEnd && overrideStart < depEnd) {
+                    utils.showToast(`Cannot schedule before predecessor "${depTask.title}" completes (Expected on or after: ${depEnd})`, "error");
+                    return;
+                }
+            }
         }
     }
     
