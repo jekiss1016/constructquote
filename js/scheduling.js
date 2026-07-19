@@ -1,6 +1,6 @@
-import * as db from './db.js?v=3.0.26';
-import * as utils from './utils.js?v=3.0.26';
-import { SchedulingEngine } from './scheduling-engine.js?v=3.0.26';
+import * as db from './db.js?v=3.0.27';
+import * as utils from './utils.js?v=3.0.27';
+import { SchedulingEngine } from './scheduling-engine.js?v=3.0.27';
 
 let schedules = [];
 let companySettings = null;
@@ -297,6 +297,7 @@ window.viewGanttChart = function(id) {
     const isProjectCompleted = sch && sch.status === 'Completed';
     
     currentTasks = sch ? (sch.scheduleTasks || []) : [];
+    window.ganttCenterDate = new Date();
     renderGanttChart(currentTasks);
 }
 
@@ -323,6 +324,13 @@ window.viewGlobalGantt = function() {
     });
     
     currentTasks = allActiveTasks;
+    window.ganttCenterDate = new Date();
+    renderGanttChart(currentTasks);
+}
+
+window.shiftGanttDate = function(days) {
+    if (!window.ganttCenterDate) window.ganttCenterDate = new Date();
+    window.ganttCenterDate.setDate(window.ganttCenterDate.getDate() + days);
     renderGanttChart(currentTasks);
 }
 
@@ -399,25 +407,22 @@ function renderGanttChart(tasks) {
     
     // Filter to only tasks that have at least a computable start date
     const scheduledTasks = tasks.filter(t => t.start_date || t.calculated_start_date);
-    if (scheduledTasks.length === 0) {
+    if (scheduledTasks.length === 0 && !window.isGlobalGantt) {
         dateRangeLabel.innerText = 'Ready to schedule';
         return;
     }
     
-    // Find min start and max end
-    let minDate = parseLocalDate(scheduledTasks[0].start_date || scheduledTasks[0].calculated_start_date);
-    let maxDate = parseLocalDate(scheduledTasks[0].end_date || scheduledTasks[0].calculated_end_date);
+    if (!window.ganttCenterDate) window.ganttCenterDate = new Date();
     
-    scheduledTasks.forEach(t => {
-        let tStart = parseLocalDate(t.start_date || t.calculated_start_date);
-        let tEnd = parseLocalDate(t.end_date || t.calculated_end_date);
-        if (tStart < minDate) minDate = tStart;
-        if (tEnd > maxDate) maxDate = tEnd;
-    });
+    // Default 15-day view (7 days prior, 7 days after)
+    let minDate = new Date(window.ganttCenterDate);
+    minDate.setDate(minDate.getDate() - 7);
+    // ensure minDate is 00:00:00 local time for accurate grid math
+    minDate.setHours(0,0,0,0);
     
-    // Add 2 days padding on either side
-    minDate.setDate(minDate.getDate() - 2);
-    maxDate.setDate(maxDate.getDate() + 2);
+    let maxDate = new Date(window.ganttCenterDate);
+    maxDate.setDate(maxDate.getDate() + 7);
+    maxDate.setHours(0,0,0,0);
     
     ganttStartDate = minDate;
     ganttEndDate = maxDate;
@@ -475,8 +480,11 @@ function renderGanttChart(tasks) {
             // Use SchedulingEngine to respect all exceptions, holidays, and custom workdays
             let isWorking = SchedulingEngine.isWorkingDay(d, mergedConfig);
             
-            if (isWorking) {
+            if (d >= minDate && d <= maxDate && isWorking) {
                 let col = Math.floor((d - minDate) / (1000 * 60 * 60 * 24)) + 1;
+                // Clamp col to minimum 1 just in case, though d >= minDate handles it
+                col = Math.max(1, col);
+                
                 if (!currentSegment) {
                     currentSegment = { startCol: col, durationCols: 1 };
                 } else {
@@ -499,10 +507,18 @@ function renderGanttChart(tasks) {
         let clickable = schStatus === 'Completed' ? '' : `onclick="if(!window.isGlobalGantt) { window.ganttOpenEditTask(${task.id}); }" style="${window.isGlobalGantt ? 'cursor: default;' : ''}"`;
         
         row.innerHTML = `<div class="gantt-task-name" title="${task.title}" ${clickable}>${task.title}</div>`;        
-        // Fallback if task is entirely on non-working days
         if (segments.length === 0) {
-            const fallbackCol = Math.floor((tStart - minDate) / (1000 * 60 * 60 * 24)) + 1;
-            segments.push({ startCol: fallbackCol, durationCols: 1 });
+            // Task is completely outside the viewport or entirely on non-working days in the viewport
+            // Check if it's completely out of viewport
+            if (tEnd < minDate || tStart > maxDate) {
+                // Out of view, hide the row
+                row.style.display = 'none';
+            } else {
+                // In view, but entirely non-working days. Fallback to start column
+                let fallbackCol = Math.floor((tStart - minDate) / (1000 * 60 * 60 * 24)) + 1;
+                fallbackCol = Math.max(1, fallbackCol);
+                segments.push({ startCol: fallbackCol, durationCols: 1 });
+            }
         }
         
         segments.forEach((seg, index) => {
@@ -518,8 +534,8 @@ function renderGanttChart(tasks) {
             // If segment is disconnected, round all edges. Otherwise, make it look seamless.
             let styleTweaks = `grid-column: ${seg.startCol} / span ${seg.durationCols}; grid-row: ${currentRow};`;
             
-            gridContainer.insertAdjacentHTML('beforeend', `<div class="gantt-bar-container" style="${styleTweaks}" onclick="window.ganttOpenEditTask(${task.id})">
-                <div class="gantt-bar ${taskClass}">
+            gridContainer.insertAdjacentHTML('beforeend', `<div class="gantt-bar-container" style="${styleTweaks}" title="${task.title}" onclick="window.ganttOpenEditTask(${task.id})">
+                <div class="gantt-bar ${taskClass}" style="border-radius: 4px;">
                     ${innerHtml}
                 </div>
             </div>`);
