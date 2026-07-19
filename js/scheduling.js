@@ -1,6 +1,6 @@
-import * as db from './db.js?v=3.0.11';
-import * as utils from './utils.js?v=3.0.11';
-import { SchedulingEngine } from './scheduling-engine.js?v=3.0.11';
+import * as db from './db.js?v=3.0.12';
+import * as utils from './utils.js?v=3.0.12';
+import { SchedulingEngine } from './scheduling-engine.js?v=3.0.12';
 
 let schedules = [];
 let companySettings = null;
@@ -192,12 +192,15 @@ let activeScheduleId = null;
 let currentTasks = [];
 let ganttStartDate = null;
 let ganttEndDate = null;
+window.activeScheduleId = null; // kept in sync below
 
 window.viewTaskList = function(id) {
     activeScheduleId = id;
+    window.activeScheduleId = id;
     
     // Switch views
     document.getElementById('scheduling-view').classList.remove('active');
+    document.getElementById('gantt-view').classList.remove('active');
     document.getElementById('project-tasks-view').classList.add('active');
     window.scrollTo(0, 0);
     
@@ -220,6 +223,7 @@ window.viewTaskList = function(id) {
 
 window.viewGanttChart = function(id) {
     activeScheduleId = id;
+    window.activeScheduleId = id;
     
     document.getElementById('scheduling-view').classList.remove('active');
     document.getElementById('project-tasks-view').classList.remove('active');
@@ -294,15 +298,21 @@ function parseLocalDate(dateStr) {
 function renderGanttChart(tasks) {
     const gridContainer = document.getElementById('gantt-grid-container');
     const dateRangeLabel = document.getElementById('gantt-date-range');
+    if (!gridContainer || !dateRangeLabel) return;
     gridContainer.innerHTML = '';
     
-    if (tasks.length === 0) return;
+    // Filter to only tasks that have at least a computable start date
+    const scheduledTasks = tasks.filter(t => t.start_date || t.calculated_start_date);
+    if (scheduledTasks.length === 0) {
+        dateRangeLabel.innerText = 'Ready to schedule';
+        return;
+    }
     
     // Find min start and max end
-    let minDate = parseLocalDate(tasks[0].start_date || tasks[0].calculated_start_date);
-    let maxDate = parseLocalDate(tasks[0].end_date || tasks[0].calculated_end_date);
+    let minDate = parseLocalDate(scheduledTasks[0].start_date || scheduledTasks[0].calculated_start_date);
+    let maxDate = parseLocalDate(scheduledTasks[0].end_date || scheduledTasks[0].calculated_end_date);
     
-    tasks.forEach(t => {
+    scheduledTasks.forEach(t => {
         let tStart = parseLocalDate(t.start_date || t.calculated_start_date);
         let tEnd = parseLocalDate(t.end_date || t.calculated_end_date);
         if (tStart < minDate) minDate = tStart;
@@ -344,7 +354,7 @@ function renderGanttChart(tasks) {
     let allCompleted = true;
     let currentRow = 2; // Row 1 is the date header
     
-    tasks.forEach(task => {
+    scheduledTasks.forEach(task => {
         if (task.status !== 'Completed') allCompleted = false;
         
         let startStr = task.start_date || task.calculated_start_date;
