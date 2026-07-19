@@ -129,8 +129,7 @@ function renderSchedulesTable(filterStatus) {
     }
 
     if (filtered.length === 0) {
-        const colSpan = isViewer ? 6 : 7;
-        tbody.innerHTML = `<tr><td colspan="${colSpan}" style="text-align: center; color: var(--text-muted); padding: 2rem;">No ${filterStatus} schedules found.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">No ${filterStatus} schedules found.</td></tr>`;
         return;
     }
 
@@ -187,22 +186,21 @@ function renderSchedulesTable(filterStatus) {
         let schStartDate = sch._startDateForSort === '9999-12-31' ? '--' : sch._startDateForSort;
         let schEndDate = sch._endDateForDisp;
 
-        let actionCell = '';
+        let actionCell = `<td style="text-align: right;">
+            <button class="btn btn-sm btn-secondary" onclick="window.viewTaskList('${sch.id}')" title="Manage Tasks">Tasks</button>
+            <button type="button" class="btn btn-secondary btn-icon-only" onclick="window.viewGanttChart('${sch.id}')" title="View Gantt Chart" style="margin-left: 0.25rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="16" height="16">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+            </button>`;
+            
         if (!isViewer) {
-            let completeBtnHtml = '';
             if (sch.status === 'Ready to Complete') {
-                completeBtnHtml = `<button class="btn btn-sm btn-success" onclick="window.completeProject('${sch.id}')" title="Complete Project" style="margin-left: 0.25rem;">Complete</button>`;
+                actionCell += `<button class="btn btn-sm btn-success" onclick="window.completeProject('${sch.id}')" title="Complete Project" style="margin-left: 0.25rem;">Complete</button>`;
             }
-            actionCell = `<td style="text-align: right;">
-                <button class="btn btn-sm btn-secondary" onclick="window.viewTaskList('${sch.id}')" title="Manage Tasks">Manage</button>
-                <button type="button" class="btn btn-secondary btn-icon-only" onclick="window.viewGanttChart('${sch.id}')" title="View Gantt Chart" style="margin-left: 0.25rem;">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="16" height="16">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                </button>
-                ${completeBtnHtml}
-            </td>`;
         }
+        
+        actionCell += `</td>`;
         
         tr.innerHTML = `
             <td><strong>${sch.job_id}</strong></td>
@@ -263,6 +261,16 @@ window.viewTaskList = function(id) {
     
     document.getElementById('project-tasks-title').innerText = `${sch.customer_name} - ${sch.job_id} Tasks`;
     
+    const profile = db.getCurrentUserProfile();
+    const isViewer = profile && profile.role === 'viewer';
+    
+    document.getElementById('tasks-list-add-task-btn').style.display = isViewer ? 'none' : '';
+    document.getElementById('tasks-list-apply-template-btn').style.display = isViewer ? 'none' : '';
+    document.getElementById('tasks-list-auto-schedule-btn').style.display = isViewer ? 'none' : '';
+    
+    const settingsBtnList = document.querySelector('#project-tasks-actions-container button[onclick="window.openProjectScheduleSettings()"]');
+    if (settingsBtnList) settingsBtnList.style.display = isViewer ? 'none' : '';
+    
     // Load real tasks from the quote object
     currentTasks = sch.scheduleTasks || [];
     
@@ -287,6 +295,12 @@ window.viewGanttChart = function(id) {
     
     window.isGlobalGantt = false;
     document.getElementById('gantt-actions-container').style.display = 'flex';
+    
+    const profile = db.getCurrentUserProfile();
+    const isViewer = profile && profile.role === 'viewer';
+    
+    const settingsBtnGantt = document.querySelector('#gantt-actions-container button[onclick="window.openProjectScheduleSettings()"]');
+    if (settingsBtnGantt) settingsBtnGantt.style.display = isViewer ? 'none' : '';
     
     const sch = schedules.find(s => s.id === id);
     if (sch) {
@@ -372,8 +386,13 @@ function renderTaskListView(tasks) {
         // Check if project is completed to disable deletion and editing
         const sch = schedules.find(s => s.id === activeScheduleId);
         const isProjectCompleted = sch && sch.status === 'Completed';
-        const editBtnHtml = isProjectCompleted ? '' : `<button type="button" class="btn btn-secondary btn-sm" onclick="window.ganttOpenEditTask(${t.id})">Edit</button>`;
-        const delBtnHtml = isProjectCompleted ? '' : `<button type="button" class="btn btn-danger btn-sm" onclick="window.ganttDeleteTask(${t.id})" style="margin-left: 0.25rem;">Del</button>`;
+        
+        const profile = db.getCurrentUserProfile();
+        const isViewer = profile && profile.role === 'viewer';
+        
+        const cantEdit = isProjectCompleted || isViewer;
+        const editBtnHtml = cantEdit ? '' : `<button type="button" class="btn btn-secondary btn-sm" onclick="window.ganttOpenEditTask(${t.id})">Edit</button>`;
+        const delBtnHtml = cantEdit ? '' : `<button type="button" class="btn btn-danger btn-sm" onclick="window.ganttDeleteTask(${t.id})" style="margin-left: 0.25rem;">Del</button>`;
         
         html += `
             <tr>
@@ -503,8 +522,11 @@ function renderGanttChart(tasks) {
         const row = document.createElement('div');
         row.className = 'gantt-row';
         
+        const profile = db.getCurrentUserProfile();
+        const isViewer = profile && profile.role === 'viewer';
         let schStatus = window.isGlobalGantt ? 'Active' : (currentSch ? currentSch.status : 'Active');
-        let clickable = schStatus === 'Completed' ? '' : `onclick="if(!window.isGlobalGantt) { window.ganttOpenEditTask(${task.id}); }" style="${window.isGlobalGantt ? 'cursor: default;' : ''}"`;
+        
+        let clickable = (schStatus === 'Completed' || isViewer) ? '' : `onclick="if(!window.isGlobalGantt) { window.ganttOpenEditTask(${task.id}); }" style="${window.isGlobalGantt ? 'cursor: default;' : ''}"`;
         
         row.innerHTML = `<div class="gantt-task-name" title="${task.title}" ${clickable}>${task.title}</div>`;        
         if (segments.length === 0) {
@@ -534,7 +556,11 @@ function renderGanttChart(tasks) {
             // If segment is disconnected, round all edges. Otherwise, make it look seamless.
             let styleTweaks = `grid-column: ${seg.startCol} / span ${seg.durationCols}; grid-row: ${currentRow};`;
             
-            gridContainer.insertAdjacentHTML('beforeend', `<div class="gantt-bar-container" style="${styleTweaks}" title="${task.title}" onclick="window.ganttOpenEditTask(${task.id})">
+            const profile = db.getCurrentUserProfile();
+            const isViewer = profile && profile.role === 'viewer';
+            const clickAction = (isViewer || window.isGlobalGantt || schStatus === 'Completed') ? '' : `onclick="window.ganttOpenEditTask(${task.id})"`;
+            
+            gridContainer.insertAdjacentHTML('beforeend', `<div class="gantt-bar-container" style="${styleTweaks}" title="${task.title}" ${clickAction}>
                 <div class="gantt-bar ${taskClass}" style="border-radius: 4px;">
                     ${innerHtml}
                 </div>
@@ -547,7 +573,11 @@ function renderGanttChart(tasks) {
     // Show Complete button or modal if everything is done
     const completeBtn = document.getElementById('gantt-complete-job-btn');
     const listCompleteBtn = document.getElementById('tasks-list-complete-job-btn');
-    if (allCompleted && currentTasks.length > 0) {
+    
+    const profile = db.getCurrentUserProfile();
+    const isViewer = profile && profile.role === 'viewer';
+    
+    if (allCompleted && currentTasks.length > 0 && !isViewer && (!currentSch || currentSch.status !== 'Completed')) {
         if(completeBtn) completeBtn.style.display = 'block';
         if(listCompleteBtn) listCompleteBtn.style.display = 'block';
     } else {
