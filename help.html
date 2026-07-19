@@ -264,6 +264,7 @@
         <a href="#customers" class="toc-link">6. Customer Manager</a>
         <a href="#settings" class="toc-link">7. Settings & Security</a>
         <a href="#pwa" class="toc-link">8. PWA & Offline Support</a>
+        <a href="#scheduling" class="toc-link">9. Project Scheduling & Gantt Charts</a>
       </nav>
     </div>
   </aside>
@@ -456,6 +457,39 @@
       <h3>Offline Mode & Connection Warnings</h3>
       <p>If your device loses internet connectivity, a red warning banner will appear at the top of the screen: <em>"You are offline. Some functions are not available. Please try again when connected to the internet."</em></p>
       <p>While offline, you can continue browsing cached data and local catalog items. However, database synchronizations, quote updates, and photo uploads will be paused until a stable internet connection is restored.</p>
+    </section>
+
+    <!-- 9. PROJECT SCHEDULING -->
+    <section id="scheduling" class="help-section">
+      <h2>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+        Project Scheduling & Gantt Charts
+      </h2>
+      <p>The Scheduling module allows you to track project timelines, assign tasks, and maintain a company-wide view of all active work.</p>
+      
+      <h3>Active vs Completed Jobs</h3>
+      <p>By default, the main Scheduling page displays all active projects sorted chronologically by their earliest task start date, followed by Job ID. If you need to view older historical data, simply click the <strong>Show Completed</strong> button to swap the view to finished projects.</p>
+
+      <h3>Global Schedule View</h3>
+      <p>Clicking the green <strong>Global Schedule View</strong> button on the main scheduling page opens a unified Gantt chart aggregating tasks from <em>all</em> active projects. This helps management easily identify overlapping jobs and schedule crunches.</p>
+      <ul>
+        <li><strong>Paginated 15-Day View:</strong> The timeline defaults to a 15-day window centered on today. Use the <strong>&larr; Prev 7 Days</strong> and <strong>Next 7 Days &rarr;</strong> buttons to slide the window backward and forward.</li>
+        <li><strong>Hover Tooltips:</strong> For tasks with very short durations where the text is truncated, hovering your mouse over the colored bar reveals a tooltip containing the `[Job ID] - Task Name`.</li>
+        <li><strong>Editing Protection:</strong> To prevent accidental cross-project changes, adding and editing tasks are disabled while viewing the Global Gantt.</li>
+      </ul>
+
+      <h3>Project Task Management</h3>
+      <p>Clicking <strong>Schedule</strong> on any individual project from the main list opens its dedicated timeline view. From here, you can switch between the Gantt Chart and a standard List View.</p>
+      <ul>
+        <li><strong>Dependencies:</strong> Tasks can be chained together via dependencies. The scheduling engine strictly prevents you from manually overriding a dependent task's start date to be earlier than its predecessor's calculated completion date.</li>
+        <li><strong>Status Colors:</strong> The Gantt chart dynamically colors tasks based on their status (e.g., orange for Scheduled, blue for In Progress, green for Completed).</li>
+      </ul>
+
+      <div class="note-card warning">
+        <p><strong>Completion Lock:</strong> Once a project achieves a "Completed" status, its task list becomes permanently locked. The <em>Edit</em> and <em>Delete</em> task buttons are removed to preserve historical integrity.</p>
+      </div>
     </section>
   </main>
 

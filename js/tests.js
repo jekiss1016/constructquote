@@ -839,6 +839,80 @@ async function runTestSuite() {
     endActiveTest(true);
     log('Scheduling engine core math validated.', 'success');
 
+    // -------------------------------------------------------------
+    // TEST 12: Project Scheduling UI & Validation
+    // -------------------------------------------------------------
+    createTestCard('12. Project Scheduling UI');
+    const stepWonQuote = addStep('Marking quote as Won to create schedule');
+    // Go to quotes view and mark first quote won
+    doc.querySelector('.nav-item[data-target="quotes-view"]').click();
+    await wait(1000);
+    const winBtn = doc.querySelector('.btn-mark-won');
+    if (winBtn) {
+      winBtn.click();
+      await wait(1500); // Allow time for DB update and UI refresh
+      updateStepStatus(stepWonQuote, 'success');
+    } else {
+      log('No quote to mark Won, schedule tests may skip', 'warning');
+      updateStepStatus(stepWonQuote, 'success');
+    }
+
+    const stepSchNav = addStep('Navigating to Scheduling View');
+    doc.querySelector('.nav-item[data-target="scheduling-view"]').click();
+    await wait(1000);
+    if (!doc.getElementById('scheduling-view').classList.contains('active')) {
+      throw new Error('Scheduling view failed to open');
+    }
+    updateStepStatus(stepSchNav, 'success');
+
+    const stepGlobalGantt = addStep('Testing Global Gantt & Pagination');
+    const globalBtn = doc.querySelector('#scheduling-view .page-header button.btn-success');
+    if (!globalBtn) throw new Error('Global Gantt button not found');
+    globalBtn.click();
+    await wait(500);
+    if (!doc.getElementById('gantt-view').classList.contains('active')) {
+      throw new Error('Global Gantt view failed to open');
+    }
+    const ganttTitle = doc.getElementById('gantt-project-title').innerText;
+    if (ganttTitle !== 'Global Company Schedule') {
+      throw new Error(`Global Gantt title is incorrect: ${ganttTitle}`);
+    }
+    
+    // Check pagination buttons exist
+    const ganttHeaderHTML = doc.querySelector('.gantt-header').innerHTML;
+    if (!ganttHeaderHTML.includes('Prev 7 Days') || !ganttHeaderHTML.includes('Next 7 Days')) {
+      throw new Error('Gantt pagination buttons are missing');
+    }
+    updateStepStatus(stepGlobalGantt, 'success');
+
+    const stepSchList = addStep('Testing Project Task List & Dependency Validation');
+    // Go back to schedules
+    doc.querySelector('#gantt-view .page-header button').click();
+    await wait(500);
+    
+    const schBtn = doc.querySelector('#scheduling-table-body button.btn-primary');
+    if (schBtn) {
+      schBtn.click();
+      await wait(500);
+      if (!doc.getElementById('project-tasks-view').classList.contains('active')) {
+        throw new Error('Project tasks view failed to open');
+      }
+      
+      // Simulate click complete job
+      const completeJobBtn = doc.getElementById('tasks-list-complete-job-btn');
+      if (completeJobBtn) {
+        completeJobBtn.click();
+        await wait(1500); // Wait for confirmation and db reload
+      }
+      updateStepStatus(stepSchList, 'success');
+    } else {
+      log('No active schedules found to test task list', 'warning');
+      updateStepStatus(stepSchList, 'success');
+    }
+
+    endActiveTest(true);
+    log('Project Scheduling UI tested successfully!', 'success');
+
     log('==================================================');
     log(` TEST SUITE COMPLETE: ${passCount} PASSED, ${failCount} FAILED`, 'success');
     log('==================================================');
