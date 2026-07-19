@@ -1,6 +1,6 @@
-import * as db from './db.js?v=3.0.22';
-import * as utils from './utils.js?v=3.0.22';
-import { SchedulingEngine } from './scheduling-engine.js?v=3.0.22';
+import * as db from './db.js?v=3.0.23';
+import * as utils from './utils.js?v=3.0.23';
+import { SchedulingEngine } from './scheduling-engine.js?v=3.0.23';
 
 let schedules = [];
 let companySettings = null;
@@ -403,7 +403,6 @@ function renderGanttChart(tasks) {
         let tEnd = parseLocalDate(endStr);
         
         let taskClass = derivedStatus.toLowerCase().replace(' ', '-');
-        if (task.is_no_dependency) taskClass = 'no-dependency';
         
         // Find continuous working day segments so we don't draw over weekends
         let segments = [];
