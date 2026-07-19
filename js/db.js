@@ -794,7 +794,7 @@ export async function saveQuote(quote) {
         existing.expirationDate !== payload.expiration_date ||
         ((existing.status === 'Won' || existing.status === 'Lost') && payload.status === 'Pending');
         
-      if (contentChanged && !existing.isLegacy) {
+      if ((contentChanged || quote._forceNewVersion) && !existing.isLegacy) {
         const legacyCopy = { ...existing };
         legacyCopy.isLegacy = true;
         legacyCopy.status = 'Legacy';

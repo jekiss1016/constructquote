@@ -1089,6 +1089,7 @@ async function handleUpdateQuotePrices() {
   });
 
   activeQuote.sections = updatedSections;
+  activeQuote._forceNewVersion = true;
 
   const res = await saveQuote(activeQuote);
   if (res.success) {
