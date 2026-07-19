@@ -1,6 +1,6 @@
 // Database management using Supabase Cloud & LocalStorage fallbacks
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { showToast } from './utils.js?v=3.0.17';
+import { showToast } from './utils.js?v=3.0.18';
 
 const KEYS = {
   SUPABASE_CONFIG: 'cq_supabase_config'
@@ -1255,6 +1255,15 @@ export async function getBillingPortalUrl() {
 // ==========================================
 // SCHEDULE TEMPLATES
 // ==========================================
+
+export async function updateQuoteStatus(quoteId, status) {
+  if (!currentUserProfile) return { error: 'Not authenticated' };
+  const { data, error } = await rawDbWrite('quotes', 'PATCH', { status: status }, `id=eq.${quoteId}`);
+  if (error) {
+    return { error: error.message || 'Failed to update quote status' };
+  }
+  return { success: true };
+}
 
 export async function getScheduleTemplates() {
   const sb = getSupabase();
