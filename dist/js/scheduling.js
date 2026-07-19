@@ -82,21 +82,18 @@ async function loadSchedules() {
             const taxVal = q.taxPlusApplicable ? 0 : (sub + markupVal) * ((q.taxRate || 0) / 100);
             const total = sub + markupVal + taxVal;
 
-                let derivedStatus = 'Not Scheduled';
-                if (q.scheduleTasks && q.scheduleTasks.length > 0) {
-                    const hasStart = q.scheduleTasks.some(t => t.start_date || t.status !== 'Pending');
-                    const allCompleted = q.scheduleTasks.every(t => t.status === 'Completed');
-                    const todayStr = window.SchedulingEngine ? window.SchedulingEngine.formatDate(new Date()) : new Date().toISOString().split('T')[0];
-                    const anyInProgress = q.scheduleTasks.some(t => {
-                        if (t.status === 'In Progress' || t.status === 'Completed') return true;
-                        if (t.start_date && t.start_date <= todayStr) return true;
-                        return false;
-                    });
+                let derivedStatus = 'Ready to Schedule';
+                if (q.status === 'Completed') {
+                    derivedStatus = 'Completed';
+                } else if (q.scheduleTasks && q.scheduleTasks.length > 0) {
+                    const hasDates = q.scheduleTasks.some(t => t.start_date || t.calculated_start_date);
+                    const allCompleted = q.scheduleTasks.every(t => getDerivedTaskStatus(t) === 'Completed');
+                    const anyInProgress = q.scheduleTasks.some(t => getDerivedTaskStatus(t) === 'In Progress');
+                    const anyCompleted = q.scheduleTasks.some(t => getDerivedTaskStatus(t) === 'Completed');
                     
-                    if (allCompleted) derivedStatus = 'Completed';
-                    else if (anyInProgress) derivedStatus = 'In Progress';
-                    else if (hasStart) derivedStatus = 'Scheduled';
-                    else derivedStatus = 'Scheduled'; // If there are tasks, it's scheduled
+                    if (allCompleted) derivedStatus = 'Ready to Complete';
+                    else if (anyInProgress || (anyCompleted && !allCompleted)) derivedStatus = 'In Progress';
+                    else if (hasDates) derivedStatus = 'Scheduled';
                 }
 
                 return {
@@ -141,9 +138,11 @@ function renderSchedulesTable(filterStatus) {
         const tr = document.createElement('tr');
         
         let statusBadge = '';
-        if (sch.status === 'Not Scheduled') statusBadge = '<span class="badge badge-pending">Not Scheduled</span>';
+        if (sch.status === 'Ready to Schedule') statusBadge = '<span class="badge badge-pending">Ready to Schedule</span>';
+        else if (sch.status === 'Not Scheduled') statusBadge = '<span class="badge badge-pending">Not Scheduled</span>';
         else if (sch.status === 'Scheduled') statusBadge = '<span class="badge badge-active" style="background-color: var(--primary); color: white;">Scheduled</span>';
         else if (sch.status === 'In Progress') statusBadge = '<span class="badge badge-active">In Progress</span>';
+        else if (sch.status === 'Ready to Complete') statusBadge = '<span class="badge badge-won" style="background-color: #f59e0b; color: white;">Ready to Complete</span>';
         else if (sch.status === 'Completed') statusBadge = '<span class="badge badge-won">Completed</span>';
         else statusBadge = `<span class="badge badge-default">${sch.status}</span>`;
         
@@ -164,6 +163,10 @@ function renderSchedulesTable(filterStatus) {
 
         let actionCell = '';
         if (!isViewer) {
+            let completeBtnHtml = '';
+            if (sch.status === 'Ready to Complete') {
+                completeBtnHtml = `<button class="btn btn-sm btn-success" onclick="window.completeProject('${sch.id}')" title="Complete Project" style="margin-left: 0.25rem;">Complete</button>`;
+            }
             actionCell = `<td style="text-align: right;">
                 <button class="btn btn-sm btn-secondary" onclick="window.viewTaskList('${sch.id}')" title="Manage Tasks">Manage</button>
                 <button type="button" class="btn btn-secondary btn-icon-only" onclick="window.viewGanttChart('${sch.id}')" title="View Gantt Chart" style="margin-left: 0.25rem;">
@@ -171,6 +174,7 @@ function renderSchedulesTable(filterStatus) {
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
                 </button>
+                ${completeBtnHtml}
             </td>`;
         }
         
@@ -192,12 +196,39 @@ let activeScheduleId = null;
 let currentTasks = [];
 let ganttStartDate = null;
 let ganttEndDate = null;
+window.activeScheduleId = null; // kept in sync below
+
+function getMergedScheduleConfig(sch) {
+    if (!currentSchedulingConfig) return null;
+    if (!sch.scheduleSettings) return currentSchedulingConfig;
+    
+    // Merge global settings with project-specific settings
+    return {
+        ...currentSchedulingConfig,
+        holidays: [...(currentSchedulingConfig.holidays || []), ...(sch.scheduleSettings.holidays || [])],
+        custom_workdays: [...(currentSchedulingConfig.custom_workdays || []), ...(sch.scheduleSettings.custom_workdays || [])]
+    };
+}
+
+function getDerivedTaskStatus(task) {
+    const todayStr = SchedulingEngine.formatDate(new Date());
+    const start = task.start_date || task.calculated_start_date;
+    const end = task.end_date || task.calculated_end_date;
+    
+    if (!start || !end) return 'Pending';
+    
+    if (todayStr > end) return 'Completed';
+    if (todayStr >= start && todayStr <= end) return 'In Progress';
+    return 'Pending';
+}
 
 window.viewTaskList = function(id) {
     activeScheduleId = id;
+    window.activeScheduleId = id;
     
     // Switch views
     document.getElementById('scheduling-view').classList.remove('active');
+    document.getElementById('gantt-view').classList.remove('active');
     document.getElementById('project-tasks-view').classList.add('active');
     window.scrollTo(0, 0);
     
@@ -212,7 +243,8 @@ window.viewTaskList = function(id) {
     // Cascade to ensure dates are fresh based on current settings
     if (currentTasks.length > 0) {
         const todayStr = SchedulingEngine.formatDate(new Date());
-        SchedulingEngine.cascadeSchedule(currentTasks, currentSchedulingConfig, todayStr);
+        const mergedConfig = getMergedScheduleConfig(sch);
+        SchedulingEngine.cascadeSchedule(currentTasks, mergedConfig, todayStr);
     }
     
     renderTaskListView(currentTasks);
@@ -220,6 +252,7 @@ window.viewTaskList = function(id) {
 
 window.viewGanttChart = function(id) {
     activeScheduleId = id;
+    window.activeScheduleId = id;
     
     document.getElementById('scheduling-view').classList.remove('active');
     document.getElementById('project-tasks-view').classList.remove('active');
@@ -234,7 +267,8 @@ window.viewGanttChart = function(id) {
     currentTasks = sch.scheduleTasks || [];
     if (currentTasks.length > 0) {
         const todayStr = SchedulingEngine.formatDate(new Date());
-        SchedulingEngine.cascadeSchedule(currentTasks, currentSchedulingConfig, todayStr);
+        const mergedConfig = getMergedScheduleConfig(sch);
+        SchedulingEngine.cascadeSchedule(currentTasks, mergedConfig, todayStr);
     }
     
     renderGanttChart(currentTasks);
@@ -250,8 +284,9 @@ function renderTaskListView(tasks) {
     let html = '';
     tasks.forEach(t => {
         let statusBadge = '';
-        if (t.status === 'Completed') statusBadge = '<span class="badge badge-won">Completed</span>';
-        else if (t.status === 'In Progress') statusBadge = '<span class="badge badge-active">In Progress</span>';
+        const derivedStatus = getDerivedTaskStatus(t);
+        if (derivedStatus === 'Completed') statusBadge = '<span class="badge badge-won">Completed</span>';
+        else if (derivedStatus === 'In Progress') statusBadge = '<span class="badge badge-active">In Progress</span>';
         else statusBadge = '<span class="badge badge-pending">Pending</span>';
         
         let deps = 'None';
@@ -267,6 +302,12 @@ function renderTaskListView(tasks) {
         
         if (t.start_date) startDisp = `<strong>${startDisp}</strong>`; // bold firm dates
         
+        // Check if project is completed to disable deletion and editing
+        const sch = schedules.find(s => s.id === activeScheduleId);
+        const isProjectCompleted = sch && sch.status === 'Completed';
+        const editBtnHtml = isProjectCompleted ? '' : `<button type="button" class="btn btn-secondary btn-sm" onclick="window.ganttOpenEditTask(${t.id})">Edit</button>`;
+        const delBtnHtml = isProjectCompleted ? '' : `<button type="button" class="btn btn-danger btn-sm" onclick="window.ganttDeleteTask(${t.id})" style="margin-left: 0.25rem;">Del</button>`;
+        
         html += `
             <tr>
                 <td><strong>${t.title}</strong></td>
@@ -276,8 +317,8 @@ function renderTaskListView(tasks) {
                 <td style="max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${deps}">${deps}</td>
                 <td>${statusBadge}</td>
                 <td style="text-align: right;">
-                    <button type="button" class="btn btn-secondary btn-sm" onclick="window.ganttOpenEditTask(${t.id})">Edit</button>
-                    <button type="button" class="btn btn-danger btn-sm" onclick="window.ganttDeleteTask(${t.id})" style="margin-left: 0.25rem;">Del</button>
+                    ${editBtnHtml}
+                    ${delBtnHtml}
                 </td>
             </tr>
         `;
@@ -294,15 +335,21 @@ function parseLocalDate(dateStr) {
 function renderGanttChart(tasks) {
     const gridContainer = document.getElementById('gantt-grid-container');
     const dateRangeLabel = document.getElementById('gantt-date-range');
+    if (!gridContainer || !dateRangeLabel) return;
     gridContainer.innerHTML = '';
     
-    if (tasks.length === 0) return;
+    // Filter to only tasks that have at least a computable start date
+    const scheduledTasks = tasks.filter(t => t.start_date || t.calculated_start_date);
+    if (scheduledTasks.length === 0) {
+        dateRangeLabel.innerText = 'Ready to schedule';
+        return;
+    }
     
     // Find min start and max end
-    let minDate = parseLocalDate(tasks[0].start_date || tasks[0].calculated_start_date);
-    let maxDate = parseLocalDate(tasks[0].end_date || tasks[0].calculated_end_date);
+    let minDate = parseLocalDate(scheduledTasks[0].start_date || scheduledTasks[0].calculated_start_date);
+    let maxDate = parseLocalDate(scheduledTasks[0].end_date || scheduledTasks[0].calculated_end_date);
     
-    tasks.forEach(t => {
+    scheduledTasks.forEach(t => {
         let tStart = parseLocalDate(t.start_date || t.calculated_start_date);
         let tEnd = parseLocalDate(t.end_date || t.calculated_end_date);
         if (tStart < minDate) minDate = tStart;
@@ -344,8 +391,10 @@ function renderGanttChart(tasks) {
     let allCompleted = true;
     let currentRow = 2; // Row 1 is the date header
     
-    tasks.forEach(task => {
-        if (task.status !== 'Completed') allCompleted = false;
+    scheduledTasks.forEach(task => {
+        // Dynamic completion check
+        const derivedStatus = getDerivedTaskStatus(task);
+        if (derivedStatus !== 'Completed') allCompleted = false;
         
         let startStr = task.start_date || task.calculated_start_date;
         let endStr = task.end_date || task.calculated_end_date;
@@ -353,7 +402,7 @@ function renderGanttChart(tasks) {
         let tStart = parseLocalDate(startStr);
         let tEnd = parseLocalDate(endStr);
         
-        let taskClass = task.status.toLowerCase().replace(' ', '-');
+        let taskClass = derivedStatus.toLowerCase().replace(' ', '-');
         if (task.is_no_dependency) taskClass = 'no-dependency';
         
         // Find continuous working day segments so we don't draw over weekends
@@ -361,9 +410,12 @@ function renderGanttChart(tasks) {
         let currentSegment = null;
         
         let d = new Date(tStart);
+        const currentSch = schedules.find(s => s.id === activeScheduleId);
+        const mergedConfig = currentSch ? getMergedScheduleConfig(currentSch) : currentSchedulingConfig;
+
         while (d <= tEnd) {
             // Use SchedulingEngine to respect all exceptions, holidays, and custom workdays
-            let isWorking = SchedulingEngine.isWorkingDay(d, currentSchedulingConfig);
+            let isWorking = SchedulingEngine.isWorkingDay(d, mergedConfig);
             
             if (isWorking) {
                 let col = Math.floor((d - minDate) / (1000 * 60 * 60 * 24)) + 1;
@@ -416,50 +468,32 @@ function renderGanttChart(tasks) {
     // Show Complete button or modal if everything is done
     const completeBtn = document.getElementById('gantt-complete-job-btn');
     const listCompleteBtn = document.getElementById('tasks-list-complete-job-btn');
-    if (allCompleted) {
+    if (allCompleted && currentTasks.length > 0) {
         if(completeBtn) completeBtn.style.display = 'block';
         if(listCompleteBtn) listCompleteBtn.style.display = 'block';
-        document.getElementById('completion-modal').classList.add('active');
     } else {
         if(completeBtn) completeBtn.style.display = 'none';
         if(listCompleteBtn) listCompleteBtn.style.display = 'none';
-        document.getElementById('completion-modal').classList.remove('active');
     }
 }
 
-window.toggleTaskStatus = function(taskId) {
-    const task = currentTasks.find(t => t.id === taskId);
-    if (!task) return;
-    
-    if (task.status === 'Completed') {
-        task.status = 'Pending';
-    } else if (task.status === 'In Progress') {
-        task.status = 'Completed';
-    } else {
-        task.status = 'In Progress';
-    }
-    
-    renderGanttChart(currentTasks);
-    renderTaskListView(currentTasks);
-};
 
-// Bind Completion Confirm Button
-document.addEventListener('DOMContentLoaded', () => {
-    const completeJobAction = async () => {
-        if (confirm("Are you sure you want to mark this job as completed?")) {
-            const q = quotesData.find(qt => qt.id === activeScheduleId);
-            if (q) {
-                await window.db.updateQuoteStatus(q.id, 'Completed');
-                utils.showToast("Job marked as Completed!", "success");
-                setTimeout(() => { location.reload(); }, 1500);
-            }
+
+window.completeProject = async function(schId) {
+    if (confirm("Are you sure you want to mark this job as completed?")) {
+        // Find the schedule by either the passed ID or active schedule
+        const targetId = schId || window.activeScheduleId;
+        const sch = schedules.find(s => s.id === targetId);
+        
+        if (sch) {
+            await window.db.updateQuoteStatus(sch.quote_id, 'Completed');
+            utils.showToast("Project marked as Completed!", "success");
+            setTimeout(() => { location.reload(); }, 1500);
+        } else {
+            utils.showToast("Could not find project to complete", "danger");
         }
-    };
-    const ganttBtn = document.getElementById('gantt-complete-job-btn');
-    if (ganttBtn) ganttBtn.addEventListener('click', completeJobAction);
-    const listBtn = document.getElementById('tasks-list-complete-job-btn');
-    if (listBtn) listBtn.addEventListener('click', completeJobAction);
-});
+    }
+};
 
 // ==========================================
 // TEMPLATE BUILDER LOGIC
@@ -811,12 +845,17 @@ document.getElementById('gantt-add-task-form').addEventListener('submit', async 
 
 // ==================== GANTT EDIT TASK ====================
 window.ganttOpenEditTask = function(taskId) {
+    const sch = schedules.find(s => s.id === activeScheduleId);
+    if (sch && sch.status === 'Completed') {
+        utils.showToast("Cannot edit tasks in a completed project.", "warning");
+        return;
+    }
+
     const task = currentTasks.find(t => t.id === taskId);
     if (!task) return;
     
     document.getElementById('gantt-edit-id').value = task.id;
     document.getElementById('gantt-edit-name').value = task.title;
-    document.getElementById('gantt-edit-status').value = task.status;
     document.getElementById('gantt-edit-duration').value = task.duration;
     document.getElementById('gantt-edit-start-date').value = task.start_date || '';
     
@@ -839,7 +878,6 @@ document.getElementById('gantt-edit-task-form').addEventListener('submit', async
     if (!task) return;
     
     task.title = document.getElementById('gantt-edit-name').value;
-    task.status = document.getElementById('gantt-edit-status').value;
     task.duration = parseInt(document.getElementById('gantt-edit-duration').value) || 1;
     
     const depId = document.getElementById('gantt-edit-dependency').value;
@@ -871,8 +909,26 @@ document.getElementById('gantt-edit-task-form').addEventListener('submit', async
     await saveScheduleToDB();
 });
 
-window.ganttDeleteTask = async function() {
-    const id = parseInt(document.getElementById('gantt-edit-id').value);
+window.ganttDeleteTask = async function(taskId) {
+    const id = taskId || parseInt(document.getElementById('gantt-edit-id').value);
+    if (!id) return;
+    
+    const sch = schedules.find(s => s.id === activeScheduleId);
+    if (sch && sch.status === 'Completed') {
+        utils.showToast("Cannot delete tasks from a completed project.", "warning");
+        return;
+    }
+    
+    const taskToDelete = currentTasks.find(t => t.id === id);
+    if (taskToDelete) {
+        const status = getDerivedTaskStatus(taskToDelete);
+        if (status === 'In Progress' || status === 'Completed') {
+            if (!confirm(`This task is currently ${status}. Are you sure you want to delete it?`)) {
+                return;
+            }
+        }
+    }
+
     // Remove task
     currentTasks = currentTasks.filter(t => t.id !== id);
     // Remove this task from other tasks' dependencies
@@ -933,7 +989,7 @@ window.ganttApplySelectedTemplate = async function() {
     const newTasks = template.tasks.map(t => {
         const newId = Date.now() + Math.floor(Math.random() * 10000);
         idMapping[t.id] = newId;
-        return { ...t, id: newId, dependencies: [] };
+        return { ...t, id: newId, status: t.status || 'Pending', dependencies: [] };
     });
     
     // Remap dependencies
@@ -952,7 +1008,9 @@ window.ganttApplySelectedTemplate = async function() {
     document.getElementById('gantt-apply-template-modal').classList.remove('active');
     
     const todayStr = SchedulingEngine.formatDate(new Date());
-    SchedulingEngine.cascadeSchedule(currentTasks, currentSchedulingConfig, todayStr);
+    const sch = schedules.find(s => s.id === activeScheduleId);
+    const mergedConfig = sch ? getMergedScheduleConfig(sch) : currentSchedulingConfig;
+    SchedulingEngine.cascadeSchedule(currentTasks, mergedConfig, todayStr);
     renderGanttChart(currentTasks);
     renderTaskListView(currentTasks);
     await saveScheduleToDB();
@@ -982,5 +1040,83 @@ window.saveScheduleSettings = async function() {
         if (activeScheduleId && currentTasks.length > 0) {
             window.viewSchedule(activeScheduleId);
         }
+    }
+};
+
+// ==================== PROJECT-LEVEL SETTINGS ====================
+let tempProjectSettings = { holidays: [], custom_workdays: [] };
+
+window.openProjectScheduleSettings = function() {
+    if (!activeScheduleId) return;
+    const sch = schedules.find(s => s.id === activeScheduleId);
+    if (!sch) return;
+    
+    // Load existing or initialize
+    tempProjectSettings = JSON.parse(JSON.stringify(sch.scheduleSettings || { holidays: [], custom_workdays: [] }));
+    if (!tempProjectSettings.holidays) tempProjectSettings.holidays = [];
+    if (!tempProjectSettings.custom_workdays) tempProjectSettings.custom_workdays = [];
+    
+    window.renderScheduleList('project-holidays-list', tempProjectSettings.holidays, 'removeProjectHoliday');
+    window.renderScheduleList('project-custom-workdays-list', tempProjectSettings.custom_workdays, 'removeProjectCustomWorkday');
+    
+    document.getElementById('project-schedule-settings-modal').classList.add('active');
+};
+
+window.addProjectHoliday = function() {
+    const dateInput = document.getElementById('project-add-holiday-date');
+    if (!dateInput.value) return;
+    
+    if (!tempProjectSettings.holidays.includes(dateInput.value)) {
+        tempProjectSettings.holidays.push(dateInput.value);
+        window.renderScheduleList('project-holidays-list', tempProjectSettings.holidays, 'removeProjectHoliday');
+    }
+    dateInput.value = '';
+};
+
+window.removeProjectHoliday = function(dateStr) {
+    tempProjectSettings.holidays = tempProjectSettings.holidays.filter(d => d !== dateStr);
+    window.renderScheduleList('project-holidays-list', tempProjectSettings.holidays, 'removeProjectHoliday');
+};
+
+window.addProjectCustomWorkday = function() {
+    const dateInput = document.getElementById('project-add-custom-workday-date');
+    if (!dateInput.value) return;
+    
+    if (!tempProjectSettings.custom_workdays.includes(dateInput.value)) {
+        tempProjectSettings.custom_workdays.push(dateInput.value);
+        window.renderScheduleList('project-custom-workdays-list', tempProjectSettings.custom_workdays, 'removeProjectCustomWorkday');
+    }
+    dateInput.value = '';
+};
+
+window.removeProjectCustomWorkday = function(dateStr) {
+    tempProjectSettings.custom_workdays = tempProjectSettings.custom_workdays.filter(d => d !== dateStr);
+    window.renderScheduleList('project-custom-workdays-list', tempProjectSettings.custom_workdays, 'removeProjectCustomWorkday');
+};
+
+window.saveProjectScheduleSettings = async function() {
+    if (!activeScheduleId) return;
+    const sch = schedules.find(s => s.id === activeScheduleId);
+    if (!sch) return;
+    
+    sch.scheduleSettings = JSON.parse(JSON.stringify(tempProjectSettings));
+    
+    const res = await window.db.updateQuoteScheduleSettings(sch.quote_id, sch.scheduleSettings);
+    if (res.error) {
+        utils.showToast(res.error, 'danger');
+        return;
+    }
+    
+    utils.showToast('Project schedule settings saved', 'success');
+    document.getElementById('project-schedule-settings-modal').classList.remove('active');
+    
+    // Recalculate schedule based on new settings
+    if (currentTasks.length > 0) {
+        const todayStr = SchedulingEngine.formatDate(new Date());
+        const mergedConfig = getMergedScheduleConfig(sch);
+        SchedulingEngine.cascadeSchedule(currentTasks, mergedConfig, todayStr);
+        renderGanttChart(currentTasks);
+        renderTaskListView(currentTasks);
+        await saveScheduleToDB();
     }
 };

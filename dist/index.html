@@ -1173,10 +1173,17 @@
             <button type="button" class="btn btn-secondary" id="tasks-list-auto-schedule-btn">
               Auto Schedule
             </button>
-            <button type="button" class="btn btn-success" id="tasks-list-complete-job-btn" style="display: none;">
+            <button type="button" class="btn btn-success" id="tasks-list-complete-job-btn" style="display: none;" onclick="window.completeProject(window.activeScheduleId)">
               Complete Job
             </button>
-            <button type="button" class="btn btn-secondary" id="tasks-list-view-gantt-btn" onclick="document.getElementById('project-tasks-view').classList.remove('active'); document.getElementById('gantt-view').classList.add('active'); window.scrollTo(0,0);">
+            <button type="button" class="btn btn-secondary" onclick="window.openProjectScheduleSettings()">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Project Settings
+            </button>
+            <button type="button" class="btn btn-secondary" id="tasks-list-view-gantt-btn" onclick="window.viewGanttChart(window.activeScheduleId)">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
@@ -1211,7 +1218,7 @@
       <section id="gantt-view" class="view-section">
         <div class="page-header">
           <div>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('scheduling-view').classList.add('active'); document.getElementById('gantt-view').classList.remove('active'); window.scrollTo(0, 0);" style="margin-bottom: 0.5rem; display: inline-flex; align-items: center; gap: 0.25rem;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('gantt-view').classList.remove('active'); document.getElementById('project-tasks-view').classList.remove('active'); document.getElementById('scheduling-view').classList.add('active'); window.scrollTo(0, 0);" style="margin-bottom: 0.5rem; display: inline-flex; align-items: center; gap: 0.25rem;">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
@@ -1221,11 +1228,18 @@
             <p class="page-description">Interactive schedule view.</p>
           </div>
           <div style="display: flex; gap: 0.5rem; align-items: center;" id="gantt-actions-container">
-            <button type="button" class="btn btn-secondary" onclick="document.getElementById('gantt-view').classList.remove('active'); document.getElementById('project-tasks-view').classList.add('active'); window.scrollTo(0,0);">
+            <button type="button" class="btn btn-secondary" onclick="window.viewTaskList(window.activeScheduleId)">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
               </svg>
               View Task List
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="window.openProjectScheduleSettings()">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Project Settings
             </button>
           </div>
         </div>
@@ -2312,14 +2326,7 @@
             <label class="form-label">Task Name</label>
             <input type="text" class="form-input" id="gantt-edit-name" required>
           </div>
-          <div class="form-group">
-            <label class="form-label">Status</label>
-            <select class="form-select" id="gantt-edit-status">
-              <option value="Pending">Pending</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Completed">Completed</option>
-            </select>
-          </div>
+
           <div class="form-group">
             <label class="form-label">Duration (Days)</label>
             <input type="number" class="form-input" id="gantt-edit-duration" min="1" required>
@@ -2458,6 +2465,47 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="project-schedule-settings-modal" style="z-index: 250;">
+    <div class="modal-content" style="max-width: 600px; width: 90%;">
+      <div class="modal-header">
+        <h3 class="modal-title">Project Schedule Settings</h3>
+        <button type="button" class="modal-close" onclick="document.getElementById('project-schedule-settings-modal').classList.remove('active')">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1.5rem;">
+          These settings apply <strong>only to this project</strong> and override the global company schedule settings.
+        </p>
+
+        <div class="form-group" style="background: var(--bg-secondary); padding: 1.25rem; border-radius: var(--radius-md); margin-bottom: 1rem;">
+          <label style="font-weight: 600;">Project Holidays (Non-Working Days)</label>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">Skip specific dates for this project.</p>
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+            <input type="date" class="search-input" id="project-add-holiday-date" style="flex: 1;" />
+            <button type="button" class="btn btn-secondary" onclick="window.addProjectHoliday()">Add Date</button>
+          </div>
+          <div id="project-holidays-list" style="display: flex; flex-wrap: wrap; gap: 0.5rem;"></div>
+        </div>
+
+        <div class="form-group" style="background: var(--bg-secondary); padding: 1.25rem; border-radius: var(--radius-md);">
+          <label style="font-weight: 600;">Project Custom Workdays</label>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">Force specific dates (like a weekend) to be a workday for this project.</p>
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+            <input type="date" class="search-input" id="project-add-custom-workday-date" style="flex: 1;" />
+            <button type="button" class="btn btn-secondary" onclick="window.addProjectCustomWorkday()">Add Date</button>
+          </div>
+          <div id="project-custom-workdays-list" style="display: flex; flex-wrap: wrap; gap: 0.5rem;"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('project-schedule-settings-modal').classList.remove('active')">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="window.saveProjectScheduleSettings()">Save Settings</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Toast system notifications -->
   <div class="toast-container" id="toast-container"></div>
