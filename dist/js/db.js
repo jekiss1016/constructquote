@@ -1,6 +1,6 @@
 // Database management using Supabase Cloud & LocalStorage fallbacks
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { showToast } from './utils.js?v=3.0.33';
+import { showToast } from './utils.js?v=3.0.34';
 
 const KEYS = {
   SUPABASE_CONFIG: 'cq_supabase_config'
