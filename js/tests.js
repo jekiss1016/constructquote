@@ -185,11 +185,22 @@ async function runTestSuite() {
     const stepAuthNav = addStep('Waiting for login form to load');
     
     // Ensure we are logged out/at auth page
-    const doc = getDoc();
-    const win = getWin();
+    let win = getWin();
+    let doc = getDoc();
+    
+    if (win.localStorage) {
+      win.localStorage.clear();
+      win.sessionStorage.clear();
+      win.location.reload();
+      await wait(1500);
+      win = getWin();
+      doc = getDoc();
+    }
     
     // Wait for the auth email input
     let emailInput = await waitForSelector('#auth-email');
+    doc = getDoc(); // Refresh reference after wait
+    win = getWin();
     updateStepStatus(stepAuthNav, 'success');
     
     // Verify Sign Up tab shows TOS checkbox
@@ -201,12 +212,12 @@ async function runTestSuite() {
     
     if (signupTabBtn && tosGroup && tosCheckbox) {
       signupTabBtn.click();
-      await wait(300);
+      await wait(500); // Wait for DOM layout
       if (tosGroup.style.display === 'none' || !tosCheckbox.hasAttribute('required')) {
         throw new Error('TOS checkbox is not visible or not required on Sign Up tab.');
       }
       loginTabBtn.click();
-      await wait(300);
+      await wait(500);
       if (tosGroup.style.display !== 'none' || tosCheckbox.hasAttribute('required')) {
         throw new Error('TOS checkbox is not hidden or still required on Login tab.');
       }
