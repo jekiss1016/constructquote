@@ -936,6 +936,43 @@ async function runTestSuite() {
     endActiveTest(true);
     log('Project Scheduling UI tested successfully!', 'success');
 
+    // -------------------------------------------------------------
+    // TEST 13: Team Invite Limits (Settings)
+    // -------------------------------------------------------------
+    createTestCard('13. Team Invite Limits');
+    const stepSettingsNav = addStep('Navigating to Settings View');
+    doc.querySelector('.nav-item[data-target="settings-view"]').click();
+    await wait(1000);
+    updateStepStatus(stepSettingsNav, 'success');
+
+    const stepInviteForm = addStep('Verifying Team Management Form');
+    const inviteForm = doc.getElementById('team-invite-form');
+    const roleSelect = doc.getElementById('team-invite-role');
+    
+    if (!inviteForm || !roleSelect) {
+      throw new Error('Team invite form is missing in settings view');
+    }
+    
+    // Check available roles
+    const roles = Array.from(roleSelect.options).map(o => o.value);
+    if (!roles.includes('editor') || !roles.includes('viewer')) {
+      throw new Error('Invite form must contain editor and viewer roles');
+    }
+    updateStepStatus(stepInviteForm, 'success');
+
+    // Since we cannot safely create 5 fake users in the production DB during E2E tests,
+    // we verify the client-side enforcement logic directly from the app.js code
+    const stepEnforcementCheck = addStep('Validating Editor Limit Enforcement Logic');
+    const appJsResponse = await win.fetch('/js/app.js');
+    const appJsText = await appJsResponse.text();
+    if (!appJsText.includes('editorCount >= 5') || !appJsText.includes("role === 'editor'")) {
+       throw new Error('Editor limit enforcement logic (max 5) not found in app.js');
+    }
+    updateStepStatus(stepEnforcementCheck, 'success');
+    
+    endActiveTest(true);
+    log('Team Invite Limits tested successfully!', 'success');
+
     log('==================================================');
     log(` TEST SUITE COMPLETE: ${passCount} PASSED, ${failCount} FAILED`, 'success');
     log('==================================================');

@@ -1650,6 +1650,22 @@ async function loadTeamManagementUI() {
         return;
       }
 
+      // Enforce maximum of 5 editors per company
+      if (role === 'editor') {
+        let editorCount = 0;
+        if (members) {
+          editorCount += members.filter(m => m.role === 'editor').length;
+        }
+        if (invites) {
+          editorCount += invites.filter(i => i.role === 'editor').length;
+        }
+        
+        if (editorCount >= 5) {
+          showToast('You have reached the maximum limit of 5 editors. Please remove an existing editor first.', 'warning');
+          return;
+        }
+      }
+
       showToast('Sending invitation...');
       const { error } = await rawDbWrite('company_invitations', 'POST', {
         company_id: profile.company_id,
