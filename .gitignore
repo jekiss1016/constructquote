@@ -19,30 +19,7 @@ $RECYCLE.BIN/
 .gemini/
 .antigravity/
 *~
-# Ignore environment secrets
-.env
-.env.local
-# OS Metadata
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-$RECYCLE.BIN/
 
-# IDE / Editor folders
-.vscode/
-.idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.swp
-.DS_Store
-
-# Temporary logs
-*.log
-.gemini/
-.antigravity/
-*~
 # Ignore environment secrets
 .env
 .env.local
@@ -53,4 +30,3 @@ test-runner.html
 js/tests.js
 
 node_modules/
-package-lock.json

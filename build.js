@@ -1,10 +1,23 @@
 const fs = require('fs');
 const path = require('path');
-const { minify: minifyJS } = require('terser');
-const CleanCSS = require('clean-css');
+
+let minifyJS = null;
+let cleanCss = null;
+
+try {
+  minifyJS = require('terser').minify;
+} catch (e) {
+  console.warn('terser module not found. Skipping JS minification and copying raw JS files.');
+}
+
+try {
+  const CleanCSS = require('clean-css');
+  cleanCss = new CleanCSS();
+} catch (e) {
+  console.warn('clean-css module not found. Skipping CSS minification and copying raw CSS files.');
+}
 
 const DIST_DIR = path.join(__dirname, 'dist');
-const cleanCss = new CleanCSS();
 
 // Define files and folders to explicitly ignore
 const IGNORE_LIST = [
@@ -52,7 +65,7 @@ async function copyRecursiveAsync(src, dest) {
     }
   } else {
     const ext = path.extname(src).toLowerCase();
-    if (ext === '.js') {
+    if (ext === '.js' && minifyJS) {
       try {
         const code = fs.readFileSync(src, 'utf8');
         const minified = await minifyJS(code, { module: true });
@@ -63,7 +76,7 @@ async function copyRecursiveAsync(src, dest) {
       } catch (err) {
         console.warn(`Minification failed for ${src}, copying raw file. Error:`, err.message);
       }
-    } else if (ext === '.css') {
+    } else if (ext === '.css' && cleanCss) {
       try {
         const css = fs.readFileSync(src, 'utf8');
         const minified = cleanCss.minify(css);
@@ -88,7 +101,7 @@ async function runBuild() {
   // Create fresh dist directory
   fs.mkdirSync(DIST_DIR);
 
-  console.log('Starting production build with minification...');
+  console.log('Starting production build...');
   const items = fs.readdirSync(__dirname);
   for (const item of items) {
     const fullPath = path.join(__dirname, item);
