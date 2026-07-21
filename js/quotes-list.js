@@ -1,7 +1,8 @@
 // Quotes List & Dashboard management controller
-import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel, getCustomerById, sendQuoteEmail, getQuoteEmailLogs, saveQuoteEmailLog } from './db.js?v=3.0.38';
-import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage, parseCombinedAddress, parseCompanyAddress } from './utils.js?v=3.0.38';
-import { navigateToView, editQuote, duplicateQuoteAsTemplate, openLightbox } from './app.js?v=3.0.38';
+import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel, getCustomerById, sendQuoteEmail, getQuoteEmailLogs, saveQuoteEmailLog } from './db.js?v=3.0.39';
+import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage, parseCombinedAddress, parseCompanyAddress } from './utils.js?v=3.0.39';
+import { navigateToView, editQuote, duplicateQuoteAsTemplate, openLightbox } from './app.js?v=3.0.39';
+import { isOffline, enqueueOfflinePhoto } from './offline-cache.js?v=3.0.39';
 
 
 let activeStatusFilter = 'pending';
@@ -1418,10 +1419,27 @@ function setupListListeners() {
   const detailPhotoCancel = document.getElementById('detail-photo-cancel');
   const detailGalleryList = document.getElementById('detail-gallery-list');
 
+  let detailPhotoFileName = '';
+
   if (detailGalleryUpload) {
     detailGalleryUpload.addEventListener('change', async (e) => {
       if (e.target.files.length > 0) {
         const file = e.target.files[0];
+        detailPhotoFileName = file.name;
+
+        if (isOffline()) {
+          showToast('Offline Mode: Reading local photo file...');
+          const base64 = await fileToBase64(file);
+          detailPhotoBase64 = base64;
+          if (detailPhotoTempPreview && detailPhotoAddFields) {
+            detailPhotoTempPreview.src = base64;
+            if (detailPhotoLabel) detailPhotoLabel.value = '';
+            if (detailPhotoCategory) detailPhotoCategory.value = 'before';
+            detailPhotoAddFields.style.display = 'flex';
+          }
+          return;
+        }
+
         const sb = getSupabase();
         if (sb && profile && selectedQuoteId) {
           showToast('Uploading project gallery photo...');
@@ -1451,6 +1469,7 @@ function setupListListeners() {
   if (detailPhotoCancel) {
     detailPhotoCancel.addEventListener('click', () => {
       detailPhotoBase64 = '';
+      detailPhotoFileName = '';
       if (detailPhotoAddFields) detailPhotoAddFields.style.display = 'none';
       if (detailGalleryUpload) detailGalleryUpload.value = '';
       showToast('Attachment discarded.');
@@ -1467,6 +1486,17 @@ function setupListListeners() {
         return;
       }
 
+      if (isOffline()) {
+        enqueueOfflinePhoto(selectedQuoteId, detailPhotoBase64, detailPhotoFileName || 'photo.jpg', label, category);
+        showToast('Photo queued for upload when connection is restored.', 'info');
+        detailPhotoBase64 = '';
+        detailPhotoFileName = '';
+        if (detailPhotoAddFields) detailPhotoAddFields.style.display = 'none';
+        if (detailGalleryUpload) detailGalleryUpload.value = '';
+        await renderQuoteDetails(selectedQuoteId);
+        return;
+      }
+
       const quote = await getQuoteById(selectedQuoteId);
       if (quote) {
         if (!quote.photos) quote.photos = [];
@@ -1479,8 +1509,9 @@ function setupListListeners() {
 
         const res = await saveQuote(quote);
         if (res.success) {
-          showToast('Photo attached. (Purely informational - Version locked)');
+          showToast('Photo attached.');
           detailPhotoBase64 = '';
+          detailPhotoFileName = '';
           await renderQuoteDetails(quote.id);
         } else {
           showToast(res.error, 'danger');

@@ -22,14 +22,15 @@ import {
   getSubscriptionStatus,
   getCheckoutUrl,
   getBillingPortalUrl
-} from './db.js?v=3.0.38';
-import { showToast, fileToBase64, formatPhoneNumber, parseCompanyAddress } from './utils.js?v=3.0.38';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=3.0.38';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=3.0.38';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=3.0.38';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=3.0.38';
-import { initSchedulingView } from './scheduling.js?v=3.0.38';
-import * as dbAPI from './db.js?v=3.0.38';
+} from './db.js?v=3.0.39';
+import { showToast, fileToBase64, formatPhoneNumber, parseCompanyAddress } from './utils.js?v=3.0.39';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=3.0.39';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=3.0.39';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=3.0.39';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=3.0.39';
+import { syncOfflinePhotoQueue, isOffline } from './offline-cache.js?v=3.0.39';
+import { initSchedulingView } from './scheduling.js?v=3.0.39';
+import * as dbAPI from './db.js?v=3.0.39';
 
 window.db = dbAPI;
 let activeChallengeId = null;
@@ -1980,7 +1981,7 @@ function setupPWA() {
 }
 
 function updateOnlineStatus() {
-  const isOnline = navigator.onLine;
+  const isOnline = !isOffline();
   const offlineBanner = document.getElementById('offline-warning-banner');
   const appContainer = document.querySelector('.app-container');
 
@@ -1988,12 +1989,12 @@ function updateOnlineStatus() {
     if (!offlineBanner) {
       const banner = document.createElement('div');
       banner.id = 'offline-warning-banner';
-      banner.style.cssText = 'position:fixed;top:0;left:0;width:100%;background-color:var(--danger);color:white;text-align:center;padding:0.75rem 1rem;z-index:99999;font-weight:600;font-size:0.95rem;box-shadow:var(--shadow-md);display:flex;align-items:center;justify-content:center;gap:0.5rem;box-sizing:border-box;';
+      banner.style.cssText = 'position:fixed;top:0;left:0;width:100%;background-color:var(--danger);color:white;text-align:center;padding:0.75rem 1rem;z-index:99999;font-weight:600;font-size:0.92rem;box-shadow:var(--shadow-md);display:flex;align-items:center;justify-content:center;gap:0.5rem;box-sizing:border-box;';
       banner.innerHTML = `
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20" style="stroke-width: 2.5; flex-shrink: 0; color: white;">
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
-        <span>You are offline. Some functions are not available. Please try again when connected to the internet.</span>
+        <span>Offline Mode (Read Only): Active schedules (±7d), won/pending quotes, and related customers are cached. Edits are disabled.</span>
       `;
       document.body.appendChild(banner);
       if (appContainer) {
@@ -2007,6 +2008,8 @@ function updateOnlineStatus() {
         appContainer.style.marginTop = '0';
       }
       showToast('You are back online.', 'success');
+      // Trigger automatic sync for offline queued photo uploads
+      syncOfflinePhotoQueue(uploadFileToStorage, getQuoteById, dbAPI.saveQuote, showToast);
     }
   }
 }

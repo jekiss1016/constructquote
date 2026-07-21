@@ -1,7 +1,8 @@
 // Customer management controller
-import { getCustomers, saveCustomer, deleteCustomer, getQuotes, getSupabase, getCurrentUserProfile, uploadFileToStorage, getCustomerById, getSettings } from './db.js?v=3.0.38';
-import { formatCurrency, formatDateTime, showToast, formatPhoneNumber } from './utils.js?v=3.0.38';
-import { navigateToView, viewQuoteDetails } from './app.js?v=3.0.38';
+import { getCustomers, saveCustomer, deleteCustomer, getQuotes, getSupabase, getCurrentUserProfile, uploadFileToStorage, getCustomerById, getSettings } from './db.js?v=3.0.39';
+import { formatCurrency, formatDateTime, showToast, formatPhoneNumber } from './utils.js?v=3.0.39';
+import { navigateToView, viewQuoteDetails } from './app.js?v=3.0.39';
+import { isOffline } from './offline-cache.js?v=3.0.39';
 
 
 let activeSearchQuery = '';
@@ -505,6 +506,11 @@ function setupCustomerListeners() {
           alert("Warning: Default Sales Tax Rate is zero or blank.");
         }
 
+        if (isOffline()) {
+          showToast('Offline Mode: Customer editing is disabled while offline.', 'danger');
+          return;
+        }
+
         const res = await saveCustomer(customer);
         if (res.success) {
           showToast(customer.id ? 'Customer profile updated.' : 'Customer profile created.');
@@ -629,6 +635,11 @@ function setupCustomerListeners() {
 
       if (deleteBtn) {
         const id = deleteBtn.getAttribute('data-id');
+        if (isOffline()) {
+          showToast('Offline Mode: Deleting customers is disabled while offline.', 'danger');
+          return;
+        }
+
         const c = await getCustomerById(id);
         if (c) {
           const res = await deleteCustomer(id);

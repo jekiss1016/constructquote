@@ -1,9 +1,10 @@
 // Quote Builder view controller
-import { getProducts, getSettings, saveQuote, checkJobIdUnique, saveSettings, getCustomers, getSupabase, getCurrentUserProfile, uploadFileToStorage } from './db.js?v=3.0.38';
-import { formatCurrency, showToast, fileToBase64, generateJobIdSuggestion, compressImage, parseCombinedAddress } from './utils.js?v=3.0.38';
-import { navigateToView, viewQuoteDetails, getPreviousViewId, openLightbox } from './app.js?v=3.0.38';
-import { renderQuoteDetails } from './quotes-list.js?v=3.0.38';
-import { openCustomerModalInline } from './customers.js?v=3.0.38';
+import { getProducts, getSettings, saveQuote, checkJobIdUnique, saveSettings, getCustomers, getSupabase, getCurrentUserProfile, uploadFileToStorage } from './db.js?v=3.0.39';
+import { formatCurrency, showToast, fileToBase64, generateJobIdSuggestion, compressImage, parseCombinedAddress } from './utils.js?v=3.0.39';
+import { navigateToView, viewQuoteDetails, getPreviousViewId, openLightbox } from './app.js?v=3.0.39';
+import { renderQuoteDetails } from './quotes-list.js?v=3.0.39';
+import { openCustomerModalInline } from './customers.js?v=3.0.39';
+import { isOffline } from './offline-cache.js?v=3.0.39';
 
 
 let currentQuote = {
@@ -1234,6 +1235,11 @@ function setupBuilderListeners() {
       const saveDefaultCheckbox = document.getElementById('builder-save-default-logo');
       if (saveDefaultCheckbox && saveDefaultCheckbox.checked && currentQuote.companyLogo) {
         await saveSettings({ companyLogo: currentQuote.companyLogo });
+      }
+
+      if (isOffline()) {
+        showToast('Offline Mode: Saving or creating quotes is disabled while offline.', 'danger');
+        return;
       }
 
       const result = await saveQuote(currentQuote);

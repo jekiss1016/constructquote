@@ -1,6 +1,7 @@
 // Database management using Supabase Cloud & LocalStorage fallbacks
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { showToast } from './utils.js?v=3.0.38';
+import { showToast } from './utils.js?v=3.0.39';
+import { isOffline, updateOfflineCache, getOfflineQuotes, getOfflineCustomers, syncOfflinePhotoQueue, enqueueOfflinePhoto } from './offline-cache.js?v=3.0.39';
 
 const KEYS = {
   SUPABASE_CONFIG: 'cq_supabase_config'
@@ -427,14 +428,20 @@ export async function renameCategory(oldName, newName) {
 /* ==================== CUSTOMERS CRUD ==================== */
 export async function getCustomers() {
   console.log('getCustomers -> Starting...');
+  if (isOffline()) {
+    console.log('getCustomers -> Offline mode active. Returning cached customers.');
+    return getOfflineCustomers();
+  }
   const sb = getSupabase();
-  if (!sb || !currentUserProfile || !currentUserProfile.company_id) return [];
+  if (!sb || !currentUserProfile || !currentUserProfile.company_id) {
+    return getOfflineCustomers();
+  }
   
   console.log('getCustomers -> Querying customers table via rawDbQuery...');
   const data = await rawDbQuery('customers', `company_id=eq.${currentUserProfile.company_id}&order=name.asc`);
   console.log('getCustomers -> Customers fetched. Data length:', data ? data.length : 0);
-  if (!data) return [];
-  return data.map(c => {
+  if (!data) return getOfflineCustomers();
+  const customers = data.map(c => {
     let combinedAddress = c.address1 || '';
     if (c.address2) {
       combinedAddress += '\n' + c.address2;
@@ -464,6 +471,12 @@ export async function getCustomers() {
       quoteEmailBodyDefault: c.quote_email_body_default || ''
     };
   });
+
+  // Update offline cache with fresh customers
+  const currentCachedQuotes = getOfflineQuotes();
+  updateOfflineCache(currentCachedQuotes, customers);
+
+  return customers;
 }
 
 export async function getCustomerById(id) {
@@ -640,14 +653,20 @@ export async function deleteProduct(id) {
 /* ==================== QUOTES CRUD ==================== */
 export async function getQuotes() {
   console.log('getQuotes -> Starting...');
+  if (isOffline()) {
+    console.log('getQuotes -> Offline mode active. Returning cached quotes.');
+    return getOfflineQuotes();
+  }
   const sb = getSupabase();
-  if (!sb || !currentUserProfile || !currentUserProfile.company_id) return [];
+  if (!sb || !currentUserProfile || !currentUserProfile.company_id) {
+    return getOfflineQuotes();
+  }
   
   console.log('getQuotes -> Querying quotes table via rawDbQuery...');
   const data = await rawDbQuery('quotes', `company_id=eq.${currentUserProfile.company_id}&order=date.desc`);
   console.log('getQuotes -> Quotes fetched. Data length:', data ? data.length : 0);
-  if (!data) return [];
-  return data.map(q => ({
+  if (!data) return getOfflineQuotes();
+  const quotes = data.map(q => ({
     id: q.id,
     jobId: q.job_id,
     quoteNumber: String(q.quote_number),
@@ -680,6 +699,12 @@ export async function getQuotes() {
     scheduleTasks: q.schedule_tasks || [],
     scheduleSettings: q.schedule_settings || {}
   }));
+
+  // Update offline cache with fresh quotes
+  const currentCachedCustomers = getOfflineCustomers();
+  updateOfflineCache(quotes, currentCachedCustomers);
+
+  return quotes;
 }
 
 export async function getQuoteById(id) {

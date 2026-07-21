@@ -1,6 +1,7 @@
-import * as db from './db.js?v=3.0.38';
-import * as utils from './utils.js?v=3.0.38';
-import { SchedulingEngine } from './scheduling-engine.js?v=3.0.38';
+import * as db from './db.js?v=3.0.39';
+import * as utils from './utils.js?v=3.0.39';
+import { SchedulingEngine } from './scheduling-engine.js?v=3.0.39';
+import { isOffline } from './offline-cache.js?v=3.0.39';
 
 let schedules = [];
 let companySettings = null;
@@ -901,6 +902,10 @@ window.removeScheduleCustomWorkday = function(dateStr) {
 
 // Make sure this is bound to DB save
 async function saveScheduleToDB() {
+    if (isOffline()) {
+        utils.showToast('Offline Mode: Schedule editing is disabled while offline.', 'danger');
+        return;
+    }
     if (!activeScheduleId) return;
     const sch = schedules.find(s => s.id === activeScheduleId);
     if (!sch || !sch.quote_id) return;
