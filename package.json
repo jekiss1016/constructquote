@@ -15,5 +15,9 @@
     "pdf"
   ],
   "author": "Antigravity",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "clean-css": "^5.3.3",
+    "terser": "^5.49.0"
+  }
 }

@@ -1,7 +1,10 @@
 const fs = require('fs');
 const path = require('path');
+const { minify: minifyJS } = require('terser');
+const CleanCSS = require('clean-css');
 
 const DIST_DIR = path.join(__dirname, 'dist');
+const cleanCss = new CleanCSS();
 
 // Define files and folders to explicitly ignore
 const IGNORE_LIST = [
@@ -30,7 +33,7 @@ function isIgnored(itemName, fullPath) {
   return false;
 }
 
-function copyRecursiveSync(src, dest) {
+async function copyRecursiveAsync(src, dest) {
   const exists = fs.existsSync(src);
   const stats = exists && fs.statSync(src);
   const isDirectory = exists && stats.isDirectory();
@@ -39,34 +42,66 @@ function copyRecursiveSync(src, dest) {
     if (!fs.existsSync(dest)) {
       fs.mkdirSync(dest, { recursive: true });
     }
-    fs.readdirSync(src).forEach((childItemName) => {
+    const children = fs.readdirSync(src);
+    for (const childItemName of children) {
       const childSrc = path.join(src, childItemName);
       const childDest = path.join(dest, childItemName);
       if (!isIgnored(childItemName, childSrc)) {
-        copyRecursiveSync(childSrc, childDest);
+        await copyRecursiveAsync(childSrc, childDest);
       }
-    });
+    }
   } else {
+    const ext = path.extname(src).toLowerCase();
+    if (ext === '.js') {
+      try {
+        const code = fs.readFileSync(src, 'utf8');
+        const minified = await minifyJS(code, { module: true });
+        if (minified.code) {
+          fs.writeFileSync(dest, minified.code, 'utf8');
+          return;
+        }
+      } catch (err) {
+        console.warn(`Minification failed for ${src}, copying raw file. Error:`, err.message);
+      }
+    } else if (ext === '.css') {
+      try {
+        const css = fs.readFileSync(src, 'utf8');
+        const minified = cleanCss.minify(css);
+        if (minified.styles) {
+          fs.writeFileSync(dest, minified.styles, 'utf8');
+          return;
+        }
+      } catch (err) {
+        console.warn(`CSS minification failed for ${src}, copying raw file. Error:`, err.message);
+      }
+    }
     fs.copyFileSync(src, dest);
   }
 }
 
-// Clean dist directory if it exists
-if (fs.existsSync(DIST_DIR)) {
-  fs.rmSync(DIST_DIR, { recursive: true, force: true });
+async function runBuild() {
+  // Clean dist directory if it exists
+  if (fs.existsSync(DIST_DIR)) {
+    fs.rmSync(DIST_DIR, { recursive: true, force: true });
+  }
+
+  // Create fresh dist directory
+  fs.mkdirSync(DIST_DIR);
+
+  console.log('Starting production build with minification...');
+  const items = fs.readdirSync(__dirname);
+  for (const item of items) {
+    const fullPath = path.join(__dirname, item);
+    if (!isIgnored(item, fullPath)) {
+      console.log(`Processing ${item}...`);
+      await copyRecursiveAsync(fullPath, path.join(DIST_DIR, item));
+    }
+  }
+
+  console.log('Build completed successfully.');
 }
 
-// Create fresh dist directory
-fs.mkdirSync(DIST_DIR);
-
-console.log('Starting production build...');
-// Copy root contents
-fs.readdirSync(__dirname).forEach(item => {
-  const fullPath = path.join(__dirname, item);
-  if (!isIgnored(item, fullPath)) {
-    console.log(`Copying ${item}...`);
-    copyRecursiveSync(fullPath, path.join(DIST_DIR, item));
-  }
+runBuild().catch(err => {
+  console.error('Build process encountered an error:', err);
+  process.exit(1);
 });
-
-console.log('Build completed successfully.');
