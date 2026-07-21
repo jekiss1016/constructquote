@@ -6,6 +6,12 @@ let schedules = [];
 let companySettings = null;
 let currentSchedulingConfig = null;
 
+window.ganttMobileTooltip = function(title) {
+    if (window.innerWidth <= 768) {
+        utils.showToast(title, 'info');
+    }
+};
+
 export async function initSchedulingView() {
     console.log("Initializing scheduling view...");
     const profile = db.getCurrentUserProfile();
@@ -526,7 +532,12 @@ function renderGanttChart(tasks) {
         const isViewer = profile && profile.role === 'viewer';
         let schStatus = window.isGlobalGantt ? 'Active' : (currentSch ? currentSch.status : 'Active');
         
-        let clickable = (schStatus === 'Completed' || isViewer) ? '' : `onclick="if(!window.isGlobalGantt) { window.ganttOpenEditTask(${task.id}); }" style="${window.isGlobalGantt ? 'cursor: default;' : ''}"`;
+        let clickContent = `window.ganttMobileTooltip(\`${task.title.replace(/`/g, '\\`').replace(/'/g, "\\'")}\`);`;
+        if (!(schStatus === 'Completed' || isViewer || window.isGlobalGantt)) {
+            clickContent += ` window.ganttOpenEditTask(${task.id});`;
+        }
+        let clickable = `onclick="${clickContent}"`;
+        if (window.isGlobalGantt) clickable += ' style="cursor: default;"';
         
         row.innerHTML = `<div class="gantt-task-name" title="${task.title}" ${clickable}>${task.title}</div>`;        
         if (segments.length === 0) {
@@ -558,7 +569,12 @@ function renderGanttChart(tasks) {
             
             const profile = db.getCurrentUserProfile();
             const isViewer = profile && profile.role === 'viewer';
-            const clickAction = (isViewer || window.isGlobalGantt || schStatus === 'Completed') ? '' : `onclick="window.ganttOpenEditTask(${task.id})"`;
+            
+            let clickContent2 = `window.ganttMobileTooltip(\`${task.title.replace(/`/g, '\\`').replace(/'/g, "\\'")}\`);`;
+            if (!(isViewer || window.isGlobalGantt || schStatus === 'Completed')) {
+                clickContent2 += ` window.ganttOpenEditTask(${task.id});`;
+            }
+            const clickAction = `onclick="${clickContent2}"`;
             
             gridContainer.insertAdjacentHTML('beforeend', `<div class="gantt-bar-container" style="${styleTweaks}" title="${task.title}" ${clickAction}>
                 <div class="gantt-bar ${taskClass}" style="border-radius: 4px;">
