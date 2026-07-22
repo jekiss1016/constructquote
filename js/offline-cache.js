@@ -1,4 +1,4 @@
-import { showToast } from './utils.js?v=3.0.45';
+import { showToast } from './utils.js?v=3.0.46';
 
 const KEYS = {
   OFFLINE_QUOTES: 'cq_offline_quotes',
@@ -145,14 +145,25 @@ export function enqueueOfflinePhoto(quoteId, dataUrl, fileName, label, category)
     const cachedQuotes = getOfflineQuotes();
     const targetQuote = cachedQuotes.find(q => q.id === quoteId);
     if (targetQuote) {
-      if (!targetQuote.photos) targetQuote.photos = [];
-      targetQuote.photos.push({
-        id: photoId,
-        url: dataUrl,
-        label: (label || 'Project Gallery Photo') + ' (Queued Offline)',
-        category: category || 'before',
-        isQueuedOffline: true
-      });
+      if (category === 'receipt') {
+        if (!targetQuote.receipts) targetQuote.receipts = [];
+        targetQuote.receipts.push({
+          id: photoId,
+          name: fileName || 'Receipt Photo',
+          url: dataUrl,
+          path: '',
+          isQueuedOffline: true
+        });
+      } else {
+        if (!targetQuote.photos) targetQuote.photos = [];
+        targetQuote.photos.push({
+          id: photoId,
+          url: dataUrl,
+          label: (label || 'Project Gallery Photo') + ' (Queued Offline)',
+          category: category || 'before',
+          isQueuedOffline: true
+        });
+      }
       localStorage.setItem(KEYS.OFFLINE_QUOTES, JSON.stringify(cachedQuotes));
     }
 
@@ -205,8 +216,10 @@ export async function syncOfflinePhotoQueue(uploadFileToStorage, getQuoteById, s
   for (const item of queue) {
     try {
       const fileObj = dataURLtoFile(item.dataUrl, item.fileName);
+      const isReceipt = (item.category === 'receipt');
+      const bucketName = isReceipt ? 'job-receipts' : 'project-photos';
       const filePath = `offline_uploads/${item.quoteId}/${Date.now()}_${item.fileName}`;
-      const { error } = await uploadFileToStorage('project-photos', filePath, fileObj);
+      const { error } = await uploadFileToStorage(bucketName, filePath, fileObj);
 
       if (error) {
         console.error('[OfflineCache] Failed to upload queued photo:', error);
@@ -215,21 +228,45 @@ export async function syncOfflinePhotoQueue(uploadFileToStorage, getQuoteById, s
       }
 
       // Get public URL from Supabase Storage
-      const { data: { publicUrl } } = window.db.getSupabase().storage.from('project-photos').getPublicUrl(filePath);
+      const sb = window.db ? window.db.getSupabase() : null;
+      if (!sb) {
+        remainingQueue.push(item);
+        continue;
+      }
+
+      const { data: { publicUrl } } = sb.storage.from(bucketName).getPublicUrl(filePath);
 
       // Fetch quote and attach permanent photo URL
       const quote = await getQuoteById(item.quoteId);
       if (quote) {
-        if (!quote.photos) quote.photos = [];
-        // Remove temporary queued entry if present
-        quote.photos = quote.photos.filter(p => p.id !== item.id);
-        quote.photos.push({
-          id: 'img_' + Math.random().toString(36).substr(2, 9),
-          url: publicUrl,
-          label: item.label,
-          category: item.category
-        });
+        if (isReceipt) {
+          if (!quote.receipts) quote.receipts = [];
+          quote.receipts = quote.receipts.filter(r => r.id !== item.id);
+          quote.receipts.push({
+            id: 'rcpt_' + Math.random().toString(36).substr(2, 9),
+            name: item.fileName,
+            url: publicUrl,
+            path: filePath
+          });
+        } else {
+          if (!quote.photos) quote.photos = [];
+          quote.photos = quote.photos.filter(p => p.id !== item.id);
+          quote.photos.push({
+            id: 'img_' + Math.random().toString(36).substr(2, 9),
+            url: publicUrl,
+            label: item.label,
+            category: item.category
+          });
+        }
         await saveQuote(quote);
+
+        // Also update local cached quotes
+        const cachedQuotes = getOfflineQuotes();
+        const localIndex = cachedQuotes.findIndex(q => q.id === quote.id);
+        if (localIndex >= 0) {
+          cachedQuotes[localIndex] = quote;
+          localStorage.setItem(KEYS.OFFLINE_QUOTES, JSON.stringify(cachedQuotes));
+        }
       }
     } catch (err) {
       console.error('[OfflineCache] Exception during photo sync:', err);
@@ -240,6 +277,9 @@ export async function syncOfflinePhotoQueue(uploadFileToStorage, getQuoteById, s
   localStorage.setItem(KEYS.PHOTO_QUEUE, JSON.stringify(remainingQueue));
   if (remainingQueue.length === 0) {
     if (showToast) showToast('Offline photo uploads synchronized successfully!', 'success');
+    if (window.renderQuoteDetails && window.selectedQuoteId) {
+      window.renderQuoteDetails(window.selectedQuoteId);
+    }
   } else {
     if (showToast) showToast(`Synced photos. ${remainingQueue.length} photo(s) pending next connection.`, 'warning');
   }

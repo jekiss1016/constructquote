@@ -1,10 +1,10 @@
 // Quote Builder view controller
-import { getProducts, getSettings, saveQuote, checkJobIdUnique, saveSettings, getCustomers, getSupabase, getCurrentUserProfile, uploadFileToStorage } from './db.js?v=3.0.45';
-import { formatCurrency, showToast, fileToBase64, generateJobIdSuggestion, compressImage, parseCombinedAddress } from './utils.js?v=3.0.45';
-import { navigateToView, viewQuoteDetails, getPreviousViewId, openLightbox } from './app.js?v=3.0.45';
-import { renderQuoteDetails } from './quotes-list.js?v=3.0.45';
-import { openCustomerModalInline } from './customers.js?v=3.0.45';
-import { isOffline } from './offline-cache.js?v=3.0.45';
+import { getProducts, getSettings, saveQuote, checkJobIdUnique, saveSettings, getCustomers, getSupabase, getCurrentUserProfile, uploadFileToStorage } from './db.js?v=3.0.46';
+import { formatCurrency, showToast, fileToBase64, generateJobIdSuggestion, compressImage, parseCombinedAddress } from './utils.js?v=3.0.46';
+import { navigateToView, viewQuoteDetails, getPreviousViewId, openLightbox } from './app.js?v=3.0.46';
+import { renderQuoteDetails } from './quotes-list.js?v=3.0.46';
+import { openCustomerModalInline } from './customers.js?v=3.0.46';
+import { isOffline, enqueueOfflinePhoto } from './offline-cache.js?v=3.0.46';
 
 
 let currentQuote = {
@@ -1122,16 +1122,22 @@ function setupBuilderListeners() {
         return;
       }
 
+      const photoId = 'img_' + Math.random().toString(36).substr(2, 9);
       currentQuote.photos.push({
-        id: 'img_' + Math.random().toString(36).substr(2, 9),
+        id: photoId,
         url: activePhotoUrl,
-        label,
+        label: isOffline() ? label + ' (Queued Offline)' : label,
         category
       });
 
+      if (isOffline() && currentQuote.id) {
+        enqueueOfflinePhoto(currentQuote.id, activePhotoUrl, 'builder_photo.jpg', label, category);
+      }
+
       activePhotoUrl = '';
       photoFormFields.style.display = 'none';
-      galleryUpload.value = ''; 
+      if (galleryUpload) galleryUpload.value = ''; 
+      if (cameraUpload) cameraUpload.value = '';
 
       renderBuilderGallery();
       showToast('Photo attached to project gallery.');

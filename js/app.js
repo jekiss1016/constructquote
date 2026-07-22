@@ -22,15 +22,15 @@ import {
   getSubscriptionStatus,
   getCheckoutUrl,
   getBillingPortalUrl
-} from './db.js?v=3.0.45';
-import { showToast, fileToBase64, formatPhoneNumber, parseCompanyAddress } from './utils.js?v=3.0.45';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=3.0.45';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=3.0.45';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=3.0.45';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=3.0.45';
-import { syncOfflinePhotoQueue, isOffline, checkOfflineAction } from './offline-cache.js?v=3.0.45';
-import { initSchedulingView } from './scheduling.js?v=3.0.45';
-import * as dbAPI from './db.js?v=3.0.45';
+} from './db.js?v=3.0.46';
+import { showToast, fileToBase64, formatPhoneNumber, parseCompanyAddress } from './utils.js?v=3.0.46';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=3.0.46';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=3.0.46';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=3.0.46';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=3.0.46';
+import { syncOfflinePhotoQueue, isOffline, checkOfflineAction } from './offline-cache.js?v=3.0.46';
+import { initSchedulingView } from './scheduling.js?v=3.0.46';
+import * as dbAPI from './db.js?v=3.0.46';
 
 window.db = dbAPI;
 let activeChallengeId = null;
@@ -2035,9 +2035,9 @@ function updateOnlineStatus() {
         appContainer.style.marginTop = '0';
       }
       showToast('You are back online.', 'success');
-      // Trigger automatic sync for offline queued photo uploads
-      syncOfflinePhotoQueue(uploadFileToStorage, getQuoteById, dbAPI.saveQuote, showToast);
     }
+    // Trigger automatic sync for offline queued photo uploads whenever online
+    syncOfflinePhotoQueue(uploadFileToStorage, getQuoteById, dbAPI.saveQuote, showToast);
   }
 }
 
