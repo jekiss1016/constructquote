@@ -1,8 +1,8 @@
 // Quotes List & Dashboard management controller
-import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel, getCustomerById, sendQuoteEmail, getQuoteEmailLogs, saveQuoteEmailLog } from './db.js?v=3.0.41';
-import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage, parseCombinedAddress, parseCompanyAddress } from './utils.js?v=3.0.41';
-import { navigateToView, editQuote, duplicateQuoteAsTemplate, openLightbox } from './app.js?v=3.0.41';
-import { isOffline, enqueueOfflinePhoto, checkOfflineAction } from './offline-cache.js?v=3.0.41';
+import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel, getCustomerById, sendQuoteEmail, getQuoteEmailLogs, saveQuoteEmailLog } from './db.js?v=3.0.42';
+import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage, parseCombinedAddress, parseCompanyAddress } from './utils.js?v=3.0.42';
+import { navigateToView, editQuote, duplicateQuoteAsTemplate, openLightbox } from './app.js?v=3.0.42';
+import { isOffline, enqueueOfflinePhoto, checkOfflineAction } from './offline-cache.js?v=3.0.42';
 
 
 let activeStatusFilter = 'pending';
@@ -252,12 +252,13 @@ export async function renderQuotesTable() {
 }
 
 async function hasPriceMismatch(quote) {
-  if (quote.isLegacy) return false;
-  const catalogProducts = await getProducts();
+  if (!quote || quote.isLegacy || isOffline()) return false;
+  const catalogProducts = (await getProducts()) || [];
+  if (!catalogProducts || catalogProducts.length === 0) return false;
   
-  return quote.sections.some(sec => {
-    return sec.items.some(item => {
-      if (!item.productId) return false;
+  return (quote.sections || []).some(sec => {
+    return (sec.items || []).some(item => {
+      if (!item || !item.productId) return false;
       const catProd = catalogProducts.find(p => p.id === item.productId);
       if (!catProd) return false;
       return item.price !== catProd.price || item.laborRate !== catProd.laborRate;

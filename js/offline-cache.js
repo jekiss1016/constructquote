@@ -1,4 +1,4 @@
-import { showToast } from './utils.js?v=3.0.41';
+import { showToast } from './utils.js?v=3.0.42';
 
 const KEYS = {
   OFFLINE_QUOTES: 'cq_offline_quotes',
@@ -61,9 +61,11 @@ export function updateOfflineCache(allQuotes = [], allCustomers = []) {
       // Rule: Today - 7d to Today + 7d schedule window (In Progress, Completed, or scheduled to start)
       if (q.scheduleTasks && q.scheduleTasks.length > 0) {
         const hasTaskInWindow = q.scheduleTasks.some(t => {
-          if (!t.startDate) return false;
-          const sDate = new Date(t.startDate);
-          const eDate = t.endDate ? new Date(t.endDate) : sDate;
+          const startStr = t.startDate || t.start_date || t.calculated_start_date;
+          const endStr = t.endDate || t.end_date || t.calculated_end_date || startStr;
+          if (!startStr) return true; // Include task if date is unspecified
+          const sDate = new Date(startStr);
+          const eDate = new Date(endStr);
           return (sDate <= maxScheduleDate && eDate >= minScheduleDate);
         });
         if (hasTaskInWindow) return true;

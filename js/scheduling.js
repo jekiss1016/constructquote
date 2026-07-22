@@ -1,7 +1,7 @@
-import * as db from './db.js?v=3.0.41';
-import * as utils from './utils.js?v=3.0.41';
-import { SchedulingEngine } from './scheduling-engine.js?v=3.0.41';
-import { isOffline, checkOfflineAction } from './offline-cache.js?v=3.0.41';
+import * as db from './db.js?v=3.0.42';
+import * as utils from './utils.js?v=3.0.42';
+import { SchedulingEngine } from './scheduling-engine.js?v=3.0.42';
+import { isOffline, checkOfflineAction } from './offline-cache.js?v=3.0.42';
 
 let schedules = [];
 let companySettings = null;
@@ -15,8 +15,7 @@ window.ganttMobileTooltip = function(title) {
 
 export async function initSchedulingView() {
     console.log("Initializing scheduling view...");
-    const profile = db.getCurrentUserProfile();
-    if (!profile) return;
+    const profile = db.getCurrentUserProfile() || { role: 'owner' };
 
     // Permissions check
     const isViewer = profile.role === 'viewer';
@@ -30,8 +29,13 @@ export async function initSchedulingView() {
     }
 
     await loadSchedules();
-    companySettings = await db.getSettings();
-    currentSchedulingConfig = companySettings.schedulingConfig || {
+    try {
+        companySettings = (await db.getSettings()) || {};
+    } catch (e) {
+        companySettings = {};
+    }
+    
+    currentSchedulingConfig = (companySettings && companySettings.schedulingConfig) ? companySettings.schedulingConfig : {
         workdays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
         weekend_days: [0, 6],
         holidays: [],
@@ -40,8 +44,14 @@ export async function initSchedulingView() {
     
     renderSchedulesTable('active');
     
-    // Also load templates if possible
-    window.loadTemplates();
+    // Also load templates if available
+    if (typeof window.loadTemplates === 'function') {
+        try {
+            await window.loadTemplates();
+        } catch (e) {
+            console.warn('Could not load schedule templates:', e);
+        }
+    }
 }
 
 // Global setup for tab listeners (run once)
@@ -67,57 +77,64 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function loadSchedules() {
-    // In a real DB scenario, we fetch project_schedules joined with quotes
-    // For now, we will fetch 'Won' quotes and mock schedules if they don't exist
     try {
-        const quotes = await window.db.getQuotes(); // fetch all active quotes
-        const wonQuotes = quotes.filter(q => q.status.toLowerCase() === 'won' || q.status.toLowerCase() === 'completed');
+        const quotes = (await window.db.getQuotes()) || [];
+        const validQuotes = quotes.filter(q => {
+            if (!q) return false;
+            const st = (q.status || '').toLowerCase();
+            return st === 'won' || st === 'completed' || st === 'in progress' || (Array.isArray(q.scheduleTasks) && q.scheduleTasks.length > 0);
+        });
         
-        // Mock schedules for now
-        schedules = wonQuotes.map(q => {
+        schedules = validQuotes.map(q => {
             let sub = 0;
             if (q.sections && Array.isArray(q.sections)) {
                 q.sections.forEach(sec => {
-                    if (sec.items && Array.isArray(sec.items)) {
+                    if (sec && sec.items && Array.isArray(sec.items)) {
                         sec.items.forEach(item => { 
-                            sub += (item.qty * (item.price + (item.laborRate || 0))) || 0; 
+                            if (item) {
+                                sub += (Number(item.qty || 0) * (Number(item.price || 0) + Number(item.laborRate || 0))) || 0; 
+                            }
                         });
                     }
                 });
             }
-            const markupVal = sub * (q.markupPercent / 100) || 0;
-            const taxVal = q.taxPlusApplicable ? 0 : (sub + markupVal) * ((q.taxRate || 0) / 100);
+            const markupVal = sub * ((Number(q.markupPercent) || 0) / 100);
+            const taxVal = q.taxPlusApplicable ? 0 : (sub + markupVal) * ((Number(q.taxRate) || 0) / 100);
             const total = sub + markupVal + taxVal;
 
-                let derivedStatus = 'Ready to Schedule';
-                if (q.status === 'Completed') {
-                    derivedStatus = 'Completed';
-                } else if (q.scheduleTasks && q.scheduleTasks.length > 0) {
-                    const hasDates = q.scheduleTasks.some(t => t.start_date || t.calculated_start_date);
-                    const allCompleted = q.scheduleTasks.every(t => getDerivedTaskStatus(t) === 'Completed');
-                    const anyInProgress = q.scheduleTasks.some(t => getDerivedTaskStatus(t) === 'In Progress');
-                    const anyCompleted = q.scheduleTasks.some(t => getDerivedTaskStatus(t) === 'Completed');
-                    
-                    if (allCompleted) derivedStatus = 'Ready to Complete';
-                    else if (anyInProgress || (anyCompleted && !allCompleted)) derivedStatus = 'In Progress';
-                    else if (hasDates) derivedStatus = 'Scheduled';
-                }
+            let derivedStatus = 'Ready to Schedule';
+            const statusLower = (q.status || '').toLowerCase();
+            if (statusLower === 'completed') {
+                derivedStatus = 'Completed';
+            } else if (q.scheduleTasks && Array.isArray(q.scheduleTasks) && q.scheduleTasks.length > 0) {
+                const hasDates = q.scheduleTasks.some(t => t && (t.start_date || t.calculated_start_date || t.startDate));
+                const allCompleted = q.scheduleTasks.every(t => getDerivedTaskStatus(t) === 'Completed');
+                const anyInProgress = q.scheduleTasks.some(t => getDerivedTaskStatus(t) === 'In Progress');
+                const anyCompleted = q.scheduleTasks.some(t => getDerivedTaskStatus(t) === 'Completed');
+                
+                if (allCompleted) derivedStatus = 'Ready to Complete';
+                else if (anyInProgress || (anyCompleted && !allCompleted)) derivedStatus = 'In Progress';
+                else if (hasDates) derivedStatus = 'Scheduled';
+            }
 
-                return {
-                    id: 'SCH-' + q.id,
-                    quote_id: q.id,
-                    job_id: q.jobId || 'Unknown',
-                    customer_name: q.customerName || 'Unknown',
-                    total: total,
-                    start_date: null,
-                    end_date: null,
-                    status: derivedStatus,
-                    scheduleTasks: q.scheduleTasks || []
-                };
+            return {
+                id: 'SCH-' + q.id,
+                quote_id: q.id,
+                job_id: q.jobId || 'Unknown',
+                customer_name: q.customerName || 'Unknown',
+                total: total,
+                start_date: null,
+                end_date: null,
+                status: derivedStatus,
+                scheduleTasks: q.scheduleTasks || [],
+                scheduleSettings: q.scheduleSettings || {}
+            };
         });
     } catch (e) {
         console.error("Failed to load schedules:", e);
-        utils.showToast("Error loading schedules: " + e.message, "danger");
+        if (utils && utils.showToast) {
+            utils.showToast("Error loading schedules: " + e.message, "danger");
+        }
     }
 }
 
@@ -230,21 +247,27 @@ let ganttEndDate = null;
 window.activeScheduleId = null; // kept in sync below
 
 function getMergedScheduleConfig(sch) {
-    if (!currentSchedulingConfig) return null;
-    if (!sch.scheduleSettings) return currentSchedulingConfig;
+    const defaultConfig = {
+        workdays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+        weekend_days: [0, 6],
+        holidays: [],
+        custom_workdays: []
+    };
+    const baseConfig = currentSchedulingConfig || defaultConfig;
+    if (!sch || !sch.scheduleSettings) return baseConfig;
     
-    // Merge global settings with project-specific settings
     return {
-        ...currentSchedulingConfig,
-        holidays: [...(currentSchedulingConfig.holidays || []), ...(sch.scheduleSettings.holidays || [])],
-        custom_workdays: [...(currentSchedulingConfig.custom_workdays || []), ...(sch.scheduleSettings.custom_workdays || [])]
+        ...baseConfig,
+        holidays: [...(baseConfig.holidays || []), ...(sch.scheduleSettings.holidays || [])],
+        custom_workdays: [...(baseConfig.custom_workdays || []), ...(sch.scheduleSettings.custom_workdays || [])]
     };
 }
 
 function getDerivedTaskStatus(task) {
+    if (!task) return 'Pending';
     const todayStr = SchedulingEngine.formatDate(new Date());
-    const start = task.start_date || task.calculated_start_date;
-    const end = task.end_date || task.calculated_end_date;
+    const start = task.start_date || task.calculated_start_date || task.startDate;
+    const end = task.end_date || task.calculated_end_date || task.endDate || start;
     
     if (!start || !end) return 'Pending';
     
@@ -257,35 +280,47 @@ window.viewTaskList = function(id) {
     activeScheduleId = id;
     window.activeScheduleId = id;
     
-    // Switch views
-    document.getElementById('scheduling-view').classList.remove('active');
-    document.getElementById('gantt-view').classList.remove('active');
-    document.getElementById('project-tasks-view').classList.add('active');
+    const schedView = document.getElementById('scheduling-view');
+    const ganttView = document.getElementById('gantt-view');
+    const projectTasksView = document.getElementById('project-tasks-view');
+
+    if (schedView) schedView.classList.remove('active');
+    if (ganttView) ganttView.classList.remove('active');
+    if (projectTasksView) projectTasksView.classList.add('active');
     window.scrollTo(0, 0);
     
-    const sch = schedules.find(s => s.id === id);
-    if (!sch) return;
+    const sch = schedules.find(s => String(s.id) === String(id) || String(s.quote_id) === String(id) || String(s.id) === 'SCH-' + id);
+    if (!sch) {
+        console.warn('Schedule not found for ID:', id);
+        return;
+    }
     
-    document.getElementById('project-tasks-title').innerText = `${sch.customer_name} - ${sch.job_id} Tasks`;
+    const titleEl = document.getElementById('project-tasks-title');
+    if (titleEl) titleEl.innerText = `${sch.customer_name || 'Project'} - ${sch.job_id || ''} Tasks`;
     
-    const profile = db.getCurrentUserProfile();
-    const isViewer = profile && profile.role === 'viewer';
+    const profile = db.getCurrentUserProfile() || { role: 'owner' };
+    const isViewer = profile.role === 'viewer';
     
-    document.getElementById('tasks-list-add-task-btn').style.display = isViewer ? 'none' : '';
-    document.getElementById('tasks-list-apply-template-btn').style.display = isViewer ? 'none' : '';
-    document.getElementById('tasks-list-auto-schedule-btn').style.display = isViewer ? 'none' : '';
+    const addTaskBtn = document.getElementById('tasks-list-add-task-btn');
+    if (addTaskBtn) addTaskBtn.style.display = isViewer ? 'none' : '';
+    
+    const applyTempBtn = document.getElementById('tasks-list-apply-template-btn');
+    if (applyTempBtn) applyTempBtn.style.display = isViewer ? 'none' : '';
+    
+    const autoSchedBtn = document.getElementById('tasks-list-auto-schedule-btn');
+    if (autoSchedBtn) autoSchedBtn.style.display = isViewer ? 'none' : '';
     
     const settingsBtnList = document.querySelector('#project-tasks-actions-container button[onclick="window.openProjectScheduleSettings()"]');
     if (settingsBtnList) settingsBtnList.style.display = isViewer ? 'none' : '';
     
-    // Load real tasks from the quote object
     currentTasks = sch.scheduleTasks || [];
     
-    // Cascade to ensure dates are fresh based on current settings
     if (currentTasks.length > 0) {
         const todayStr = SchedulingEngine.formatDate(new Date());
         const mergedConfig = getMergedScheduleConfig(sch);
-        SchedulingEngine.cascadeSchedule(currentTasks, mergedConfig, todayStr);
+        if (mergedConfig) {
+            SchedulingEngine.cascadeSchedule(currentTasks, mergedConfig, todayStr);
+        }
     }
     
     renderTaskListView(currentTasks);
@@ -294,24 +329,30 @@ window.viewTaskList = function(id) {
 window.viewGanttChart = function(id) {
     activeScheduleId = id;
     window.activeScheduleId = id;
-        // Switch views
-    document.getElementById('scheduling-view').classList.remove('active');
-    document.getElementById('project-tasks-view').classList.remove('active');
-    document.getElementById('gantt-view').classList.add('active');
+
+    const schedView = document.getElementById('scheduling-view');
+    const projectTasksView = document.getElementById('project-tasks-view');
+    const ganttView = document.getElementById('gantt-view');
+
+    if (schedView) schedView.classList.remove('active');
+    if (projectTasksView) projectTasksView.classList.remove('active');
+    if (ganttView) ganttView.classList.add('active');
     window.scrollTo(0, 0);
     
     window.isGlobalGantt = false;
-    document.getElementById('gantt-actions-container').style.display = 'flex';
+    const actionsContainer = document.getElementById('gantt-actions-container');
+    if (actionsContainer) actionsContainer.style.display = 'flex';
     
-    const profile = db.getCurrentUserProfile();
-    const isViewer = profile && profile.role === 'viewer';
+    const profile = db.getCurrentUserProfile() || { role: 'owner' };
+    const isViewer = profile.role === 'viewer';
     
     const settingsBtnGantt = document.querySelector('#gantt-actions-container button[onclick="window.openProjectScheduleSettings()"]');
     if (settingsBtnGantt) settingsBtnGantt.style.display = isViewer ? 'none' : '';
     
-    const sch = schedules.find(s => s.id === id);
+    const sch = schedules.find(s => String(s.id) === String(id) || String(s.quote_id) === String(id) || String(s.id) === 'SCH-' + id);
     if (sch) {
-        document.getElementById('gantt-project-title').innerText = `Project Timeline: ${sch.job_id} - ${sch.customer_name}`;
+        const titleEl = document.getElementById('gantt-project-title');
+        if (titleEl) titleEl.innerText = `Project Timeline: ${sch.job_id || ''} - ${sch.customer_name || ''}`;
     }
     
     // Check if project is completed
@@ -1195,7 +1236,7 @@ window.saveScheduleSettings = async function() {
         
         // Re-cascade current schedule if it's open
         if (activeScheduleId && currentTasks.length > 0) {
-            window.viewSchedule(activeScheduleId);
+            window.viewTaskList(activeScheduleId);
         }
     }
 };

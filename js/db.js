@@ -1,7 +1,7 @@
 // Database management using Supabase Cloud & LocalStorage fallbacks
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { showToast } from './utils.js?v=3.0.41';
-import { isOffline, updateOfflineCache, getOfflineQuotes, getOfflineCustomers, syncOfflinePhotoQueue, enqueueOfflinePhoto } from './offline-cache.js?v=3.0.41';
+import { showToast } from './utils.js?v=3.0.42';
+import { isOffline, updateOfflineCache, getOfflineQuotes, getOfflineCustomers, syncOfflinePhotoQueue, enqueueOfflinePhoto } from './offline-cache.js?v=3.0.42';
 
 const KEYS = {
   SUPABASE_CONFIG: 'cq_supabase_config'
@@ -574,6 +574,7 @@ export async function deleteCustomer(id) {
 /* ==================== PRODUCTS CRUD ==================== */
 export async function getProducts() {
   console.log('getProducts -> Starting...');
+  if (isOffline()) return [];
   const sb = getSupabase();
   if (!sb || !currentUserProfile || !currentUserProfile.company_id) return [];
   
