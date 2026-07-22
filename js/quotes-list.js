@@ -1,8 +1,8 @@
 // Quotes List & Dashboard management controller
-import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel, getCustomerById, sendQuoteEmail, getQuoteEmailLogs, saveQuoteEmailLog } from './db.js?v=3.0.46';
-import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage, parseCombinedAddress, parseCompanyAddress } from './utils.js?v=3.0.46';
-import { navigateToView, editQuote, duplicateQuoteAsTemplate, openLightbox } from './app.js?v=3.0.46';
-import { isOffline, enqueueOfflinePhoto, checkOfflineAction } from './offline-cache.js?v=3.0.46';
+import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel, getCustomerById, sendQuoteEmail, getQuoteEmailLogs, saveQuoteEmailLog } from './db.js?v=3.0.47';
+import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage, parseCombinedAddress, parseCompanyAddress } from './utils.js?v=3.0.47';
+import { navigateToView, editQuote, duplicateQuoteAsTemplate, openLightbox } from './app.js?v=3.0.47';
+import { isOffline, enqueueOfflinePhoto, checkOfflineAction } from './offline-cache.js?v=3.0.47';
 
 
 let activeStatusFilter = 'pending';
@@ -807,7 +807,7 @@ function renderDetailReceipts(quote) {
           <a href="${r.url}" target="_blank" style="display: flex; align-items: center; gap: 0.35rem; text-decoration: none; width: 100%;">
             <img src="${r.url}" style="width: 28px; height: 28px; object-fit: cover; border-radius: 2px; flex-shrink: 0;">
             <span style="font-size: 0.72rem; font-weight: 600; color: var(--text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
-              ${escapeHtml(r.name)}
+              ${escapeHtml(r.name)} ${r.isQueuedOffline ? '<span style="color:var(--warning); font-size:0.65rem; margin-left:0.25rem;">(Queued Offline)</span>' : ''}
             </span>
           </a>
         </div>
@@ -1646,11 +1646,31 @@ function setupListListeners() {
 
   // Quote receipts upload handler
   const receiptUpload = document.getElementById('detail-receipt-upload');
+  const receiptCameraUpload = document.getElementById('detail-receipt-camera-upload');
   const receiptsListContainer = document.getElementById('detail-receipts-list');
-  if (receiptUpload) {
-    receiptUpload.addEventListener('change', async (e) => {
-      if (e.target.files.length > 0) {
-        const file = e.target.files[0];
+
+  const handleReceiptUpload = async (e) => {
+    if (e.target.files.length > 0) {
+      const file = e.target.files[0];
+
+      try {
+        showToast('Processing receipt image...');
+        const rawBase64 = await fileToBase64(file);
+        const compressed = await compressImage(rawBase64, 1200, 1200);
+
+        if (isOffline()) {
+          enqueueOfflinePhoto(selectedQuoteId, compressed, file.name || 'receipt.jpg', 'Receipt Photo', 'receipt');
+          showToast('Receipt attached & queued offline.', 'info');
+
+          // Fetch local cached quote and render receipts list immediately
+          const cachedQuotes = getOfflineQuotes();
+          const targetQuote = cachedQuotes.find(q => q.id === selectedQuoteId);
+          if (targetQuote) {
+            renderDetailReceipts(targetQuote);
+          }
+          return;
+        }
+
         const sb = getSupabase();
         if (sb && profile && selectedQuoteId) {
           showToast('Uploading receipt photo...');
@@ -1658,8 +1678,13 @@ function setupListListeners() {
           const { error } = await uploadFileToStorage('job-receipts', filePath, file);
           
           if (error) {
-            showToast('Upload failed: ' + error.message, 'danger');
-            receiptUpload.value = '';
+            showToast('Upload network issue. Receipt queued offline.', 'warning');
+            enqueueOfflinePhoto(selectedQuoteId, compressed, file.name || 'receipt.jpg', 'Receipt Photo', 'receipt');
+            const cachedQuotes = getOfflineQuotes();
+            const targetQuote = cachedQuotes.find(q => q.id === selectedQuoteId);
+            if (targetQuote) {
+              renderDetailReceipts(targetQuote);
+            }
             return;
           }
           
@@ -1679,11 +1704,18 @@ function setupListListeners() {
               renderDetailReceipts(quote);
             }
           }
-          receiptUpload.value = '';
         }
+      } catch (err) {
+        console.error('Receipt upload error:', err);
+        showToast('Could not attach receipt photo.', 'danger');
+      } finally {
+        e.target.value = '';
       }
-    });
-  }
+    }
+  };
+
+  if (receiptUpload) receiptUpload.addEventListener('change', handleReceiptUpload);
+  if (receiptCameraUpload) receiptCameraUpload.addEventListener('change', handleReceiptUpload);
 
   if (receiptsListContainer) {
     receiptsListContainer.addEventListener('click', async (e) => {
