@@ -1,8 +1,8 @@
 // Quotes List & Dashboard management controller
-import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel, getCustomerById, sendQuoteEmail, getQuoteEmailLogs, saveQuoteEmailLog } from './db.js?v=3.0.43';
-import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage, parseCombinedAddress, parseCompanyAddress } from './utils.js?v=3.0.43';
-import { navigateToView, editQuote, duplicateQuoteAsTemplate, openLightbox } from './app.js?v=3.0.43';
-import { isOffline, enqueueOfflinePhoto, checkOfflineAction } from './offline-cache.js?v=3.0.43';
+import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel, getCustomerById, sendQuoteEmail, getQuoteEmailLogs, saveQuoteEmailLog } from './db.js?v=3.0.44';
+import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage, parseCombinedAddress, parseCompanyAddress } from './utils.js?v=3.0.44';
+import { navigateToView, editQuote, duplicateQuoteAsTemplate, openLightbox } from './app.js?v=3.0.44';
+import { isOffline, enqueueOfflinePhoto, checkOfflineAction } from './offline-cache.js?v=3.0.44';
 
 
 let activeStatusFilter = 'pending';
@@ -1413,6 +1413,7 @@ function setupListListeners() {
 
   // Project gallery manager event listeners (uploads to storage)
   const detailGalleryUpload = document.getElementById('detail-gallery-upload');
+  const detailCameraUpload = document.getElementById('detail-camera-upload');
   const detailPhotoAddFields = document.getElementById('detail-photo-add-fields');
   const detailPhotoTempPreview = document.getElementById('detail-photo-temp-preview');
   const detailPhotoLabel = document.getElementById('detail-photo-label');
@@ -1423,19 +1424,36 @@ function setupListListeners() {
 
   let detailPhotoFileName = '';
 
-  if (detailGalleryUpload) {
-    detailGalleryUpload.addEventListener('change', async (e) => {
-      if (e.target.files.length > 0) {
-        const file = e.target.files[0];
-        detailPhotoFileName = file.name;
+  const handlePhotoSelect = async (e) => {
+    if (e.target.files.length > 0) {
+      const file = e.target.files[0];
+      detailPhotoFileName = file.name;
 
-        try {
-          showToast('Reading photo file...');
-          const rawBase64 = await fileToBase64(file);
-          const compressed = await compressImage(rawBase64, 1200, 1200);
+      try {
+        showToast('Reading photo file...');
+        const rawBase64 = await fileToBase64(file);
+        const compressed = await compressImage(rawBase64, 1200, 1200);
 
-          if (isOffline()) {
-            showToast('Offline Mode: Photo attached for queueing.');
+        if (isOffline()) {
+          showToast('Offline Mode: Photo attached for queueing.');
+          detailPhotoBase64 = compressed;
+          if (detailPhotoTempPreview && detailPhotoAddFields) {
+            detailPhotoTempPreview.src = compressed;
+            if (detailPhotoLabel) detailPhotoLabel.value = '';
+            if (detailPhotoCategory) detailPhotoCategory.value = 'before';
+            detailPhotoAddFields.style.display = 'flex';
+          }
+          return;
+        }
+
+        const sb = getSupabase();
+        if (sb && profile && selectedQuoteId) {
+          showToast('Uploading project gallery photo...');
+          const filePath = `${profile.company_id}/quotes/${selectedQuoteId}/gallery_${Math.random().toString(36).substr(2, 9)}_${file.name}`;
+          const { error } = await uploadFileToStorage('project-photos', filePath, file);
+          
+          if (error) {
+            showToast('Upload failed: ' + error.message, 'danger');
             detailPhotoBase64 = compressed;
             if (detailPhotoTempPreview && detailPhotoAddFields) {
               detailPhotoTempPreview.src = compressed;
@@ -1445,44 +1463,28 @@ function setupListListeners() {
             }
             return;
           }
+          
+          const { data: { publicUrl } } = sb.storage.from('project-photos').getPublicUrl(filePath);
+          detailPhotoBase64 = publicUrl;
 
-          const sb = getSupabase();
-          if (sb && profile && selectedQuoteId) {
-            showToast('Uploading project gallery photo...');
-            const filePath = `${profile.company_id}/quotes/${selectedQuoteId}/gallery_${Math.random().toString(36).substr(2, 9)}_${file.name}`;
-            const { error } = await uploadFileToStorage('project-photos', filePath, file);
-            
-            if (error) {
-              showToast('Upload failed: ' + error.message, 'danger');
-              detailPhotoBase64 = compressed;
-              if (detailPhotoTempPreview && detailPhotoAddFields) {
-                detailPhotoTempPreview.src = compressed;
-                if (detailPhotoLabel) detailPhotoLabel.value = '';
-                if (detailPhotoCategory) detailPhotoCategory.value = 'before';
-                detailPhotoAddFields.style.display = 'flex';
-              }
-              return;
-            }
-            
-            const { data: { publicUrl } } = sb.storage.from('project-photos').getPublicUrl(filePath);
-            detailPhotoBase64 = publicUrl;
-
-            if (detailPhotoTempPreview && detailPhotoAddFields) {
-              detailPhotoTempPreview.src = publicUrl;
-              if (detailPhotoLabel) detailPhotoLabel.value = '';
-              if (detailPhotoCategory) detailPhotoCategory.value = 'before';
-              detailPhotoAddFields.style.display = 'flex';
-            }
+          if (detailPhotoTempPreview && detailPhotoAddFields) {
+            detailPhotoTempPreview.src = publicUrl;
+            if (detailPhotoLabel) detailPhotoLabel.value = '';
+            if (detailPhotoCategory) detailPhotoCategory.value = 'before';
+            detailPhotoAddFields.style.display = 'flex';
           }
-        } catch (err) {
-          console.error('Photo read error:', err);
-          showToast('Could not load photo file. Please try another image or format.', 'danger');
-        } finally {
-          detailGalleryUpload.value = '';
         }
+      } catch (err) {
+        console.error('Photo read error:', err);
+        showToast('Could not load photo file. Please try another image or format.', 'danger');
+      } finally {
+        e.target.value = '';
       }
-    });
-  }
+    }
+  };
+
+  if (detailGalleryUpload) detailGalleryUpload.addEventListener('change', handlePhotoSelect);
+  if (detailCameraUpload) detailCameraUpload.addEventListener('change', handlePhotoSelect);
 
   if (detailPhotoCancel) {
     detailPhotoCancel.addEventListener('click', () => {
