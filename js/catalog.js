@@ -1,6 +1,7 @@
 // Product Catalog management controller
-import { getProducts, getCategories, saveProduct, deleteProduct, getProductById, saveCategory, deleteCategory, renameCategory, getQuotes, getCurrentUserProfile } from './db.js?v=3.0.40';
-import { formatCurrency, showToast } from './utils.js?v=3.0.40';
+import { getProducts, getCategories, saveProduct, deleteProduct, getProductById, saveCategory, deleteCategory, renameCategory, getQuotes, getCurrentUserProfile } from './db.js?v=3.0.41';
+import { formatCurrency, showToast } from './utils.js?v=3.0.41';
+import { checkOfflineAction } from './offline-cache.js?v=3.0.41';
 
 
 let activeSearchQuery = '';
@@ -211,7 +212,8 @@ function setupCatalogListeners() {
 
   // Open modal for NEW product
   if (addBtn) {
-    addBtn.addEventListener('click', async () => {
+    addBtn.addEventListener('click', async (e) => {
+      if (checkOfflineAction(e)) return;
       if (isViewer) return;
       form.reset();
       document.getElementById('product-form-id').value = '';
@@ -228,6 +230,7 @@ function setupCatalogListeners() {
   // Submit Product Form (Create / Edit)
   if (form) {
     form.addEventListener('submit', async (e) => {
+      if (checkOfflineAction(e)) return;
       console.log('Catalog View: product-form submit event triggered');
       e.preventDefault();
       if (isViewer) {
@@ -264,6 +267,7 @@ function setupCatalogListeners() {
       const toggleStatusBtn = e.target.closest('.toggle-product-status-btn');
 
       if (toggleStatusBtn && !isViewer) {
+        if (checkOfflineAction(e)) return;
         const id = toggleStatusBtn.getAttribute('data-id');
         const p = await getProductById(id);
         if (p) {
@@ -279,6 +283,7 @@ function setupCatalogListeners() {
       }
 
       if (editBtn) {
+        if (checkOfflineAction(e)) return;
         const id = editBtn.getAttribute('data-id');
         const p = await getProductById(id);
         
@@ -298,6 +303,7 @@ function setupCatalogListeners() {
       }
 
       if (deleteBtn && !isViewer) {
+        if (checkOfflineAction(e)) return;
         const id = deleteBtn.getAttribute('data-id');
         const p = await getProductById(id);
         if (p) {
@@ -321,10 +327,14 @@ function setupCatalogListeners() {
   }
 
   // Category Manager: Add Category
-  const handleAddCategory = async () => {
-    if (isViewer) return;
+  const handleAddCategory = async (e) => {
+    if (checkOfflineAction(e)) return;
     const val = catAddInput.value.trim();
-    if (!val) return;
+    if (!val) {
+      showToast('Category name cannot be empty.', 'warning');
+      return;
+    }
+
     const res = await saveCategory(val);
     if (res.success) {
       showToast(`Category "${val}" created.`);
@@ -339,14 +349,20 @@ function setupCatalogListeners() {
   if (catAddBtn) catAddBtn.addEventListener('click', handleAddCategory);
   if (catAddInput) {
     catAddInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') handleAddCategory();
+      if (e.key === 'Enter') handleAddCategory(e);
     });
   }
 
-  // Category Manager: Edit Category Name
+  // Category Manager: Edit/Delete Category
   if (catList) {
     catList.addEventListener('click', async (e) => {
       const btn = e.target.closest('.edit-category-btn');
+      const delBtn = e.target.closest('.delete-category-btn');
+      
+      if (btn || delBtn) {
+        if (checkOfflineAction(e)) return;
+      }
+
       if (btn && !isViewer) {
         const cat = btn.getAttribute('data-category');
         const newName = prompt(`Enter new name for category "${cat}":`, cat);

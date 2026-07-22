@@ -22,15 +22,15 @@ import {
   getSubscriptionStatus,
   getCheckoutUrl,
   getBillingPortalUrl
-} from './db.js?v=3.0.40';
-import { showToast, fileToBase64, formatPhoneNumber, parseCompanyAddress } from './utils.js?v=3.0.40';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=3.0.40';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=3.0.40';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=3.0.40';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=3.0.40';
-import { syncOfflinePhotoQueue, isOffline } from './offline-cache.js?v=3.0.40';
-import { initSchedulingView } from './scheduling.js?v=3.0.40';
-import * as dbAPI from './db.js?v=3.0.40';
+} from './db.js?v=3.0.41';
+import { showToast, fileToBase64, formatPhoneNumber, parseCompanyAddress } from './utils.js?v=3.0.41';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=3.0.41';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=3.0.41';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=3.0.41';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=3.0.41';
+import { syncOfflinePhotoQueue, isOffline, checkOfflineAction } from './offline-cache.js?v=3.0.41';
+import { initSchedulingView } from './scheduling.js?v=3.0.41';
+import * as dbAPI from './db.js?v=3.0.41';
 
 window.db = dbAPI;
 let activeChallengeId = null;
@@ -1059,7 +1059,8 @@ function setupAppNavigation() {
   const dashActSet = document.getElementById('dash-action-settings');
   const listNewBtn = document.getElementById('list-new-quote-btn');
 
-  const triggerNewQuote = async () => {
+  const triggerNewQuote = async (e) => {
+    if (checkOfflineAction(e)) return;
     const profile = getCurrentUserProfile();
     if (profile && profile.role === 'viewer') {
       showToast('Read-only accounts cannot create proposals.', 'danger');
@@ -1989,22 +1990,43 @@ function updateOnlineStatus() {
   const appContainer = document.querySelector('.app-container');
 
   if (!isOnline) {
+    if (sessionStorage.getItem('cq_offline_banner_dismissed') === 'true') {
+      return;
+    }
     if (!offlineBanner) {
+      const isMobile = window.innerWidth <= 768;
+      const topOffset = isMobile ? '56px' : '0px';
+      const zIndex = isMobile ? '998' : '99999';
+
       const banner = document.createElement('div');
       banner.id = 'offline-warning-banner';
-      banner.style.cssText = 'position:fixed;top:0;left:0;width:100%;background-color:var(--danger);color:white;text-align:center;padding:0.75rem 1rem;z-index:99999;font-weight:600;font-size:0.92rem;box-shadow:var(--shadow-md);display:flex;align-items:center;justify-content:center;gap:0.5rem;box-sizing:border-box;';
+      banner.style.cssText = `position:fixed;top:${topOffset};left:0;width:100%;background-color:var(--danger);color:white;padding:0.6rem 1rem;z-index:${zIndex};font-weight:600;font-size:0.88rem;box-shadow:var(--shadow-md);display:flex;align-items:center;justify-space-between;gap:0.5rem;box-sizing:border-box;`;
       banner.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20" style="stroke-width: 2.5; flex-shrink: 0; color: white;">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-        </svg>
-        <span>Offline Mode (Read Only): Active schedules (±7d), won/pending quotes, and related customers are cached. Edits are disabled.</span>
+        <div style="display:flex;align-items:center;gap:0.5rem;flex:1;min-width:0;">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18" style="stroke-width: 2.5; flex-shrink: 0; color: white;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Offline Mode (Read Only): Active schedules (±7d), won/pending quotes, and related customers are cached.</span>
+        </div>
+        <button type="button" id="close-offline-banner-btn" style="background:none;border:none;color:white;font-size:1.25rem;line-height:1;cursor:pointer;padding:0 0.25rem;opacity:0.85;" title="Dismiss notification">✕</button>
       `;
       document.body.appendChild(banner);
-      if (appContainer) {
-        appContainer.style.marginTop = '44px';
+
+      const closeBtn = document.getElementById('close-offline-banner-btn');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+          sessionStorage.setItem('cq_offline_banner_dismissed', 'true');
+          banner.remove();
+          if (appContainer) appContainer.style.marginTop = '0';
+        });
+      }
+
+      if (appContainer && !isMobile) {
+        appContainer.style.marginTop = '38px';
       }
     }
   } else {
+    sessionStorage.removeItem('cq_offline_banner_dismissed');
     if (offlineBanner) {
       offlineBanner.remove();
       if (appContainer) {

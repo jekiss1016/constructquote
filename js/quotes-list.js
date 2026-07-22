@@ -1,8 +1,8 @@
 // Quotes List & Dashboard management controller
-import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel, getCustomerById, sendQuoteEmail, getQuoteEmailLogs, saveQuoteEmailLog } from './db.js?v=3.0.40';
-import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage, parseCombinedAddress, parseCompanyAddress } from './utils.js?v=3.0.40';
-import { navigateToView, editQuote, duplicateQuoteAsTemplate, openLightbox } from './app.js?v=3.0.40';
-import { isOffline, enqueueOfflinePhoto } from './offline-cache.js?v=3.0.40';
+import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel, getCustomerById, sendQuoteEmail, getQuoteEmailLogs, saveQuoteEmailLog } from './db.js?v=3.0.41';
+import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage, parseCombinedAddress, parseCompanyAddress } from './utils.js?v=3.0.41';
+import { navigateToView, editQuote, duplicateQuoteAsTemplate, openLightbox } from './app.js?v=3.0.41';
+import { isOffline, enqueueOfflinePhoto, checkOfflineAction } from './offline-cache.js?v=3.0.41';
 
 
 let activeStatusFilter = 'pending';
@@ -1340,8 +1340,9 @@ function setupListListeners() {
     });
   }
 
-  if (detailActions) {
-    detailActions.addEventListener('click', async (e) => {
+  const quoteDetailsView = document.getElementById('detail-view');
+  if (quoteDetailsView) {
+    quoteDetailsView.addEventListener('click', async (e) => {
       const backBtn = e.target.closest('#detail-back-btn');
       const printBtn = e.target.closest('#detail-print-btn');
       const emailBtn = e.target.closest('#detail-email-btn');
@@ -1356,15 +1357,15 @@ function setupListListeners() {
 
       if (backBtn) navigateToView('quotes-view');
       if (printBtn) window.print();
-      if (emailBtn && !isViewer) await handleOpenEmailModal(selectedQuoteId);
-      if (dupBtn && !isViewer) duplicateQuoteAsTemplate(selectedQuoteId);
-      if (editBtn && !isViewer) editQuote(selectedQuoteId);
-      if (pendingBtn && !isViewer) await promptStatusChange('Pending');
-      if (wonBtn && !isViewer) await promptStatusChange('Won');
-      if (lostBtn && !isViewer) await promptStatusChange('Lost');
-      if (inactiveBtn && !isViewer) await promptStatusChange('Inactive');
-      if (compBtn && !isViewer) await promptStatusChange('Completed');
-      if (reactivateBtn && !isViewer) await handleOpenReactivateModal();
+      if (emailBtn && !isViewer) { if (checkOfflineAction(e)) return; await handleOpenEmailModal(selectedQuoteId); }
+      if (dupBtn && !isViewer) { if (checkOfflineAction(e)) return; duplicateQuoteAsTemplate(selectedQuoteId); }
+      if (editBtn && !isViewer) { if (checkOfflineAction(e)) return; editQuote(selectedQuoteId); }
+      if (pendingBtn && !isViewer) { if (checkOfflineAction(e)) return; await promptStatusChange('Pending'); }
+      if (wonBtn && !isViewer) { if (checkOfflineAction(e)) return; await promptStatusChange('Won'); }
+      if (lostBtn && !isViewer) { if (checkOfflineAction(e)) return; await promptStatusChange('Lost'); }
+      if (inactiveBtn && !isViewer) { if (checkOfflineAction(e)) return; await promptStatusChange('Inactive'); }
+      if (compBtn && !isViewer) { if (checkOfflineAction(e)) return; await promptStatusChange('Completed'); }
+      if (reactivateBtn && !isViewer) { if (checkOfflineAction(e)) return; await handleOpenReactivateModal(); }
     });
   }
 

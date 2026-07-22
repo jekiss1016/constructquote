@@ -1,4 +1,4 @@
-/* ==================== PWA ENHANCED OFFLINE CACHE MODULE ==================== */
+import { showToast } from './utils.js?v=3.0.41';
 
 const KEYS = {
   OFFLINE_QUOTES: 'cq_offline_quotes',
@@ -11,6 +11,19 @@ const KEYS = {
  */
 export function isOffline() {
   return typeof navigator !== 'undefined' && !navigator.onLine;
+}
+
+/**
+ * Intercepts action buttons in offline mode with a friendly user notification
+ */
+export function checkOfflineAction(e) {
+  if (isOffline()) {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+    showToast('This function is not available in offline mode. Please try again when you are back online.', 'warning');
+    return true; // Was blocked because app is offline
+  }
+  return false; // Online, allow action to proceed
 }
 
 /**

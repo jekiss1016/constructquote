@@ -1,7 +1,7 @@
-import * as db from './db.js?v=3.0.40';
-import * as utils from './utils.js?v=3.0.40';
-import { SchedulingEngine } from './scheduling-engine.js?v=3.0.40';
-import { isOffline } from './offline-cache.js?v=3.0.40';
+import * as db from './db.js?v=3.0.41';
+import * as utils from './utils.js?v=3.0.41';
+import { SchedulingEngine } from './scheduling-engine.js?v=3.0.41';
+import { isOffline, checkOfflineAction } from './offline-cache.js?v=3.0.41';
 
 let schedules = [];
 let companySettings = null;
@@ -920,7 +920,8 @@ async function saveScheduleToDB() {
 }
 
 // ==================== GANTT ADD TASK ====================
-const openAddTaskModalAction = () => {
+const openAddTaskModalAction = (e) => {
+    if (checkOfflineAction(e)) return;
     const depSelect = document.getElementById('gantt-add-dependency');
     depSelect.innerHTML = '<option value="">None (Independent Task)</option>';
     currentTasks.forEach(t => {

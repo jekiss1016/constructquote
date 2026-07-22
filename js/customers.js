@@ -1,8 +1,8 @@
 // Customer management controller
-import { getCustomers, saveCustomer, deleteCustomer, getQuotes, getSupabase, getCurrentUserProfile, uploadFileToStorage, getCustomerById, getSettings } from './db.js?v=3.0.40';
-import { formatCurrency, formatDateTime, showToast, formatPhoneNumber } from './utils.js?v=3.0.40';
-import { navigateToView, viewQuoteDetails } from './app.js?v=3.0.40';
-import { isOffline } from './offline-cache.js?v=3.0.40';
+import { getCustomers, saveCustomer, deleteCustomer, getQuotes, getSupabase, getCurrentUserProfile, uploadFileToStorage, getCustomerById, getSettings } from './db.js?v=3.0.41';
+import { formatCurrency, formatDateTime, showToast, formatPhoneNumber } from './utils.js?v=3.0.41';
+import { navigateToView, viewQuoteDetails } from './app.js?v=3.0.41';
+import { isOffline, checkOfflineAction } from './offline-cache.js?v=3.0.41';
 
 
 let activeSearchQuery = '';
@@ -410,7 +410,8 @@ function setupCustomerListeners() {
   }
 
   if (addBtn) {
-    addBtn.addEventListener('click', () => {
+    addBtn.addEventListener('click', (e) => {
+      if (checkOfflineAction(e)) return;
       openCustomerModalInline(null);
     });
   }
@@ -635,10 +636,7 @@ function setupCustomerListeners() {
 
       if (deleteBtn) {
         const id = deleteBtn.getAttribute('data-id');
-        if (isOffline()) {
-          showToast('Offline Mode: Deleting customers is disabled while offline.', 'danger');
-          return;
-        }
+        if (checkOfflineAction()) return;
 
         const c = await getCustomerById(id);
         if (c) {
