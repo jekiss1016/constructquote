@@ -1,8 +1,8 @@
 // Customer management controller
-import { getCustomers, saveCustomer, deleteCustomer, getQuotes, getSupabase, getCurrentUserProfile, uploadFileToStorage, getCustomerById, getSettings } from './db.js?v=3.0.42';
-import { formatCurrency, formatDateTime, showToast, formatPhoneNumber } from './utils.js?v=3.0.42';
-import { navigateToView, viewQuoteDetails } from './app.js?v=3.0.42';
-import { isOffline, checkOfflineAction } from './offline-cache.js?v=3.0.42';
+import { getCustomers, saveCustomer, deleteCustomer, getQuotes, getSupabase, getCurrentUserProfile, uploadFileToStorage, getCustomerById, getSettings } from './db.js?v=3.0.43';
+import { formatCurrency, formatDateTime, showToast, formatPhoneNumber } from './utils.js?v=3.0.43';
+import { navigateToView, viewQuoteDetails } from './app.js?v=3.0.43';
+import { isOffline, checkOfflineAction } from './offline-cache.js?v=3.0.43';
 
 
 let activeSearchQuery = '';

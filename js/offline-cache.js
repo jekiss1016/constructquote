@@ -1,4 +1,4 @@
-import { showToast } from './utils.js?v=3.0.42';
+import { showToast } from './utils.js?v=3.0.43';
 
 const KEYS = {
   OFFLINE_QUOTES: 'cq_offline_quotes',

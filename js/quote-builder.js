@@ -1,10 +1,10 @@
 // Quote Builder view controller
-import { getProducts, getSettings, saveQuote, checkJobIdUnique, saveSettings, getCustomers, getSupabase, getCurrentUserProfile, uploadFileToStorage } from './db.js?v=3.0.42';
-import { formatCurrency, showToast, fileToBase64, generateJobIdSuggestion, compressImage, parseCombinedAddress } from './utils.js?v=3.0.42';
-import { navigateToView, viewQuoteDetails, getPreviousViewId, openLightbox } from './app.js?v=3.0.42';
-import { renderQuoteDetails } from './quotes-list.js?v=3.0.42';
-import { openCustomerModalInline } from './customers.js?v=3.0.42';
-import { isOffline } from './offline-cache.js?v=3.0.42';
+import { getProducts, getSettings, saveQuote, checkJobIdUnique, saveSettings, getCustomers, getSupabase, getCurrentUserProfile, uploadFileToStorage } from './db.js?v=3.0.43';
+import { formatCurrency, showToast, fileToBase64, generateJobIdSuggestion, compressImage, parseCombinedAddress } from './utils.js?v=3.0.43';
+import { navigateToView, viewQuoteDetails, getPreviousViewId, openLightbox } from './app.js?v=3.0.43';
+import { renderQuoteDetails } from './quotes-list.js?v=3.0.43';
+import { openCustomerModalInline } from './customers.js?v=3.0.43';
+import { isOffline } from './offline-cache.js?v=3.0.43';
 
 
 let currentQuote = {
@@ -1050,28 +1050,60 @@ function setupBuilderListeners() {
     galleryUpload.addEventListener('change', async (e) => {
       if (e.target.files.length > 0) {
         const file = e.target.files[0];
-        const sb = getSupabase();
-        if (sb && profile) {
-          showToast('Uploading project gallery photo...');
-          const filePath = `${profile.company_id}/builder_${Math.random().toString(36).substr(2, 9)}_${file.name}`;
-          const { error } = await uploadFileToStorage('project-photos', filePath, file);
-          
-          if (error) {
-            showToast('Upload failed: ' + error.message, 'danger');
+        try {
+          showToast('Reading photo file...');
+          const rawBase64 = await fileToBase64(file);
+          const compressed = await compressImage(rawBase64, 1200, 1200);
+
+          if (isOffline()) {
+            showToast('Offline Mode: Photo attached.');
+            activePhotoUrl = compressed;
+            document.getElementById('builder-photo-temp-preview').src = compressed;
+            document.getElementById('builder-photo-label').value = '';
+            document.getElementById('builder-photo-category').value = 'before';
+            photoFormFields.style.display = 'flex';
+            photoFormFields.scrollIntoView({ behavior: 'smooth' });
             return;
           }
-          
-          const { data: { publicUrl } } = sb.storage.from('project-photos').getPublicUrl(filePath);
-          activePhotoUrl = publicUrl;
 
-          document.getElementById('builder-photo-temp-preview').src = publicUrl;
-          document.getElementById('builder-photo-label').value = '';
-          document.getElementById('builder-photo-category').value = 'before';
-          
-          photoFormFields.style.display = 'flex';
-          photoFormFields.scrollIntoView({ behavior: 'smooth' });
-        } else {
-          showToast('Database connection not established.', 'danger');
+          const sb = getSupabase();
+          if (sb && profile) {
+            showToast('Uploading project gallery photo...');
+            const filePath = `${profile.company_id}/builder_${Math.random().toString(36).substr(2, 9)}_${file.name}`;
+            const { error } = await uploadFileToStorage('project-photos', filePath, file);
+            
+            if (error) {
+              showToast('Upload network issue. Photo kept locally.', 'warning');
+              activePhotoUrl = compressed;
+              document.getElementById('builder-photo-temp-preview').src = compressed;
+              document.getElementById('builder-photo-label').value = '';
+              document.getElementById('builder-photo-category').value = 'before';
+              photoFormFields.style.display = 'flex';
+              photoFormFields.scrollIntoView({ behavior: 'smooth' });
+              return;
+            }
+            
+            const { data: { publicUrl } } = sb.storage.from('project-photos').getPublicUrl(filePath);
+            activePhotoUrl = publicUrl;
+
+            document.getElementById('builder-photo-temp-preview').src = publicUrl;
+            document.getElementById('builder-photo-label').value = '';
+            document.getElementById('builder-photo-category').value = 'before';
+            
+            photoFormFields.style.display = 'flex';
+            photoFormFields.scrollIntoView({ behavior: 'smooth' });
+          } else {
+            activePhotoUrl = compressed;
+            document.getElementById('builder-photo-temp-preview').src = compressed;
+            document.getElementById('builder-photo-label').value = '';
+            document.getElementById('builder-photo-category').value = 'before';
+            photoFormFields.style.display = 'flex';
+          }
+        } catch (err) {
+          console.error('Photo read error:', err);
+          showToast('Could not load photo file. Please try another image or format.', 'danger');
+        } finally {
+          galleryUpload.value = '';
         }
       }
     });
