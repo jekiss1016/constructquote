@@ -1,7 +1,7 @@
 // Database management using Supabase Cloud & LocalStorage fallbacks
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { showToast } from './utils.js?v=3.0.39';
-import { isOffline, updateOfflineCache, getOfflineQuotes, getOfflineCustomers, syncOfflinePhotoQueue, enqueueOfflinePhoto } from './offline-cache.js?v=3.0.39';
+import { showToast } from './utils.js?v=3.0.40';
+import { isOffline, updateOfflineCache, getOfflineQuotes, getOfflineCustomers, syncOfflinePhotoQueue, enqueueOfflinePhoto } from './offline-cache.js?v=3.0.40';
 
 const KEYS = {
   SUPABASE_CONFIG: 'cq_supabase_config'
@@ -52,12 +52,25 @@ export async function loadRuntimeConfig() {
           lemonSqueezyMonthlyVariant: config.lemonSqueezyMonthlyVariant || '1909120',
           lemonSqueezyAnnualVariant: config.lemonSqueezyAnnualVariant || '1909159'
         };
+        try {
+          localStorage.setItem('cq_cached_runtime_config', JSON.stringify(cachedConfig));
+        } catch (e) {}
         return cachedConfig;
       }
     }
   } catch (e) {
-    // Ignore error if file doesn't exist
+    // Ignore error if offline
   }
+
+  // Fallback to cached runtime config for offline access
+  try {
+    const savedRuntime = localStorage.getItem('cq_cached_runtime_config');
+    if (savedRuntime) {
+      cachedConfig = JSON.parse(savedRuntime);
+      return cachedConfig;
+    }
+  } catch (err) {}
+
   return null;
 }
 
@@ -305,10 +318,20 @@ export async function loadUserSession(passedSession = null) {
 
   if (pError) {
     console.error('Error fetching user profile:', pError);
+    try {
+      const cachedProfile = localStorage.getItem('cq_cached_user_profile');
+      if (cachedProfile) {
+        currentUserProfile = JSON.parse(cachedProfile);
+        return currentUserProfile;
+      }
+    } catch (e) {}
   }
 
   if (profile) {
     currentUserProfile = profile;
+    try {
+      localStorage.setItem('cq_cached_user_profile', JSON.stringify(profile));
+    } catch (e) {}
     return profile;
   }
 

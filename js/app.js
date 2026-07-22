@@ -22,15 +22,15 @@ import {
   getSubscriptionStatus,
   getCheckoutUrl,
   getBillingPortalUrl
-} from './db.js?v=3.0.39';
-import { showToast, fileToBase64, formatPhoneNumber, parseCompanyAddress } from './utils.js?v=3.0.39';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=3.0.39';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=3.0.39';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=3.0.39';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=3.0.39';
-import { syncOfflinePhotoQueue, isOffline } from './offline-cache.js?v=3.0.39';
-import { initSchedulingView } from './scheduling.js?v=3.0.39';
-import * as dbAPI from './db.js?v=3.0.39';
+} from './db.js?v=3.0.40';
+import { showToast, fileToBase64, formatPhoneNumber, parseCompanyAddress } from './utils.js?v=3.0.40';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=3.0.40';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=3.0.40';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=3.0.40';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=3.0.40';
+import { syncOfflinePhotoQueue, isOffline } from './offline-cache.js?v=3.0.40';
+import { initSchedulingView } from './scheduling.js?v=3.0.40';
+import * as dbAPI from './db.js?v=3.0.40';
 
 window.db = dbAPI;
 let activeChallengeId = null;
@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 1. Check for Supabase configuration keys
   await initSupabaseClient();
-  if (!isSupabaseConnected()) {
+  if (!isSupabaseConnected() && !isOffline()) {
     showSupabaseSetupModal();
     return;
   }
@@ -92,6 +92,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Displays Setup dialog overlay if keys are missing
 function showSupabaseSetupModal() {
+  if (isOffline()) return; // Never trigger configuration setup modal when offline
   const modal = document.getElementById('supabase-setup-modal');
   if (modal) modal.classList.add('active');
 
@@ -116,7 +117,9 @@ function showSupabaseSetupModal() {
 async function setupAuthListener() {
   const sb = getSupabase();
   if (!sb) {
-    showSupabaseSetupModal();
+    if (!isOffline()) {
+      showSupabaseSetupModal();
+    }
     return;
   }
 
