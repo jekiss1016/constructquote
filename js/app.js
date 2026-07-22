@@ -22,15 +22,15 @@ import {
   getSubscriptionStatus,
   getCheckoutUrl,
   getBillingPortalUrl
-} from './db.js?v=3.0.48';
-import { showToast, fileToBase64, formatPhoneNumber, parseCompanyAddress } from './utils.js?v=3.0.48';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=3.0.48';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=3.0.48';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=3.0.48';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=3.0.48';
-import { syncOfflinePhotoQueue, isOffline, checkOfflineAction } from './offline-cache.js?v=3.0.48';
-import { initSchedulingView } from './scheduling.js?v=3.0.48';
-import * as dbAPI from './db.js?v=3.0.48';
+} from './db.js?v=3.0.49';
+import { showToast, fileToBase64, formatPhoneNumber, parseCompanyAddress } from './utils.js?v=3.0.49';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=3.0.49';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=3.0.49';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=3.0.49';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=3.0.49';
+import { syncOfflinePhotoQueue, isOffline, checkOfflineAction } from './offline-cache.js?v=3.0.49';
+import { initSchedulingView } from './scheduling.js?v=3.0.49';
+import * as dbAPI from './db.js?v=3.0.49';
 
 window.db = dbAPI;
 let activeChallengeId = null;
