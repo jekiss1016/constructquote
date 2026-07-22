@@ -2096,3 +2096,12 @@ body {
   margin-bottom: 2rem;
   font-size: 1.05rem;
 }
+
+/* ==================== OFFLINE UPLOAD CONTROLS VISIBILITY ==================== */
+.cq-offline-mode .offline-gallery-btn {
+  display: none !important;
+}
+
+body:not(.cq-offline-mode) .offline-camera-only {
+  display: none !important;
+}

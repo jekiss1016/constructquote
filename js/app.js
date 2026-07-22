@@ -22,15 +22,15 @@ import {
   getSubscriptionStatus,
   getCheckoutUrl,
   getBillingPortalUrl
-} from './db.js?v=3.0.44';
-import { showToast, fileToBase64, formatPhoneNumber, parseCompanyAddress } from './utils.js?v=3.0.44';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=3.0.44';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=3.0.44';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=3.0.44';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=3.0.44';
-import { syncOfflinePhotoQueue, isOffline, checkOfflineAction } from './offline-cache.js?v=3.0.44';
-import { initSchedulingView } from './scheduling.js?v=3.0.44';
-import * as dbAPI from './db.js?v=3.0.44';
+} from './db.js?v=3.0.45';
+import { showToast, fileToBase64, formatPhoneNumber, parseCompanyAddress } from './utils.js?v=3.0.45';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=3.0.45';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=3.0.45';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=3.0.45';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=3.0.45';
+import { syncOfflinePhotoQueue, isOffline, checkOfflineAction } from './offline-cache.js?v=3.0.45';
+import { initSchedulingView } from './scheduling.js?v=3.0.45';
+import * as dbAPI from './db.js?v=3.0.45';
 
 window.db = dbAPI;
 let activeChallengeId = null;
@@ -1990,6 +1990,7 @@ function updateOnlineStatus() {
   const appContainer = document.querySelector('.app-container');
 
   if (!isOnline) {
+    document.body.classList.add('cq-offline-mode');
     if (sessionStorage.getItem('cq_offline_banner_dismissed') === 'true') {
       return;
     }
@@ -2026,6 +2027,7 @@ function updateOnlineStatus() {
       }
     }
   } else {
+    document.body.classList.remove('cq-offline-mode');
     sessionStorage.removeItem('cq_offline_banner_dismissed');
     if (offlineBanner) {
       offlineBanner.remove();
