@@ -22,15 +22,15 @@ import {
   getSubscriptionStatus,
   getCheckoutUrl,
   getBillingPortalUrl
-} from './db.js?v=3.0.49';
-import { showToast, fileToBase64, formatPhoneNumber, parseCompanyAddress } from './utils.js?v=3.0.49';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=3.0.49';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=3.0.49';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=3.0.49';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=3.0.49';
-import { syncOfflinePhotoQueue, isOffline, checkOfflineAction } from './offline-cache.js?v=3.0.49';
-import { initSchedulingView } from './scheduling.js?v=3.0.49';
-import * as dbAPI from './db.js?v=3.0.49';
+} from './db.js?v=3.0.50';
+import { showToast, fileToBase64, formatPhoneNumber, parseCompanyAddress } from './utils.js?v=3.0.50';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=3.0.50';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=3.0.50';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=3.0.50';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=3.0.50';
+import { syncOfflinePhotoQueue, isOffline, checkOfflineAction } from './offline-cache.js?v=3.0.50';
+import { initSchedulingView } from './scheduling.js?v=3.0.50';
+import * as dbAPI from './db.js?v=3.0.50';
 
 window.db = dbAPI;
 let activeChallengeId = null;
@@ -153,6 +153,17 @@ async function setupAuthListener() {
             // Refresh settings/branding on state update
             await loadDefaultSettingsToUI();
             updateBrandHeader();
+          }
+
+          // Check if returning from a successful Stripe checkout
+          const checkoutParam = new URLSearchParams(window.location.search).get('checkout');
+          if (checkoutParam === 'success') {
+            showToast('Subscription payment processed successfully! Updating profile...', 'success');
+            // Re-fetch user profile from Supabase to pull updated subscription_level
+            await loadUserSession(session);
+            await loadDefaultSettingsToUI();
+            updateBrandHeader();
+            window.history.replaceState({}, document.title, window.location.pathname);
           }
         } else {
           showToast('Failed to load user profile.', 'danger');
@@ -2087,9 +2098,9 @@ async function loadSubscriptionBillingUI() {
   if (monthlyBtn && profile) {
     monthlyBtn.addEventListener('click', async () => {
       try {
-        const checkoutUrl = await getCheckoutUrl(config.lemonSqueezyMonthlyVariant, profile.company_id, profile.email);
+        const checkoutUrl = await getCheckoutUrl(config.stripeMonthlyPriceId, profile.company_id, profile.email);
         if (checkoutUrl) {
-          window.open(checkoutUrl, '_blank');
+          window.location.href = checkoutUrl;
         } else {
           showToast('Failed to generate checkout link.', 'danger');
         }
@@ -2102,9 +2113,9 @@ async function loadSubscriptionBillingUI() {
   if (yearlyBtn && profile) {
     yearlyBtn.addEventListener('click', async () => {
       try {
-        const checkoutUrl = await getCheckoutUrl(config.lemonSqueezyAnnualVariant, profile.company_id, profile.email);
+        const checkoutUrl = await getCheckoutUrl(config.stripeAnnualPriceId, profile.company_id, profile.email);
         if (checkoutUrl) {
-          window.open(checkoutUrl, '_blank');
+          window.location.href = checkoutUrl;
         } else {
           showToast('Failed to generate checkout link.', 'danger');
         }
@@ -2119,7 +2130,7 @@ async function loadSubscriptionBillingUI() {
       try {
         const portalUrl = await getBillingPortalUrl();
         if (portalUrl) {
-          window.open(portalUrl, '_blank');
+          window.location.href = portalUrl;
         } else {
           showToast('Failed to open billing portal.', 'danger');
         }

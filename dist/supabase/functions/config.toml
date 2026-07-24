@@ -1,0 +1,5 @@
+[stripe-webhook]
+verify_jwt = false
+
+[stripe-webhookdev]
+verify_jwt = false

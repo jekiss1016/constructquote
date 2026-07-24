@@ -1,7 +1,7 @@
 {
   "supabaseUrl": "https://krossrybtvrswububsvc.supabase.co",
   "supabaseKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtyb3NzcnlidHZyc3d1YnVic3ZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4MzIzMjksImV4cCI6MjA5ODQwODMyOX0.MjPHUrJR6_y83wYit7OXW-sAiGIvjGoc_Lbjom-WwkQ",
-  "lemonSqueezyStore": "mybidbook",
-  "lemonSqueezyMonthlyVariant": "2604dc64-f414-46a2-b5c5-af7cede88b69",
-  "lemonSqueezyAnnualVariant": "5338a009-20d6-485b-98d7-703587220830"
+  "stripePublishableKey": "pk_live_51TwUOZI507PIdKdv7I7k8G7z",
+  "stripeMonthlyPriceId": "price_1TwUVpI507PIdKdvHUcgXl9b",
+  "stripeAnnualPriceId": "price_1TwUWiI507PIdKdvAFhFmAP6"
 }

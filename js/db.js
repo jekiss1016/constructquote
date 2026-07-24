@@ -1,7 +1,7 @@
 // Database management using Supabase Cloud & LocalStorage fallbacks
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { showToast } from './utils.js?v=3.0.49';
-import { isOffline, updateOfflineCache, getOfflineQuotes, getOfflineCustomers, syncOfflinePhotoQueue, enqueueOfflinePhoto } from './offline-cache.js?v=3.0.49';
+import { showToast } from './utils.js?v=3.0.50';
+import { isOffline, updateOfflineCache, getOfflineQuotes, getOfflineCustomers, syncOfflinePhotoQueue, enqueueOfflinePhoto } from './offline-cache.js?v=3.0.50';
 
 const KEYS = {
   SUPABASE_CONFIG: 'cq_supabase_config'
@@ -48,9 +48,9 @@ export async function loadRuntimeConfig() {
         cachedConfig = { 
           url: config.supabaseUrl, 
           key: config.supabaseKey,
-          lemonSqueezyStore: config.lemonSqueezyStore || 'mybidbook',
-          lemonSqueezyMonthlyVariant: config.lemonSqueezyMonthlyVariant || '1909120',
-          lemonSqueezyAnnualVariant: config.lemonSqueezyAnnualVariant || '1909159'
+          stripePublishableKey: config.stripePublishableKey,
+          stripeMonthlyPriceId: config.stripeMonthlyPriceId,
+          stripeAnnualPriceId: config.stripeAnnualPriceId
         };
         try {
           localStorage.setItem('cq_cached_runtime_config', JSON.stringify(cachedConfig));
@@ -1320,18 +1320,74 @@ export async function sendQuoteEmail(emailData) {
   }
 }
 
-export async function getCheckoutUrl(variantId, companyId, email) {
+export async function getCheckoutUrl(priceId, companyId, email) {
   const config = await getSupabaseConfig();
-  if (!config) return null;
-  const store = config.lemonSqueezyStore || 'mybidbook';
-  return `https://${store}.lemonsqueezy.com/checkout/buy/${variantId}?checkout[custom][company_id]=${companyId}&checkout[email]=${encodeURIComponent(email)}`;
+  if (!config || !config.url) return null;
+
+  const functionUrl = `${config.url}/functions/v1/create-checkout-session`;
+  const appOrigin = window.location.origin + window.location.pathname;
+
+  try {
+    const res = await fetch(functionUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': config.key
+      },
+      body: JSON.stringify({
+        priceId: priceId,
+        companyId: companyId,
+        email: email,
+        origin: appOrigin
+      })
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      return data.url;
+    } else {
+      const errData = await res.json();
+      console.error('Create Checkout Session Error:', errData);
+      return null;
+    }
+  } catch (err) {
+    console.error('Create Checkout Session Fetch Error:', err);
+    return null;
+  }
 }
 
 export async function getBillingPortalUrl() {
   const config = await getSupabaseConfig();
   if (!config) return null;
-  const store = config.lemonSqueezyStore || 'mybidbook';
-  return `https://${store}.lemonsqueezy.com/billing`;
+  if (config.stripeBillingPortalUrl) {
+    return config.stripeBillingPortalUrl;
+  }
+  const profile = getCurrentUserProfile();
+  const customerId = profile?.companies?.stripe_customer_id;
+  if (!customerId || !config.stripeSecretKey) {
+    return null;
+  }
+  try {
+    const res = await fetch('https://api.stripe.com/v1/billing_portal/sessions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${config.stripeSecretKey}`,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams({
+        customer: customerId,
+        return_url: `${window.location.origin}${window.location.pathname}`
+      }).toString()
+    });
+
+    if (res.ok) {
+      const portal = await res.json();
+      return portal.url;
+    }
+  } catch (e) {
+    console.error('Stripe Billing Portal Error:', e);
+  }
+  return null;
 }
 
 // ==========================================
