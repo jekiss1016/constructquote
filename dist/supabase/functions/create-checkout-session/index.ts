@@ -1,5 +1,5 @@
 // Supabase Edge Function: create-checkout-session
-// Generates a Stripe Checkout Session URL using the server-side STRIPE_SECRET_KEY
+// Generates Stripe Checkout Sessions & Customer Portal Sessions securely using server-side STRIPE_SECRET_KEY
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.8";
 
@@ -21,8 +21,50 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { priceId, companyId, email, origin } = await req.json();
+    const body = await req.json();
+    const { action, priceId, companyId, customerId, email, origin } = body;
 
+    const appOrigin = origin || "https://constructquote.com";
+
+    // Action: Customer Billing Portal Session
+    if (action === "portal") {
+      if (!customerId) {
+        return new Response(JSON.stringify({ error: "Missing customerId for portal session" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      const portalParams = new URLSearchParams();
+      portalParams.append("customer", customerId);
+      portalParams.append("return_url", appOrigin);
+
+      const portalRes = await fetch("https://api.stripe.com/v1/billing_portal/sessions", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + STRIPE_SECRET_KEY,
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: portalParams.toString()
+      });
+
+      if (portalRes.ok) {
+        const portalSession = await portalRes.json();
+        return new Response(JSON.stringify({ url: portalSession.url }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      } else {
+        const errData = await portalRes.json();
+        console.error("Stripe Portal API Error", errData);
+        return new Response(JSON.stringify({ error: errData }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+    }
+
+    // Default Action: Checkout Session
     if (!priceId) {
       return new Response(JSON.stringify({ error: "Missing priceId" }), {
         status: 400,
@@ -30,7 +72,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    const appOrigin = origin || "https://constructquote.com";
     const successUrl = appOrigin + "?checkout=success";
     const cancelUrl = appOrigin + "?checkout=cancelled";
 

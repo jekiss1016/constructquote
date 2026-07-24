@@ -1358,36 +1358,48 @@ export async function getCheckoutUrl(priceId, companyId, email) {
 
 export async function getBillingPortalUrl() {
   const config = await getSupabaseConfig();
-  if (!config) return null;
+  if (!config || !config.url) return null;
+
   if (config.stripeBillingPortalUrl) {
     return config.stripeBillingPortalUrl;
   }
+
   const profile = getCurrentUserProfile();
   const customerId = profile?.companies?.stripe_customer_id;
-  if (!customerId || !config.stripeSecretKey) {
+  if (!customerId) {
+    console.warn('getBillingPortalUrl: Missing customerId in profile');
     return null;
   }
+
+  const functionUrl = `${config.url}/functions/v1/create-checkout-session`;
+  const appOrigin = window.location.origin + window.location.pathname;
+
   try {
-    const res = await fetch('https://api.stripe.com/v1/billing_portal/sessions', {
+    const res = await fetch(functionUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${config.stripeSecretKey}`,
-        'Content-Type': 'application/x-www-form-urlencoded'
+        'Content-Type': 'application/json',
+        'apikey': config.key
       },
-      body: new URLSearchParams({
-        customer: customerId,
-        return_url: `${window.location.origin}${window.location.pathname}`
-      }).toString()
+      body: JSON.stringify({
+        action: 'portal',
+        customerId: customerId,
+        origin: appOrigin
+      })
     });
 
     if (res.ok) {
-      const portal = await res.json();
-      return portal.url;
+      const data = await res.json();
+      return data.url;
+    } else {
+      const errData = await res.json();
+      console.error('Stripe Billing Portal Error:', errData);
+      return null;
     }
   } catch (e) {
-    console.error('Stripe Billing Portal Error:', e);
+    console.error('Stripe Billing Portal Fetch Error:', e);
+    return null;
   }
-  return null;
 }
 
 // ==========================================
