@@ -38,6 +38,7 @@ Deno.serve(async (req) => {
     params.append("mode", "subscription");
     params.append("line_items[0][price]", priceId);
     params.append("line_items[0][quantity]", "1");
+    params.append("allow_promotion_codes", "true");
     if (email) params.append("customer_email", email);
     if (companyId) params.append("client_reference_id", companyId);
     params.append("success_url", successUrl);
