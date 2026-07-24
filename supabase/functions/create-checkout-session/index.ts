@@ -5,14 +5,18 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.8";
 
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY") || "";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS"
+};
+
 Deno.serve(async (req) => {
+  // CORS Preflight request
   if (req.method === "OPTIONS") {
     return new Response("ok", {
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-        "Access-Control-Allow-Methods": "POST, OPTIONS"
-      }
+      status: 200,
+      headers: corsHeaders
     });
   }
 
@@ -22,7 +26,7 @@ Deno.serve(async (req) => {
     if (!priceId) {
       return new Response(JSON.stringify({ error: "Missing priceId" }), {
         status: 400,
-        headers: { "Content-Type": "application/json" }
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
@@ -60,30 +64,21 @@ Deno.serve(async (req) => {
       const session = await res.json();
       return new Response(JSON.stringify({ url: session.url }), {
         status: 200,
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Content-Type": "application/json"
-        }
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     } else {
       const errData = await res.json();
       console.error("Stripe API Error", errData);
       return new Response(JSON.stringify({ error: errData }), {
         status: 500,
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Content-Type": "application/json"
-        }
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
   } catch (err: any) {
     console.error("Function Catch Error", err);
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Content-Type": "application/json"
-      }
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
   }
 });
