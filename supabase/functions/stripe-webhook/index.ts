@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
     if (companyId) {
       let periodEndIso = null;
 
-      // Optionally fetch subscription from Stripe to get current_period_end
+      // Fetch subscription from Stripe API to guarantee current_period_end is retrieved
       if (subscriptionId && STRIPE_SECRET_KEY) {
         try {
           const subRes = await fetch("https://api.stripe.com/v1/subscriptions/" + subscriptionId, {
@@ -57,8 +57,9 @@ Deno.serve(async (req) => {
           });
           if (subRes.ok) {
             const subData = await subRes.json();
-            if (subData.current_period_end) {
-              periodEndIso = new Date(subData.current_period_end * 1000).toISOString();
+            const rawEnd = subData.current_period_end || subData.cancel_at || subData.ended_at;
+            if (rawEnd) {
+              periodEndIso = new Date(rawEnd * 1000).toISOString();
             }
           }
         } catch (e) {
@@ -86,7 +87,7 @@ Deno.serve(async (req) => {
         return new Response("Database error", { status: 500 });
       }
 
-      console.log("Successfully upgraded Company to Pro", companyId);
+      console.log("Successfully upgraded Company to Pro", companyId, "Period End:", periodEndIso);
     } else {
       console.warn("Warning: Received checkout.session.completed without company_id");
     }
@@ -96,18 +97,34 @@ Deno.serve(async (req) => {
     const customerId = subscription.customer;
     const status = subscription.status;
     const companyId = subscription.metadata ? subscription.metadata.company_id : null;
-    const periodEnd = subscription.current_period_end
-      ? new Date(subscription.current_period_end * 1000).toISOString()
-      : null;
 
-    console.log("Subscription Created/Updated", subscriptionId, status, periodEnd);
+    let rawPeriodEnd = subscription.current_period_end || subscription.cancel_at || subscription.ended_at;
+    
+    // If not present in raw payload, fetch directly from Stripe API using secret key
+    if (!rawPeriodEnd && subscriptionId && STRIPE_SECRET_KEY) {
+      try {
+        const subRes = await fetch("https://api.stripe.com/v1/subscriptions/" + subscriptionId, {
+          headers: { "Authorization": "Bearer " + STRIPE_SECRET_KEY }
+        });
+        if (subRes.ok) {
+          const subData = await subRes.json();
+          rawPeriodEnd = subData.current_period_end || subData.cancel_at || subData.ended_at;
+        }
+      } catch (e) {
+        console.warn("Failed to fetch direct subscription from Stripe API", e);
+      }
+    }
+
+    const periodEndIso = rawPeriodEnd ? new Date(rawPeriodEnd * 1000).toISOString() : null;
+
+    console.log("Subscription Created/Updated", subscriptionId, status, "Period End:", periodEndIso);
 
     const updatePayload: any = {
       subscription_status: status,
       stripe_subscription_id: subscriptionId
     };
-    if (periodEnd) {
-      updatePayload.subscription_period_end = periodEnd;
+    if (periodEndIso) {
+      updatePayload.subscription_period_end = periodEndIso;
     }
     if (customerId) {
       updatePayload.stripe_customer_id = customerId;
