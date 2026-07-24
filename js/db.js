@@ -1366,8 +1366,9 @@ export async function getBillingPortalUrl() {
 
   const profile = getCurrentUserProfile();
   const customerId = profile?.companies?.stripe_customer_id;
-  if (!customerId) {
-    console.warn('getBillingPortalUrl: Missing customerId in profile');
+  const companyId = profile?.company_id;
+  if (!customerId && !companyId) {
+    console.warn('getBillingPortalUrl: Missing customerId and companyId in profile');
     return null;
   }
 
@@ -1384,6 +1385,7 @@ export async function getBillingPortalUrl() {
       body: JSON.stringify({
         action: 'portal',
         customerId: customerId,
+        companyId: companyId,
         origin: appOrigin
       })
     });

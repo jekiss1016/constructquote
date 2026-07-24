@@ -4,6 +4,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.8";
 
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY") || "";
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,15 +32,33 @@ Deno.serve(async (req) => {
 
     // Action: Customer Billing Portal Session
     if (action === "portal") {
-      if (!customerId) {
-        return new Response(JSON.stringify({ error: "Missing customerId for portal session" }), {
+      let targetCustomerId = customerId;
+
+      // Fallback: If customerId is not cached in client profile, look it up in DB via companyId
+      if (!targetCustomerId && companyId) {
+        console.log("Portal Session: Looking up stripe_customer_id for companyId", companyId);
+        const { data: co, error: coErr } = await supabase
+          .from("companies")
+          .select("stripe_customer_id")
+          .eq("id", companyId)
+          .single();
+
+        if (co && co.stripe_customer_id) {
+          targetCustomerId = co.stripe_customer_id;
+        } else if (coErr) {
+          console.error("Portal DB Lookup Error:", coErr);
+        }
+      }
+
+      if (!targetCustomerId) {
+        return new Response(JSON.stringify({ error: "Missing customerId or company subscription not found" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
       }
 
       const portalParams = new URLSearchParams();
-      portalParams.append("customer", customerId);
+      portalParams.append("customer", targetCustomerId);
       portalParams.append("return_url", appOrigin);
 
       const portalRes = await fetch("https://api.stripe.com/v1/billing_portal/sessions", {
