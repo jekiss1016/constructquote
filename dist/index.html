@@ -1522,17 +1522,19 @@
 
             <div class="form-group-row" style="border-top: 1px solid var(--border-color); padding-top: 1rem;">
               <div class="form-group">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem; gap: 0.5rem; flex-wrap: wrap;">
-                  <label class="form-label" id="settings-default-markup-label" for="settings-default-markup" style="margin-bottom: 0;">Default Markup Percentage (%)</label>
-                  <div class="radio-group" style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.85rem; font-weight: 500; color: var(--text-primary);">
-                    <label style="display: flex; align-items: center; gap: 0.25rem; cursor: pointer;">
+                <div style="margin-bottom: 0.75rem;">
+                  <label class="form-label" style="font-weight: 700; color: var(--text-primary); margin-bottom: 0.35rem; display: block;">Calculation Method</label>
+                  <div class="radio-group" style="display: flex; align-items: center; gap: 1.25rem; font-size: 0.85rem; font-weight: 500; color: var(--text-primary);">
+                    <label style="display: flex; align-items: center; gap: 0.35rem; cursor: pointer;">
                       <input type="radio" name="settings-calc-method" value="markup" checked style="cursor: pointer;"> Markup
                     </label>
-                    <label style="display: flex; align-items: center; gap: 0.25rem; cursor: pointer;">
+                    <label style="display: flex; align-items: center; gap: 0.35rem; cursor: pointer;">
                       <input type="radio" name="settings-calc-method" value="margin" style="cursor: pointer;"> Margin
                     </label>
                   </div>
                 </div>
+
+                <label class="form-label" id="settings-default-markup-label" for="settings-default-markup">Default Markup Percentage (%)</label>
                 <input type="number" class="form-input" id="settings-default-markup" value="15" min="0">
                 <div id="settings-calc-method-example" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem; font-style: italic;">
                   Markup Example (10%): $1,000 x 1.10 = $1,100.00
