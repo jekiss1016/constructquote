@@ -1,7 +1,7 @@
 // Product Catalog management controller
-import { getProducts, getCategories, saveProduct, deleteProduct, getProductById, saveCategory, deleteCategory, renameCategory, getQuotes, getCurrentUserProfile } from './db.js?v=3.0.53';
-import { formatCurrency, showToast } from './utils.js?v=3.0.53';
-import { checkOfflineAction } from './offline-cache.js?v=3.0.53';
+import { getProducts, getCategories, saveProduct, deleteProduct, getProductById, saveCategory, deleteCategory, renameCategory, getQuotes, getCurrentUserProfile } from './db.js?v=3.0.54';
+import { formatCurrency, showToast } from './utils.js?v=3.0.54';
+import { checkOfflineAction } from './offline-cache.js?v=3.0.54';
 
 
 let activeSearchQuery = '';
@@ -127,36 +127,53 @@ export async function renderCategoryList() {
 
   catListContainer.innerHTML = categories.map(cat => {
     const isLabor = cat.toLowerCase() === 'labor';
+    const isCategory1 = cat.toLowerCase() === 'category 1';
+    const isSystemDefault = isLabor || isCategory1;
     const hasProducts = products.some(p => p.category && p.category.toLowerCase() === cat.toLowerCase());
     
-    let deleteBtn = '';
+    let actionControls = '';
     if (isViewer) {
-      deleteBtn = '';
+      actionControls = '';
     } else if (isLabor) {
-      deleteBtn = `<span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">System Default</span>`;
-    } else if (hasProducts) {
-      deleteBtn = `<span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">Locked</span>`;
+      actionControls = `<span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">Locked</span>`;
     } else {
-      deleteBtn = `
-        <div style="display: flex; gap: 0.25rem;">
-          <button type="button" class="item-delete-btn edit-category-btn" data-category="${escapeHtml(cat)}" style="padding: 0.15rem;" title="Rename Category">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-            </svg>
-          </button>
-          <button type="button" class="item-delete-btn delete-category-btn" data-category="${escapeHtml(cat)}" style="padding: 0.15rem;" title="Delete Category">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-          </button>
+      const editBtnHtml = `
+        <button type="button" class="item-delete-btn edit-category-btn" data-category="${escapeHtml(cat)}" style="padding: 0.15rem;" title="Rename Category">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+          </svg>
+        </button>
+      `;
+
+      const deleteBtnHtml = hasProducts ? `
+        <span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;" title="Category has products attached and cannot be deleted">Locked</span>
+      ` : `
+        <button type="button" class="item-delete-btn delete-category-btn" data-category="${escapeHtml(cat)}" style="padding: 0.15rem;" title="Delete Category">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </button>
+      `;
+
+      actionControls = `
+        <div style="display: flex; gap: 0.35rem; align-items: center;">
+          ${editBtnHtml}
+          ${deleteBtnHtml}
         </div>
       `;
     }
 
+    const defaultBadge = isSystemDefault ? `
+      <span class="badge" style="background-color: rgba(99, 102, 241, 0.12); color: var(--primary); font-size: 0.7rem; padding: 0.15rem 0.4rem; margin-left: 0.35rem; font-weight: 600;">System Default</span>
+    ` : '';
+
     return `
       <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; background-color: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
-        <span style="font-weight: 500; font-size: 0.85rem;">${escapeHtml(cat)}</span>
-        ${deleteBtn}
+        <div style="display: flex; align-items: center;">
+          <span style="font-weight: 500; font-size: 0.85rem;">${escapeHtml(cat)}</span>
+          ${defaultBadge}
+        </div>
+        ${actionControls}
       </div>
     `;
   }).join('');
@@ -442,6 +459,12 @@ function setupCatalogListeners() {
         const cat = btn.getAttribute('data-category');
         if ((cat || '').toLowerCase() === 'labor') {
           showToast("System default category 'Labor' cannot be deleted.", 'warning');
+          return;
+        }
+        const products = await getProducts();
+        const hasProducts = products.some(p => p.category && p.category.toLowerCase() === cat.toLowerCase());
+        if (hasProducts) {
+          showToast(`Category "${cat}" has active products attached and cannot be deleted.`, 'warning');
           return;
         }
         if (confirm(`Are you sure you want to delete the category "${cat}"? Products under this category will remain, but the category selector option will be removed.`)) {
