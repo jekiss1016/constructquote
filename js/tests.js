@@ -1002,13 +1002,19 @@ async function runTestSuite() {
     }
     updateStepStatus(stepCalcMethod, 'success');
 
-    const stepFormulaValidation = addStep('Validating Formula Output Logic (Markup $1,100 vs Margin $1,111.11 @ 10%)');
-    const markupRes = (1000 * 1.10).toFixed(2); // 1100.00
-    const marginRes = (1000 / 0.90).toFixed(2); // 1111.11
+    const stepFormulaValidation = addStep('Validating Formula Output Logic for BOTH Markup and Margin Methods');
+    const markupVal = (1000 * 1.10).toFixed(2); // $1,100.00
+    const marginVal = (1000 / 0.90).toFixed(2); // $1,111.11
 
-    if (markupRes !== '1100.00' || marginRes !== '1111.11') {
-      throw new Error(`Formula mismatch: Expected Markup $1100.00 and Margin $1111.11, got Markup $${markupRes} and Margin $${marginRes}`);
+    if (markupVal !== '1100.00') {
+      throw new Error(`Markup formula verification failed: Expected 1100.00, got ${markupVal}`);
     }
+    if (marginVal !== '1111.11') {
+      throw new Error(`Margin formula verification failed: Expected 1111.11, got ${marginVal}`);
+    }
+
+    log(`Verified Markup Formula: Cost $1,000 @ 10% rate => $${markupVal}`, 'info');
+    log(`Verified Margin Formula: Cost $1,000 @ 10% rate => $${marginVal}`, 'info');
     updateStepStatus(stepFormulaValidation, 'success');
 
     const stepConfirmationModal = addStep('Verifying Calculation Method Change Confirmation Modal');

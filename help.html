@@ -346,8 +346,9 @@
       <h3>Section Management & Price Summary</h3>
       <ul>
         <li><strong>Sections</strong>: Quotes can be broken down into structured sections (e.g., <em>"Phase 1: Foundation"</em>, <em>"Phase 2: Framing"</em>).</li>
-        <li><strong>Quote Configuration Panel</strong>: Houses your Markup %, Sales Tax %, and Tax exemption settings, alongside print layout controls.</li>
-        <li><strong>Price Summary Breakdown</strong>: Displays Material, Labor, and Markup subtotals under a Combined Subtotal, followed by calculated Tax and the final Total Price.</li>
+        <li><strong>Quote Configuration Panel</strong>: Houses your Markup/Margin %, Sales Tax %, and Tax exemption settings, alongside print layout controls.</li>
+        <li><strong>Price Summary Breakdown</strong>: Displays Material, Labor, and Markup/Margin subtotals under a Combined Subtotal, followed by calculated Tax and the final Total Price.</li>
+        <li><strong>Calculation Method Integration</strong>: Each quote stores its own calculation method (<code>Markup</code> or <code>Margin</code>). Line items and subtotals compute totals using the assigned formula (\(\text{Cost} \times (1 + \text{Rate})\) vs \(\frac{\text{Cost}}{1 - \text{Rate}}\)), and existing historical quotes permanently retain their original calculation method.</li>
       </ul>
 
       <div class="note-card warning">
