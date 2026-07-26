@@ -1,8 +1,8 @@
 // Customer management controller
-import { getCustomers, saveCustomer, deleteCustomer, getQuotes, getSupabase, getCurrentUserProfile, uploadFileToStorage, getCustomerById, getSettings } from './db.js?v=3.0.50';
-import { formatCurrency, formatDateTime, showToast, formatPhoneNumber } from './utils.js?v=3.0.50';
-import { navigateToView, viewQuoteDetails } from './app.js?v=3.0.50';
-import { isOffline, checkOfflineAction } from './offline-cache.js?v=3.0.50';
+import { getCustomers, saveCustomer, deleteCustomer, getQuotes, getSupabase, getCurrentUserProfile, uploadFileToStorage, getCustomerById, getSettings } from './db.js?v=3.0.51';
+import { formatCurrency, formatDateTime, showToast, formatPhoneNumber, calculateQuoteTotals } from './utils.js?v=3.0.51';
+import { navigateToView, viewQuoteDetails } from './app.js?v=3.0.51';
+import { isOffline, checkOfflineAction } from './offline-cache.js?v=3.0.51';
 
 
 let activeSearchQuery = '';
@@ -128,13 +128,7 @@ async function renderCustomerQuoteHistory(customerId) {
     grid.style.gridTemplateColumns = '';
   }
   tbody.innerHTML = quotes.map(q => {
-    const subtotal = q.sections.reduce((secSum, sec) => {
-      const secSub = sec.items.reduce((sum, item) => sum + (item.qty * (item.price + item.laborRate)), 0);
-      return secSum + secSub;
-    }, 0);
-    const markupVal = subtotal * (q.markupPercent / 100);
-    const taxVal = q.taxPlusApplicable ? 0 : (subtotal + markupVal) * (q.taxRate / 100);
-    const total = subtotal + markupVal + taxVal;
+    const qTotals = calculateQuoteTotals(q);
 
     return `
       <tr>
@@ -146,7 +140,7 @@ async function renderCustomerQuoteHistory(customerId) {
         <td>${formatDateTime(q.createdDateTime || q.date)}</td>
         <td>${q.status === 'Won' || q.status === 'Lost' || q.status === 'Completed' ? formatDateTime(q.dateWonLost) : '-'}</td>
         <td>${q.status === 'Completed' ? formatDateTime(q.dateCompleted) : '-'}</td>
-        <td style="text-align: right; font-weight: 600; color: var(--primary);">${formatCurrency(total)}</td>
+        <td style="text-align: right; font-weight: 600; color: var(--primary);">${formatCurrency(qTotals.total)}</td>
       </tr>
     `;
   }).join('');
@@ -197,6 +191,12 @@ export async function openCustomerModalInline(callback = null) {
   document.getElementById('customer-view-title').textContent = 'Add Database Customer';
   
   const settings = await getSettings();
+  const calcMethod = settings.calculationMethod || 'markup';
+  const customerMarkupLabel = document.getElementById('customer-form-default-markup-label');
+  if (customerMarkupLabel) {
+    customerMarkupLabel.textContent = `Default ${calcMethod === 'margin' ? 'Margin' : 'Markup'} Percentage (%)`;
+  }
+
   document.getElementById('customer-form-default-markup').value = settings.defaultMarkupPercent !== undefined ? settings.defaultMarkupPercent : 15;
   document.getElementById('customer-form-default-terms-notes').value = settings.defaultTermsNotes || '';
   document.getElementById('customer-form-quote-email-body-default').value = settings.quoteEmailBodyDefault || '';

@@ -1,8 +1,8 @@
 // Quotes List & Dashboard management controller
-import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel, getCustomerById, sendQuoteEmail, getQuoteEmailLogs, saveQuoteEmailLog } from './db.js?v=3.0.50';
-import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage, parseCombinedAddress, parseCompanyAddress } from './utils.js?v=3.0.50';
-import { navigateToView, editQuote, duplicateQuoteAsTemplate, openLightbox } from './app.js?v=3.0.50';
-import { isOffline, enqueueOfflinePhoto, checkOfflineAction, getOfflineQuotes } from './offline-cache.js?v=3.0.50';
+import { getQuotes, getQuoteById, saveQuote, saveQuotesRaw, deleteQuote, getProducts, getSettings, getCurrentUserProfile, getSupabase, uploadFileToStorage, getSubscriptionLevel, getCustomerById, sendQuoteEmail, getQuoteEmailLogs, saveQuoteEmailLog } from './db.js?v=3.0.51';
+import { formatCurrency, formatDate, showToast, formatDateTime, fileToBase64, compressImage, parseCombinedAddress, parseCompanyAddress, calculateItemTotals, calculateQuoteTotals } from './utils.js?v=3.0.51';
+import { navigateToView, editQuote, duplicateQuoteAsTemplate, openLightbox } from './app.js?v=3.0.51';
+import { isOffline, enqueueOfflinePhoto, checkOfflineAction, getOfflineQuotes } from './offline-cache.js?v=3.0.51';
 
 
 let activeStatusFilter = 'pending';
@@ -28,15 +28,7 @@ export async function renderDashboardStats() {
   const lostQuotes = quotes.filter(q => q.status === 'Lost');
   const completedQuotes = quotes.filter(q => q.status === 'Completed');
 
-  const pendingValue = pendingQuotes.reduce((acc, q) => {
-    const sub = q.sections.reduce((secSum, sec) => {
-      const secSub = sec.items.reduce((sum, item) => sum + (item.qty * (item.price + item.laborRate)), 0);
-      return secSum + secSub;
-    }, 0);
-    const markupVal = sub * (q.markupPercent / 100);
-    const taxVal = q.taxPlusApplicable ? 0 : (sub + markupVal) * (q.taxRate / 100);
-    return acc + (sub + markupVal + taxVal);
-  }, 0);
+  const pendingValue = pendingQuotes.reduce((acc, q) => acc + calculateQuoteTotals(q).total, 0);
 
   const wonCount = wonQuotes.length + completedQuotes.length;
   const lostCount = lostQuotes.length;
@@ -97,13 +89,7 @@ export async function renderDashboardExpirations() {
   }
 
   tbody.innerHTML = warningQuotes.map(q => {
-    const sub = q.sections.reduce((secSum, sec) => {
-      const secSub = sec.items.reduce((sum, item) => sum + (item.qty * (item.price + item.laborRate)), 0);
-      return secSum + secSub;
-    }, 0);
-    const markupVal = sub * (q.markupPercent / 100);
-    const taxVal = q.taxPlusApplicable ? 0 : (sub + markupVal) * (q.taxRate / 100);
-    const total = sub + markupVal + taxVal;
+    const total = calculateQuoteTotals(q).total;
     
     const isExpired = new Date(q.expirationDate) < today;
     const expiryDisplay = isExpired 
@@ -162,13 +148,7 @@ export async function renderQuotesTable() {
   }
 
   tbody.innerHTML = filtered.map(q => {
-    const sub = q.sections.reduce((secSum, sec) => {
-      const secSub = sec.items.reduce((sum, item) => sum + (item.qty * (item.price + item.laborRate)), 0);
-      return secSum + secSub;
-    }, 0);
-    const markupVal = sub * (q.markupPercent / 100);
-    const taxVal = q.taxPlusApplicable ? 0 : (sub + markupVal) * (q.taxRate / 100);
-    const total = sub + markupVal + taxVal;
+    const total = calculateQuoteTotals(q).total;
 
     let statusBadge = '';
     if (q.status === 'Pending') statusBadge = '<span class="badge badge-pending">Pending</span>';
@@ -493,12 +473,11 @@ export async function renderQuoteDetails(id) {
     const paperTbody = document.getElementById('paper-items-tbody');
     let tbodyHtml = '';
 
+    const method = quote.calculationMethod || 'markup';
+
     if (!showDetails) {
       tbodyHtml = quote.sections.map(sec => {
-        const secSub = sec.items.reduce((sum, item) => {
-          const itemMarkup = item.markupPercent !== undefined ? item.markupPercent : (quote.markupPercent || 0);
-          return sum + (item.qty * (item.price + item.laborRate) * (1 + itemMarkup / 100));
-        }, 0);
+        const secSub = sec.items.reduce((sum, item) => sum + calculateItemTotals(item, quote.markupPercent || 0, method).markedUpTotal, 0);
         
         if (!showQuantities) {
           return `
@@ -526,10 +505,7 @@ export async function renderQuoteDetails(id) {
       const rows = [];
       
       quote.sections.forEach(sec => {
-        const secSub = sec.items.reduce((sum, item) => {
-          const itemMarkup = item.markupPercent !== undefined ? item.markupPercent : (quote.markupPercent || 0);
-          return sum + (item.qty * (item.price + item.laborRate) * (1 + itemMarkup / 100));
-        }, 0);
+        const secSub = sec.items.reduce((sum, item) => sum + calculateItemTotals(item, quote.markupPercent || 0, method).markedUpTotal, 0);
 
         if (!showQuantities) {
           rows.push(`
@@ -552,9 +528,9 @@ export async function renderQuoteDetails(id) {
         }
 
         sec.items.forEach(item => {
-          const itemMarkup = item.markupPercent !== undefined ? item.markupPercent : (quote.markupPercent || 0);
-          const itemUnitPrice = (item.price + item.laborRate) * (1 + itemMarkup / 100);
-          const itemTotal = item.qty * itemUnitPrice;
+          const itemRes = calculateItemTotals(item, quote.markupPercent || 0, method);
+          const itemUnitPrice = itemRes.unitPrice;
+          const itemTotal = itemRes.markedUpTotal;
           
           let descLines = '';
           if (item.productId && item.description) {
@@ -633,17 +609,9 @@ export async function renderQuoteDetails(id) {
     paperTbody.innerHTML = tbodyHtml;
   }
 
-  const subtotal = quote.sections.reduce((sum, sec) => {
-    const secSub = sec.items.reduce((sum, item) => {
-      const itemMarkup = item.markupPercent !== undefined ? item.markupPercent : (quote.markupPercent || 0);
-      return sum + (item.qty * (item.price + item.laborRate) * (1 + itemMarkup / 100));
-    }, 0);
-    return sum + secSub;
-  }, 0);
-  const taxVal = quote.taxPlusApplicable ? 0 : subtotal * (quote.taxRate / 100);
-  const total = subtotal + taxVal;
+  const qTotals = calculateQuoteTotals(quote);
 
-  document.getElementById('paper-subtotal').textContent = formatCurrency(subtotal);
+  document.getElementById('paper-subtotal').textContent = formatCurrency(qTotals.markedUpSubtotal);
   
   const paperMarkupRow = document.getElementById('paper-markup-row');
   if (paperMarkupRow) {

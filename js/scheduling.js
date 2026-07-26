@@ -1,7 +1,7 @@
-import * as db from './db.js?v=3.0.50';
-import * as utils from './utils.js?v=3.0.50';
-import { SchedulingEngine } from './scheduling-engine.js?v=3.0.50';
-import { isOffline, checkOfflineAction } from './offline-cache.js?v=3.0.50';
+import * as db from './db.js?v=3.0.51';
+import * as utils from './utils.js?v=3.0.51';
+import { SchedulingEngine } from './scheduling-engine.js?v=3.0.51';
+import { isOffline, checkOfflineAction } from './offline-cache.js?v=3.0.51';
 
 let schedules = [];
 let companySettings = null;
@@ -86,21 +86,8 @@ async function loadSchedules() {
         });
         
         schedules = validQuotes.map(q => {
-            let sub = 0;
-            if (q.sections && Array.isArray(q.sections)) {
-                q.sections.forEach(sec => {
-                    if (sec && sec.items && Array.isArray(sec.items)) {
-                        sec.items.forEach(item => { 
-                            if (item) {
-                                sub += (Number(item.qty || 0) * (Number(item.price || 0) + Number(item.laborRate || 0))) || 0; 
-                            }
-                        });
-                    }
-                });
-            }
-            const markupVal = sub * ((Number(q.markupPercent) || 0) / 100);
-            const taxVal = q.taxPlusApplicable ? 0 : (sub + markupVal) * ((Number(q.taxRate) || 0) / 100);
-            const total = sub + markupVal + taxVal;
+            const qTotals = utils.calculateQuoteTotals(q);
+            const total = qTotals.total;
 
             let derivedStatus = 'Ready to Schedule';
             const statusLower = (q.status || '').toLowerCase();

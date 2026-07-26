@@ -7,6 +7,13 @@
 ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS quote_email_body_default text;
 ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS quote_email_body_default text;
 
+-- Add calculation method setting to settings and quotes
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS calculation_method VARCHAR(10) DEFAULT 'markup';
+UPDATE public.settings SET calculation_method = 'markup' WHERE calculation_method IS NULL;
+
+ALTER TABLE public.quotes ADD COLUMN IF NOT EXISTS calculation_method VARCHAR(10) DEFAULT 'markup';
+UPDATE public.quotes SET calculation_method = 'markup' WHERE calculation_method IS NULL;
+
 -- Create quote email logs table
 CREATE TABLE IF NOT EXISTS public.quote_email_logs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -1,10 +1,10 @@
 // Quote Builder view controller
-import { getProducts, getSettings, saveQuote, checkJobIdUnique, saveSettings, getCustomers, getSupabase, getCurrentUserProfile, uploadFileToStorage } from './db.js?v=3.0.50';
-import { formatCurrency, showToast, fileToBase64, generateJobIdSuggestion, compressImage, parseCombinedAddress } from './utils.js?v=3.0.50';
-import { navigateToView, viewQuoteDetails, getPreviousViewId, openLightbox } from './app.js?v=3.0.50';
-import { renderQuoteDetails } from './quotes-list.js?v=3.0.50';
-import { openCustomerModalInline } from './customers.js?v=3.0.50';
-import { isOffline, enqueueOfflinePhoto } from './offline-cache.js?v=3.0.50';
+import { getProducts, getSettings, saveQuote, checkJobIdUnique, saveSettings, getCustomers, getSupabase, getCurrentUserProfile, uploadFileToStorage } from './db.js?v=3.0.51';
+import { formatCurrency, showToast, fileToBase64, generateJobIdSuggestion, compressImage, parseCombinedAddress, calculateItemTotals, calculateQuoteTotals } from './utils.js?v=3.0.51';
+import { navigateToView, viewQuoteDetails, getPreviousViewId, openLightbox } from './app.js?v=3.0.51';
+import { renderQuoteDetails } from './quotes-list.js?v=3.0.51';
+import { openCustomerModalInline } from './customers.js?v=3.0.51';
+import { isOffline, enqueueOfflinePhoto } from './offline-cache.js?v=3.0.51';
 
 
 let currentQuote = {
@@ -92,6 +92,7 @@ export async function startNewQuote() {
     taxRate: settings.defaultTaxRate || 0,
     taxPlusApplicable: settings.defaultTaxPlusApplicable || false,
     markupPercent: settings.defaultMarkupPercent || 0,
+    calculationMethod: settings.calculationMethod || 'markup',
     status: 'Pending',
     companyLogo: settings.companyLogo || '',
     notes: settings.defaultTermsNotes || 'Payment Terms: 50% deposit required upon authorization, 50% upon project completion. Quote is valid until expiration date.',
@@ -122,6 +123,7 @@ export async function loadQuoteForEditing(quote) {
   if (updateCostsBtn) updateCostsBtn.style.display = 'inline-block';
 
   currentQuote = JSON.parse(JSON.stringify(quote)); // Deep clone
+  if (!currentQuote.calculationMethod) currentQuote.calculationMethod = quote.calculationMethod || 'markup';
   if (currentQuote.taxPlusApplicable === undefined) currentQuote.taxPlusApplicable = false;
   if (!currentQuote.photos) currentQuote.photos = [];
   if (!currentQuote.sections) currentQuote.sections = [];
@@ -241,6 +243,17 @@ function populateBuilderFields() {
   document.getElementById('builder-markup').value = currentQuote.markupPercent;
   document.getElementById('builder-notes').value = currentQuote.notes;
 
+  const method = currentQuote.calculationMethod || 'markup';
+  const isMargin = method === 'margin';
+  const builderMarkupLabel = document.getElementById('builder-markup-label');
+  if (builderMarkupLabel) {
+    builderMarkupLabel.textContent = isMargin ? 'Margin (%)' : 'Markup (%)';
+  }
+  const summaryMarkupLabel = document.getElementById('builder-summary-markup-label');
+  if (summaryMarkupLabel) {
+    summaryMarkupLabel.textContent = isMargin ? 'Margin Subtotal:' : 'Markup Subtotal:';
+  }
+
   const plusTaxCheck = document.getElementById('builder-tax-plus-applicable');
   const isPlusTax = currentQuote.taxPlusApplicable || false;
   if (plusTaxCheck) {
@@ -327,6 +340,9 @@ export async function renderBuilderSections() {
     const isOnlyOne = currentQuote.sections.length === 1;
     
     let rowsHtml = '';
+    const method = currentQuote.calculationMethod || 'markup';
+    const isMargin = method === 'margin';
+
     if (section.items.length === 0) {
       rowsHtml = `
         <tr class="empty-builder-row">
@@ -338,9 +354,9 @@ export async function renderBuilderSections() {
     } else {
       rowsHtml = section.items.map((item, itemIdx) => {
         const isLaborOnly = item.isLaborOnly === true;
-        const itemTotal = item.qty * (item.price + item.laborRate);
-        const itemMarkup = item.markupPercent !== undefined ? item.markupPercent : (currentQuote.markupPercent || 0);
-        const markedUpTotal = itemTotal * (1 + itemMarkup / 100);
+        const itemRes = calculateItemTotals(item, currentQuote.markupPercent || 0, method);
+        const itemTotal = itemRes.cost;
+        const markedUpTotal = itemRes.markedUpTotal;
         
         return `
           <tr data-sec-idx="${secIdx}" data-item-idx="${itemIdx}">
@@ -397,6 +413,12 @@ export async function renderBuilderSections() {
       }).join('');
     }
 
+    const secCostSum = calculateSectionSum(section);
+    const secMarkedUpSum = section.items.reduce((sum, item) => sum + calculateItemTotals(item, currentQuote.markupPercent || 0, method).markedUpTotal, 0);
+    const effectiveMarkup = isMargin
+      ? (secMarkedUpSum > 0 ? ((secMarkedUpSum - secCostSum) / secMarkedUpSum) * 100 : (currentQuote.markupPercent || 0))
+      : (secCostSum > 0 ? ((secMarkedUpSum - secCostSum) / secCostSum) * 100 : (currentQuote.markupPercent || 0));
+
     return `
       <div class="widget-card section-card" data-sec-idx="${secIdx}" style="padding: 1.25rem; margin-bottom: 1.25rem;">
         <div style="display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; gap: 0.5rem;">
@@ -423,9 +445,9 @@ export async function renderBuilderSections() {
                 <th style="width: 6%;">Qty</th>
                 <th style="width: 9%;">Material ($)</th>
                 <th style="width: 9%;">Labor ($)</th>
-                <th style="width: 9%; text-align: center;">Markup %</th>
+                <th style="width: 9%; text-align: center;">${isMargin ? 'Margin %' : 'Markup %'}</th>
                 <th style="width: 10%; text-align: right;">Cost Sub</th>
-                <th style="width: 11%; text-align: right;">Total w/ Markup</th>
+                <th style="width: 11%; text-align: right;">${isMargin ? 'Total w/ Margin' : 'Total w/ Markup'}</th>
                 <th style="width: 4%;"></th>
               </tr>
             </thead>
@@ -445,8 +467,8 @@ export async function renderBuilderSections() {
             </button>
           </div>
           <div style="font-weight: 700; font-size: 0.85rem; color: var(--text-secondary); display: flex; gap: 1.5rem;">
-            <span>Cost Subtotal: <span class="section-subtotal-value" style="color: var(--text-muted); font-weight: 500;">${formatCurrency(calculateSectionSum(section))}</span></span>
-            <span>Subtotal w/ Markup: <span class="section-markedup-subtotal-value" style="color: var(--primary);">${formatCurrency(section.items.reduce((sum, item) => sum + (item.qty * (item.price + item.laborRate) * (1 + (item.markupPercent !== undefined ? item.markupPercent : (currentQuote.markupPercent || 0)) / 100)), 0))}</span> <span class="section-markup-percentage-value" style="font-size: 0.8rem; font-weight: 500; color: var(--text-secondary);">(${(calculateSectionSum(section) > 0 ? ((section.items.reduce((sum, item) => sum + (item.qty * (item.price + item.laborRate) * (1 + (item.markupPercent !== undefined ? item.markupPercent : (currentQuote.markupPercent || 0)) / 100)), 0) - calculateSectionSum(section)) / calculateSectionSum(section)) * 100 : (currentQuote.markupPercent || 0)).toFixed(1)}%)</span></span>
+            <span>Cost Subtotal: <span class="section-subtotal-value" style="color: var(--text-muted); font-weight: 500;">${formatCurrency(secCostSum)}</span></span>
+            <span>${isMargin ? 'Subtotal w/ Margin' : 'Subtotal w/ Markup'}: <span class="section-markedup-subtotal-value" style="color: var(--primary);">${formatCurrency(secMarkedUpSum)}</span> <span class="section-markup-percentage-value" style="font-size: 0.8rem; font-weight: 500; color: var(--text-secondary);">(${effectiveMarkup.toFixed(1)}%)</span></span>
           </div>
         </div>
       </div>
@@ -460,14 +482,17 @@ function calculateSectionSum(section) {
 
 function updateBuilderMarkedUpTotals() {
   const globalMarkup = currentQuote.markupPercent || 0;
+  const method = currentQuote.calculationMethod || 'markup';
+  const isMargin = method === 'margin';
+
   currentQuote.sections.forEach((section, secIdx) => {
     let secCostSum = 0;
     let secMarkedUpSum = 0;
     
     section.items.forEach((item, itemIdx) => {
-      const itemTotal = item.qty * (item.price + item.laborRate);
-      const itemMarkup = item.markupPercent !== undefined ? item.markupPercent : globalMarkup;
-      const markedUpTotal = itemTotal * (1 + itemMarkup / 100);
+      const itemRes = calculateItemTotals(item, globalMarkup, method);
+      const itemTotal = itemRes.cost;
+      const markedUpTotal = itemRes.markedUpTotal;
       secCostSum += itemTotal;
       secMarkedUpSum += markedUpTotal;
       
@@ -490,7 +515,9 @@ function updateBuilderMarkedUpTotals() {
       }
       const pctSpan = secCard.querySelector('.section-markup-percentage-value');
       if (pctSpan) {
-        const effectiveMarkup = secCostSum > 0 ? ((secMarkedUpSum - secCostSum) / secCostSum) * 100 : globalMarkup;
+        const effectiveMarkup = isMargin
+          ? (secMarkedUpSum > 0 ? ((secMarkedUpSum - secCostSum) / secMarkedUpSum) * 100 : globalMarkup)
+          : (secCostSum > 0 ? ((secMarkedUpSum - secCostSum) / secCostSum) * 100 : globalMarkup);
         pctSpan.textContent = `(${effectiveMarkup.toFixed(1)}%)`;
       }
     }
@@ -530,7 +557,8 @@ function renderBuilderGallery() {
 
 /* ==================== PRICING COMPUTATION ==================== */
 function calculateTotals() {
-  const subtotal = currentQuote.sections.reduce((sum, sec) => sum + calculateSectionSum(sec), 0);
+  const qTotals = calculateQuoteTotals(currentQuote);
+  const isMargin = qTotals.method === 'margin';
   
   let materialSubtotal = 0;
   let laborSubtotal = 0;
@@ -541,41 +569,38 @@ function calculateTotals() {
     });
   });
 
-  const markupVal = currentQuote.sections.reduce((sum, sec) => {
-    return sum + sec.items.reduce((itemSum, item) => {
-      const itemTotal = item.qty * (item.price + item.laborRate);
-      const itemMarkup = item.markupPercent !== undefined ? item.markupPercent : (currentQuote.markupPercent || 0);
-      return itemSum + (itemTotal * (itemMarkup / 100));
-    }, 0);
-  }, 0);
-
-  const isPlusTaxes = currentQuote.taxPlusApplicable || false;
-  const taxVal = isPlusTaxes ? 0 : (subtotal + markupVal) * (currentQuote.taxRate / 100);
-  const grandTotal = subtotal + markupVal + taxVal;
-
   const materialsEl = document.getElementById('builder-summary-materials');
   if (materialsEl) materialsEl.textContent = formatCurrency(materialSubtotal);
   
   const laborEl = document.getElementById('builder-summary-labor');
   if (laborEl) laborEl.textContent = formatCurrency(laborSubtotal);
 
-  document.getElementById('builder-summary-subtotal').textContent = formatCurrency(subtotal + markupVal);
-  document.getElementById('builder-summary-markup-val').textContent = formatCurrency(markupVal);
+  const summaryMarkupLabel = document.getElementById('builder-summary-markup-label');
+  if (summaryMarkupLabel) {
+    summaryMarkupLabel.textContent = isMargin ? 'Margin Subtotal:' : 'Markup Subtotal:';
+  }
+
+  document.getElementById('builder-summary-subtotal').textContent = formatCurrency(qTotals.markedUpSubtotal);
+  document.getElementById('builder-summary-markup-val').textContent = formatCurrency(qTotals.markupVal);
   
-  const effectiveMarkupPct = subtotal > 0 ? (markupVal / subtotal) * 100 : (currentQuote.markupPercent || 0);
+  const effectivePct = isMargin
+    ? (qTotals.markedUpSubtotal > 0 ? (qTotals.markupVal / qTotals.markedUpSubtotal) * 100 : (currentQuote.markupPercent || 0))
+    : (qTotals.costSubtotal > 0 ? (qTotals.markupVal / qTotals.costSubtotal) * 100 : (currentQuote.markupPercent || 0));
+
   const builderSummaryMarkupPct = document.getElementById('builder-summary-markup-pct');
   if (builderSummaryMarkupPct) {
-    builderSummaryMarkupPct.textContent = `${effectiveMarkupPct.toFixed(1)}%`;
+    builderSummaryMarkupPct.textContent = `${effectivePct.toFixed(1)}%`;
   }
   
+  const isPlusTaxes = currentQuote.taxPlusApplicable || false;
   const taxSummaryVal = document.getElementById('builder-summary-tax-val');
   if (isPlusTaxes) {
     taxSummaryVal.textContent = "Plus Applicable Taxes";
   } else {
-    taxSummaryVal.textContent = formatCurrency(taxVal);
+    taxSummaryVal.textContent = formatCurrency(qTotals.taxVal);
   }
   
-  document.getElementById('builder-summary-total').textContent = formatCurrency(grandTotal);
+  document.getElementById('builder-summary-total').textContent = formatCurrency(qTotals.total);
 }
 
 let isBuilderListenersSetup = false;
@@ -990,6 +1015,7 @@ function setupBuilderListeners() {
         // Revert to global settings defaults
         const defaultMarkup = settings.defaultMarkupPercent || 15;
         currentQuote.markupPercent = defaultMarkup;
+        currentQuote.calculationMethod = settings.calculationMethod || 'markup';
         document.getElementById('builder-markup').value = defaultMarkup;
 
         const defaultTerms = settings.defaultTermsNotes || '';

@@ -1,7 +1,7 @@
 // Database management using Supabase Cloud & LocalStorage fallbacks
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { showToast } from './utils.js?v=3.0.50';
-import { isOffline, updateOfflineCache, getOfflineQuotes, getOfflineCustomers, syncOfflinePhotoQueue, enqueueOfflinePhoto } from './offline-cache.js?v=3.0.50';
+import { showToast } from './utils.js?v=3.0.51';
+import { isOffline, updateOfflineCache, getOfflineQuotes, getOfflineCustomers, syncOfflinePhotoQueue, enqueueOfflinePhoto } from './offline-cache.js?v=3.0.51';
 
 const KEYS = {
   SUPABASE_CONFIG: 'cq_supabase_config'
@@ -15,6 +15,7 @@ const DEFAULT_SETTINGS = {
   companyEmail: 'billing@mybidbook.com',
   defaultTaxRate: 8.8,
   defaultMarkupPercent: 15,
+  calculationMethod: 'markup',
   companyLogo: '',
   quoteEmailBodyDefault: '',
   schedulingConfig: { workdays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], weekend_days: [0, 6], holidays: [], custom_workdays: [] }
@@ -703,6 +704,7 @@ export async function getQuotes() {
     expirationDate: q.expiration_date,
     markupPercent: parseFloat(q.markup_percent) || 0,
     taxRate: parseFloat(q.tax_rate) || 0,
+    calculationMethod: q.calculation_method || 'markup',
     notes: q.notes,
     status: q.status || 'Pending',
     version: q.version || 1,
@@ -794,6 +796,7 @@ export async function saveQuote(quote) {
     expiration_date: quote.expirationDate,
     markup_percent: quote.markupPercent,
     tax_rate: quote.taxRate,
+    calculation_method: quote.calculationMethod || 'markup',
     notes: quote.notes,
     status: quote.status || 'Pending',
     version: quote.version || 1,
@@ -862,6 +865,7 @@ export async function saveQuote(quote) {
           expiration_date: legacyCopy.expirationDate,
           markup_percent: legacyCopy.markupPercent,
           tax_rate: legacyCopy.taxRate,
+          calculation_method: legacyCopy.calculationMethod || 'markup',
           notes: legacyCopy.notes,
           status: 'Legacy',
           version: legacyCopy.version,
@@ -920,6 +924,7 @@ export async function saveQuotesRaw(quotesList) {
     expiration_date: q.expirationDate,
     markup_percent: q.markupPercent,
     tax_rate: q.taxRate,
+    calculation_method: q.calculationMethod || 'markup',
     notes: q.notes,
     status: q.status,
     version: q.version,
@@ -995,6 +1000,7 @@ export async function getSettings() {
     companyEmail: row.company_email,
     defaultTaxRate: parseFloat(row.default_tax_rate) || 0,
     defaultMarkupPercent: parseFloat(row.default_markup_percent) || 0,
+    calculationMethod: row.calculation_method || 'markup',
     companyLogo: row.company_logo,
     theme: row.theme || 'light',
     defaultTermsNotes: row.default_terms_notes || '',
@@ -1014,6 +1020,7 @@ export async function saveSettings(settingsObj) {
   if (settingsObj.companyEmail !== undefined) mapped.company_email = settingsObj.companyEmail;
   if (settingsObj.defaultTaxRate !== undefined) mapped.default_tax_rate = settingsObj.defaultTaxRate;
   if (settingsObj.defaultMarkupPercent !== undefined) mapped.default_markup_percent = settingsObj.defaultMarkupPercent;
+  if (settingsObj.calculationMethod !== undefined) mapped.calculation_method = settingsObj.calculationMethod;
   if (settingsObj.companyLogo !== undefined) mapped.company_logo = settingsObj.companyLogo;
   if (settingsObj.theme !== undefined) mapped.theme = settingsObj.theme;
   if (settingsObj.defaultTermsNotes !== undefined) mapped.default_terms_notes = settingsObj.defaultTermsNotes;

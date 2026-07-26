@@ -283,3 +283,82 @@ function parseStateZip(str) {
   return { state, zip };
 }
 
+/**
+ * Calculates item line total based on item quantity, prices, markup/margin percentage, and calculation method.
+ * Formula Logic:
+ * If 'markup': Total = Cost * (1 + Rate)
+ * If 'margin': Total = Cost / (1 - Rate)
+ */
+export function calculateItemTotals(item, defaultPct = 0, method = 'markup') {
+  const qty = Number(item.qty || 0);
+  const rawUnitPrice = Number(item.price || 0) + Number(item.laborRate || 0);
+  const cost = qty * rawUnitPrice;
+  const ratePct = item.markupPercent !== undefined && item.markupPercent !== null && item.markupPercent !== ''
+    ? Number(item.markupPercent)
+    : Number(defaultPct || 0);
+  const rate = ratePct / 100;
+  
+  let markedUpTotal = cost;
+  let unitPrice = rawUnitPrice;
+
+  if (method === 'margin') {
+    const safeRate = Math.min(rate, 0.9999);
+    unitPrice = safeRate < 1 ? rawUnitPrice / (1 - safeRate) : 0;
+    markedUpTotal = safeRate < 1 ? cost / (1 - safeRate) : 0;
+  } else { // 'markup' (default)
+    unitPrice = rawUnitPrice * (1 + rate);
+    markedUpTotal = cost * (1 + rate);
+  }
+
+  const addedVal = markedUpTotal - cost;
+
+  return {
+    cost,
+    unitPrice,
+    markedUpTotal,
+    addedVal,
+    ratePct
+  };
+}
+
+/**
+ * Calculates overall quote totals for a quote object.
+ * Respects quote.calculationMethod ('markup' | 'margin').
+ */
+export function calculateQuoteTotals(quote) {
+  if (!quote) return { subtotal: 0, costSubtotal: 0, markedUpSubtotal: 0, markupVal: 0, taxVal: 0, total: 0, method: 'markup' };
+
+  const method = quote.calculationMethod || 'markup';
+  let costSubtotal = 0;
+  let markedUpSubtotal = 0;
+
+  if (quote.sections && Array.isArray(quote.sections)) {
+    quote.sections.forEach(sec => {
+      if (sec && sec.items && Array.isArray(sec.items)) {
+        sec.items.forEach(item => {
+          if (item) {
+            const res = calculateItemTotals(item, quote.markupPercent || 0, method);
+            costSubtotal += res.cost;
+            markedUpSubtotal += res.markedUpTotal;
+          }
+        });
+      }
+    });
+  }
+
+  const markupVal = markedUpSubtotal - costSubtotal;
+  const isPlusTaxes = quote.taxPlusApplicable === true;
+  const taxVal = isPlusTaxes ? 0 : markedUpSubtotal * (Number(quote.taxRate || 0) / 100);
+  const total = markedUpSubtotal + taxVal;
+
+  return {
+    subtotal: markedUpSubtotal,
+    costSubtotal,
+    markedUpSubtotal,
+    markupVal,
+    taxVal,
+    total,
+    method
+  };
+}
+

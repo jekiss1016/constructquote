@@ -22,15 +22,15 @@ import {
   getSubscriptionStatus,
   getCheckoutUrl,
   getBillingPortalUrl
-} from './db.js?v=3.0.50';
-import { showToast, fileToBase64, formatPhoneNumber, parseCompanyAddress } from './utils.js?v=3.0.50';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=3.0.50';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=3.0.50';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=3.0.50';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=3.0.50';
-import { syncOfflinePhotoQueue, isOffline, checkOfflineAction } from './offline-cache.js?v=3.0.50';
-import { initSchedulingView } from './scheduling.js?v=3.0.50';
-import * as dbAPI from './db.js?v=3.0.50';
+} from './db.js?v=3.0.51';
+import { showToast, fileToBase64, formatPhoneNumber, parseCompanyAddress } from './utils.js?v=3.0.51';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=3.0.51';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=3.0.51';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=3.0.51';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=3.0.51';
+import { syncOfflinePhotoQueue, isOffline, checkOfflineAction } from './offline-cache.js?v=3.0.51';
+import { initSchedulingView } from './scheduling.js?v=3.0.51';
+import * as dbAPI from './db.js?v=3.0.51';
 
 window.db = dbAPI;
 let activeChallengeId = null;
@@ -1253,6 +1253,30 @@ async function loadDefaultSettingsToUI() {
     quoteEmailBodyInput.disabled = isViewer;
   }
 
+  const calcMethod = settings.calculationMethod || 'markup';
+  const radio = document.querySelector(`input[name="settings-calc-method"][value="${calcMethod}"]`);
+  if (radio) radio.checked = true;
+  document.querySelectorAll('input[name="settings-calc-method"]').forEach(r => r.disabled = isViewer);
+
+  const exampleEl = document.getElementById('settings-calc-method-example');
+  if (exampleEl) {
+    if (calcMethod === 'margin') {
+      exampleEl.textContent = 'Margin Example (10%): $1,000 / 0.90 = $1,111.11';
+    } else {
+      exampleEl.textContent = 'Markup Example (10%): $1,000 x 1.10 = $1,100.00';
+    }
+  }
+
+  const settingsMarkupLabel = document.getElementById('settings-default-markup-label');
+  if (settingsMarkupLabel) {
+    settingsMarkupLabel.textContent = `Default ${calcMethod === 'margin' ? 'Margin' : 'Markup'} Percentage (%)`;
+  }
+
+  const customerMarkupLabel = document.getElementById('customer-form-default-markup-label');
+  if (customerMarkupLabel) {
+    customerMarkupLabel.textContent = `Default ${calcMethod === 'margin' ? 'Margin' : 'Markup'} Percentage (%)`;
+  }
+
 
 
   const saveBtn = document.getElementById('settings-save-btn');
@@ -1314,6 +1338,79 @@ function setupSettingsHandlers() {
     });
   }
 
+  const calcRadios = document.querySelectorAll('input[name="settings-calc-method"]');
+  calcRadios.forEach(radio => {
+    radio.addEventListener('click', async (e) => {
+      if (isViewer) return;
+
+      const currentSettings = await getSettings();
+      const activeCalcMethod = currentSettings.calculationMethod || 'markup';
+      const targetMethod = e.target.value;
+
+      if (targetMethod === activeCalcMethod) return;
+
+      e.preventDefault();
+
+      const modal = document.getElementById('calc-method-confirm-modal');
+      const msgEl = document.getElementById('calc-method-confirm-message');
+      const submitBtn = document.getElementById('calc-method-confirm-submit-btn');
+      const cancelBtn = document.getElementById('calc-method-confirm-cancel-btn');
+      const closeBtn = document.getElementById('calc-method-confirm-close-btn');
+
+      if (!modal) return;
+
+      const targetCap = targetMethod.charAt(0).toUpperCase() + targetMethod.slice(1);
+      if (msgEl) {
+        msgEl.textContent = `Are you sure you want to switch your calculation method to ${targetCap}? This will apply the new calculation formula to all new quotes, customer default rates, and line items. Existing numerical values (e.g., 10%) will be preserved, but calculated totals will update using the new formula. Previously created quotes will keep their original calculation method.`;
+      }
+
+      modal.classList.add('active');
+
+      const cleanup = () => {
+        modal.classList.remove('active');
+        if (submitBtn) submitBtn.onclick = null;
+        if (cancelBtn) cancelBtn.onclick = null;
+        if (closeBtn) closeBtn.onclick = null;
+      };
+
+      if (cancelBtn) {
+        cancelBtn.onclick = () => {
+          cleanup();
+          const origRadio = document.querySelector(`input[name="settings-calc-method"][value="${activeCalcMethod}"]`);
+          if (origRadio) origRadio.checked = true;
+        };
+      }
+
+      if (closeBtn) {
+        closeBtn.onclick = () => {
+          cleanup();
+          const origRadio = document.querySelector(`input[name="settings-calc-method"][value="${activeCalcMethod}"]`);
+          if (origRadio) origRadio.checked = true;
+        };
+      }
+
+      if (submitBtn) {
+        submitBtn.onclick = async () => {
+          cleanup();
+          const newRadio = document.querySelector(`input[name="settings-calc-method"][value="${targetMethod}"]`);
+          if (newRadio) newRadio.checked = true;
+
+          showToast(`Updating calculation method to ${targetCap}...`);
+          const res = await saveSettings({ calculationMethod: targetMethod });
+          if (res.success) {
+            showToast(`Calculation method updated to ${targetCap}.`, 'success');
+            await loadDefaultSettingsToUI();
+            await renderDashboardStats();
+          } else {
+            showToast(res.error || 'Failed to update calculation method.', 'danger');
+            const origRadio = document.querySelector(`input[name="settings-calc-method"][value="${activeCalcMethod}"]`);
+            if (origRadio) origRadio.checked = true;
+          }
+        };
+      }
+    });
+  });
+
   if (saveBtn) {
     saveBtn.addEventListener('click', async () => {
       if (isViewer) return;
@@ -1333,12 +1430,15 @@ function setupSettingsHandlers() {
       }
       combinedAddress = combinedAddress.trim();
 
+      const selectedCalcMethod = document.querySelector('input[name="settings-calc-method"]:checked')?.value || 'markup';
+
       const updated = {
         companyName: document.getElementById('settings-co-name').value.trim(),
         companyAddress: combinedAddress,
         companyPhone: document.getElementById('settings-co-phone').value.trim(),
         companyEmail: document.getElementById('settings-co-email').value.trim(),
         defaultMarkupPercent: parseFloat(document.getElementById('settings-default-markup').value) || 0,
+        calculationMethod: selectedCalcMethod,
         defaultTaxRate: parseFloat(document.getElementById('settings-default-tax').value) || 0,
         defaultTaxPlusApplicable: document.getElementById('settings-default-tax-plus-applicable').checked,
         defaultTermsNotes: document.getElementById('settings-default-terms-notes').value.trim(),
@@ -1348,6 +1448,7 @@ function setupSettingsHandlers() {
       const res = await saveSettings(updated);
       if (res.success) {
         showToast('Company settings profile saved.');
+        await loadDefaultSettingsToUI();
         await renderDashboardStats();
         await updateBrandHeader();
       } else {

@@ -94,6 +94,7 @@ create table if not exists public.quotes (
   expiration_date date not null,
   markup_percent numeric(5,2) default 0.00 not null,
   tax_rate numeric(5,2) default 0.00 not null,
+  calculation_method text default 'markup'::text check (calculation_method in ('markup', 'margin')),
   notes text,
   status text default 'Pending'::text check (status in ('Pending', 'Won', 'Lost', 'Completed', 'Inactive', 'Legacy')),
   version integer default 1 not null,
@@ -121,6 +122,7 @@ create table if not exists public.settings (
   company_email text,
   default_tax_rate numeric(5,2) default 8.25 not null,
   default_markup_percent numeric(5,2) default 15.00 not null,
+  calculation_method text default 'markup'::text check (calculation_method in ('markup', 'margin')),
   company_logo text,
   theme text default 'light'::text check (theme in ('light', 'dark')),
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null

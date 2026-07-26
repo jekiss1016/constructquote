@@ -422,6 +422,14 @@
       </h2>
       <p>Configure company properties, logo graphics, backups, and user security policies.</p>
       
+      <h3>Global Calculation Method (Markup vs Margin)</h3>
+      <p>MyBidBook allows you to choose your default calculation formula for financial pricing across your organization. Adjacent to the <strong>Default Markup Percentage</strong> field, select either <strong>Markup</strong> or <strong>Margin</strong>:</p>
+      <ul>
+        <li><strong>Markup Formula:</strong> \(\text{Total} = \text{Cost} \times (1 + \text{Rate})\). (Example @ 10%: $1,000 &times; 1.10 = $1,100.00).</li>
+        <li><strong>Margin Formula:</strong> \(\text{Total} = \frac{\text{Cost}}{1 - \text{Rate}}\). (Example @ 10%: $1,000 / 0.90 = $1,111.11).</li>
+      </ul>
+      <p>Toggling the calculation method triggers a confirmation prompt. Once confirmed, all newly created quotes and line items will compute totals using the selected formula. Customer default rates preserve their stored numerical values while using the new formula, and existing historical quotes permanently retain their original calculation method.</p>
+
       <h3>Subscription & Billing</h3>
       <p>Under the Settings page, you can manage your MyBidBook subscription plan. The Subscription & Billing widget displays your current plan tier and status. If you are on a Trial, you can upgrade to a Pro Monthly or Pro Annual subscription. If you are already on a Pro plan, you can access the Customer Portal to manage your billing details, download invoices, or change your plan securely.</p>
 
