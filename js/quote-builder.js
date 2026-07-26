@@ -989,8 +989,9 @@ function setupBuilderListeners() {
               taxInput.value = '';
               currentQuote.taxRate = 0;
             } else {
-              taxInput.value = settings.defaultTaxRate || 0;
-              currentQuote.taxRate = settings.defaultTaxRate || 0;
+              const defaultTax = (c.defaultTaxRate !== undefined && c.defaultTaxRate > 0) ? c.defaultTaxRate : (settings.defaultTaxRate || 0);
+              taxInput.value = defaultTax;
+              currentQuote.taxRate = defaultTax;
             }
           }
 
@@ -1278,9 +1279,25 @@ function setupBuilderListeners() {
         return;
       }
 
-      if (!currentQuote.taxPlusApplicable && !isTaxRateEdited) {
-        if (!confirm(`You have not modified the sales tax rate. Are you sure you want to save with the current tax rate of ${currentQuote.taxRate}%?`)) {
-          return;
+      if (!currentQuote.taxPlusApplicable) {
+        const settings = await getSettings();
+        let expectedTaxRate = settings.defaultTaxRate || 0;
+        if (currentQuote.customerId) {
+          const customers = await getCustomers();
+          const c = customers.find(cust => cust.id === currentQuote.customerId);
+          if (c && c.defaultTaxRate !== undefined && c.defaultTaxRate > 0) {
+            expectedTaxRate = c.defaultTaxRate;
+          }
+        }
+
+        if (currentQuote.taxRate === 0 || isNaN(currentQuote.taxRate)) {
+          if (!confirm('Sales tax rate is set to 0%. Are you sure you want to save with 0% sales tax?')) {
+            return;
+          }
+        } else if (currentQuote.taxRate !== expectedTaxRate) {
+          if (!confirm(`The sales tax rate (${currentQuote.taxRate}%) does not match the default rate (${expectedTaxRate}%). Are you sure you want to save with ${currentQuote.taxRate}%?`)) {
+            return;
+          }
         }
       }
 
