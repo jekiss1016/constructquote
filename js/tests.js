@@ -1028,27 +1028,45 @@ async function runTestSuite() {
     log('Global Calculation Method tested successfully!', 'success');
 
     // ----------------------------------------------------
-    // TEST 15: System Default Labor Category & Labor-Only Form Hiding
+    // TEST 15: Category Badges, Renaming Rules & Labor Form Hiding
     // ----------------------------------------------------
-    createTestCard('15. System Default Labor Category & Labor-Only Form Hiding');
-    const stepNavCatalog = addStep('Navigating to Product Catalog');
+    createTestCard('15. Category Badges, Renaming Rules & Labor Form Hiding');
+    const stepNavCatalog = addStep('Navigating to Product Catalog & Rendering Categories');
     
     doc.querySelector('.nav-item[data-target="catalog-view"]').click();
     await wait(500);
+    const catalogModule = await win.eval(`import('/js/catalog.js?v=${version}')`);
+    const dbModule = await win.eval(`import('/js/db.js?v=${version}')`);
+    await catalogModule.renderCategoryList();
     updateStepStatus(stepNavCatalog, 'success');
 
-    const stepLaborCategoryCheck = addStep('Verifying Default "Labor" Category in Dropdown');
-    const catSelectEl = doc.getElementById('product-form-category');
-    const catalogModule = await win.eval(`import('/js/catalog.js?v=${version}')`);
-    await catalogModule.populateCategoryDropdowns();
-
-    const options = Array.from(doc.querySelectorAll('#product-form-category option')).map(o => o.value);
-    if (!options.some(opt => opt.toLowerCase() === 'labor')) {
-      throw new Error('Default "Labor" category missing from product form category select dropdown');
+    const stepBadgesCheck = addStep('Verifying System Default Badges for "Category 1" and "Labor"');
+    const catListHtml = doc.getElementById('catalog-category-list').innerHTML;
+    if (!catListHtml.includes('Category 1') || !catListHtml.includes('Labor')) {
+      throw new Error('System default categories "Category 1" or "Labor" missing from category list');
     }
-    updateStepStatus(stepLaborCategoryCheck, 'success');
+    if (!catListHtml.includes('System Default')) {
+      throw new Error('System Default badge missing from category list UI');
+    }
+    updateStepStatus(stepBadgesCheck, 'success');
+
+    const stepRenamingRulesCheck = addStep('Verifying Category 1 is Editable and Labor is Protected');
+    const dbCategories = await dbModule.getCategories();
+    if (dbCategories.some(c => c.toLowerCase() === 'category 1')) {
+      const renameRes = await dbModule.renameCategory('Category 1', 'Category 1');
+      if (renameRes.error && renameRes.error.includes('cannot be renamed')) {
+        throw new Error('Category 1 should be editable but was blocked by renameCategory');
+      }
+    }
+    const laborRenameRes = await dbModule.renameCategory('Labor', 'New Labor Name');
+    if (laborRenameRes.success) {
+      throw new Error('System category Labor was renamed, but it must be protected');
+    }
+    updateStepStatus(stepRenamingRulesCheck, 'success');
 
     const stepLaborFieldHiding = addStep('Verifying Material Price Hiding when "Labor" Category is Selected');
+    const catSelectEl = doc.getElementById('product-form-category');
+    await catalogModule.populateCategoryDropdowns();
     catSelectEl.value = 'Labor';
     catSelectEl.dispatchEvent(new win.Event('change', { bubbles: true }));
     await wait(200);
@@ -1060,7 +1078,7 @@ async function runTestSuite() {
     updateStepStatus(stepLaborFieldHiding, 'success');
 
     endActiveTest(true);
-    log('System Default Labor Category tested successfully!', 'success');
+    log('Category Badges, Renaming Rules & Labor Form Hiding tested successfully!', 'success');
 
     log('==================================================');
     log(` TEST SUITE COMPLETE: ${passCount} PASSED, ${failCount} FAILED`, 'success');
