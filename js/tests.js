@@ -603,20 +603,29 @@ async function runTestSuite() {
     // Check markup rate and tax rates
     const markupRate = parseFloat(doc.querySelector('#builder-markup').value) || 0;
     const taxRate = parseFloat(doc.querySelector('#builder-tax').value) || 0;
+    const isMarginMode = (doc.querySelector('#builder-markup-label')?.textContent || '').includes('Margin');
     
     const matTotal = 0.00;
     const labTotal = 500.00;
-    const markupExpected = (matTotal + labTotal) * (markupRate / 100);
-    const subtotalExpected = matTotal + labTotal + markupExpected; // Combined Subtotal (Material + Labor + Markup)
-    const taxableExpected = subtotalExpected;
-    const taxExpected = taxableExpected * (taxRate / 100);
-    const grandTotalExpected = taxableExpected + taxExpected;
+    const costTotal = matTotal + labTotal;
+    
+    let subtotalExpected = 0;
+    if (isMarginMode) {
+      const safeRate = Math.min(markupRate / 100, 0.9999);
+      subtotalExpected = safeRate < 1 ? costTotal / (1 - safeRate) : 0;
+    } else {
+      subtotalExpected = costTotal * (1 + markupRate / 100);
+    }
+    
+    const isPlusTaxes = doc.querySelector('#builder-tax-plus-applicable')?.checked || false;
+    const taxExpected = isPlusTaxes ? 0 : subtotalExpected * (taxRate / 100);
+    const grandTotalExpected = subtotalExpected + taxExpected;
     
     // Fetch values from DOM
     const subtotalDom = parseFloat(doc.querySelector('#builder-summary-subtotal').textContent.replace(/[^0-9.]/g, ''));
     const grandTotalDom = parseFloat(doc.querySelector('#builder-summary-total').textContent.replace(/[^0-9.]/g, ''));
     
-    log(`Expected Subtotal: $${subtotalExpected.toFixed(2)} | DOM Subtotal: $${subtotalDom.toFixed(2)}`);
+    log(`Calculation Method: ${isMarginMode ? 'Margin' : 'Markup'} | Expected Subtotal: $${subtotalExpected.toFixed(2)} | DOM Subtotal: $${subtotalDom.toFixed(2)}`);
     log(`Expected Grand Total: $${grandTotalExpected.toFixed(2)} | DOM Grand Total: $${grandTotalDom.toFixed(2)}`);
     
     if (Math.abs(subtotalDom - subtotalExpected) > 0.05 || Math.abs(grandTotalDom - grandTotalExpected) > 0.05) {
