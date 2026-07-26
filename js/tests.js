@@ -983,15 +983,15 @@ async function runTestSuite() {
     
     endActiveTest(true);
     // ----------------------------------------------------
-    // TEST: Markup vs Margin Calculation Method Toggle & Formulas
+    // TEST 14: Markup vs Margin Calculation Method Toggle & Formulas
     // ----------------------------------------------------
-    startTestCard('Global Calculation Method (Markup vs Margin) Verification');
+    createTestCard('14. Global Calculation Method (Markup vs Margin)');
     const stepCalcMethod = addStep('Verifying Settings Radio Group and Example Helper Text');
     
     // Navigate to settings view
     const navSettings = doc.querySelector('.nav-item[data-target="settings-view"]');
     if (navSettings) navSettings.click();
-    await sleep(500);
+    await wait(500);
 
     const markupRadio = doc.querySelector('input[name="settings-calc-method"][value="markup"]');
     const marginRadio = doc.querySelector('input[name="settings-calc-method"][value="margin"]');

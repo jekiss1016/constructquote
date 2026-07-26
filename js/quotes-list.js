@@ -633,7 +633,7 @@ export async function renderQuoteDetails(id) {
       paperTaxRow.style.display = 'table-row';
       paperTaxLabelWrapper.innerHTML = 'Sales Tax (<span id="paper-tax-label">0</span>%):';
       document.getElementById('paper-tax-label').textContent = quote.taxRate;
-      paperTaxAmount.textContent = formatCurrency(taxVal);
+      paperTaxAmount.textContent = formatCurrency(qTotals.taxVal);
       paperTaxAmount.style.fontStyle = 'normal';
       paperTaxAmount.style.fontWeight = 'normal';
     } else {
@@ -641,7 +641,7 @@ export async function renderQuoteDetails(id) {
     }
   }
 
-  document.getElementById('paper-total').textContent = formatCurrency(total);
+  document.getElementById('paper-total').textContent = formatCurrency(qTotals.total);
   
   const paperSigCoName = document.getElementById('paper-sig-co-name');
   if (paperSigCoName) {
