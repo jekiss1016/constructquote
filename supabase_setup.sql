@@ -163,7 +163,8 @@ begin
 
     -- Seed default categories for this company
     insert into public.categories (company_id, name) values
-      (new_company_id, 'Category 1');
+      (new_company_id, 'Category 1'),
+      (new_company_id, 'Labor');
 
     -- Insert profile as owner
     insert into public.profiles (id, company_id, role, email)
@@ -499,7 +500,8 @@ BEGIN
 
     -- Seed default categories for this company
     INSERT INTO public.categories (company_id, name) VALUES
-      (new_company_id, 'Category 1');
+      (new_company_id, 'Category 1'),
+      (new_company_id, 'Labor');
 
     -- Insert profile as owner
     INSERT INTO public.profiles (id, company_id, role, email)

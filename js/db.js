@@ -1,7 +1,7 @@
 // Database management using Supabase Cloud & LocalStorage fallbacks
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { showToast } from './utils.js?v=3.0.52';
-import { isOffline, updateOfflineCache, getOfflineQuotes, getOfflineCustomers, syncOfflinePhotoQueue, enqueueOfflinePhoto } from './offline-cache.js?v=3.0.52';
+import { showToast } from './utils.js?v=3.0.53';
+import { isOffline, updateOfflineCache, getOfflineQuotes, getOfflineCustomers, syncOfflinePhotoQueue, enqueueOfflinePhoto } from './offline-cache.js?v=3.0.53';
 
 const KEYS = {
   SUPABASE_CONFIG: 'cq_supabase_config'
@@ -375,9 +375,11 @@ export async function getCategories() {
   console.log('getCategories -> Querying categories table via rawDbQuery...');
   const data = await rawDbQuery('categories', `company_id=eq.${currentUserProfile.company_id}&order=name.asc`);
   console.log('getCategories -> Categories fetched. Data length:', data ? data.length : 0);
-  if (!data) return [];
-
-  return data.map(c => c.name);
+  let list = data ? data.map(c => c.name) : [];
+  if (!list.some(c => c.toLowerCase() === 'labor')) {
+    list.push('Labor');
+  }
+  return list;
 }
 
 export async function saveCategory(categoryName) {
@@ -396,6 +398,9 @@ export async function saveCategory(categoryName) {
 
 export async function deleteCategory(categoryName) {
   if (!currentUserProfile) return { success: false, error: 'Not authenticated' };
+  if ((categoryName || '').toLowerCase() === 'labor') {
+    return { success: false, error: "System default category 'Labor' cannot be deleted." };
+  }
   
   const { error } = await rawDbWrite(
     'categories', 
@@ -410,6 +415,9 @@ export async function deleteCategory(categoryName) {
 
 export async function renameCategory(oldName, newName) {
   if (!currentUserProfile) return { success: false, error: 'Not authenticated' };
+  if ((oldName || '').toLowerCase() === 'labor') {
+    return { success: false, error: "System default category 'Labor' cannot be renamed." };
+  }
   
   const oldTrimmed = oldName.trim();
   const newTrimmed = newName.trim();

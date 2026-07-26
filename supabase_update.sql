@@ -14,6 +14,11 @@ UPDATE public.settings SET calculation_method = 'markup' WHERE calculation_metho
 ALTER TABLE public.quotes ADD COLUMN IF NOT EXISTS calculation_method VARCHAR(10) DEFAULT 'markup';
 UPDATE public.quotes SET calculation_method = 'markup' WHERE calculation_method IS NULL;
 
+-- Ensure default 'Labor' category exists for all companies
+INSERT INTO public.categories (company_id, name)
+SELECT id, 'Labor' FROM public.companies
+WHERE id NOT IN (SELECT company_id FROM public.categories WHERE lower(name) = 'labor');
+
 -- Create quote email logs table
 CREATE TABLE IF NOT EXISTS public.quote_email_logs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

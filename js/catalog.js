@@ -1,7 +1,7 @@
 // Product Catalog management controller
-import { getProducts, getCategories, saveProduct, deleteProduct, getProductById, saveCategory, deleteCategory, renameCategory, getQuotes, getCurrentUserProfile } from './db.js?v=3.0.52';
-import { formatCurrency, showToast } from './utils.js?v=3.0.52';
-import { checkOfflineAction } from './offline-cache.js?v=3.0.52';
+import { getProducts, getCategories, saveProduct, deleteProduct, getProductById, saveCategory, deleteCategory, renameCategory, getQuotes, getCurrentUserProfile } from './db.js?v=3.0.53';
+import { formatCurrency, showToast } from './utils.js?v=3.0.53';
+import { checkOfflineAction } from './offline-cache.js?v=3.0.53';
 
 
 let activeSearchQuery = '';
@@ -126,24 +126,32 @@ export async function renderCategoryList() {
   const products = await getProducts();
 
   catListContainer.innerHTML = categories.map(cat => {
-    // Check if any product matches this category name (case-insensitive)
+    const isLabor = cat.toLowerCase() === 'labor';
     const hasProducts = products.some(p => p.category && p.category.toLowerCase() === cat.toLowerCase());
-    const deleteBtn = isViewer ? '' : (hasProducts ? `
-      <span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">Locked</span>
-    ` : `
-      <div style="display: flex; gap: 0.25rem;">
-        <button type="button" class="item-delete-btn edit-category-btn" data-category="${escapeHtml(cat)}" style="padding: 0.15rem;" title="Rename Category">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-          </svg>
-        </button>
-        <button type="button" class="item-delete-btn delete-category-btn" data-category="${escapeHtml(cat)}" style="padding: 0.15rem;" title="Delete Category">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
-        </button>
-      </div>
-    `);
+    
+    let deleteBtn = '';
+    if (isViewer) {
+      deleteBtn = '';
+    } else if (isLabor) {
+      deleteBtn = `<span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">System Default</span>`;
+    } else if (hasProducts) {
+      deleteBtn = `<span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">Locked</span>`;
+    } else {
+      deleteBtn = `
+        <div style="display: flex; gap: 0.25rem;">
+          <button type="button" class="item-delete-btn edit-category-btn" data-category="${escapeHtml(cat)}" style="padding: 0.15rem;" title="Rename Category">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+          </button>
+          <button type="button" class="item-delete-btn delete-category-btn" data-category="${escapeHtml(cat)}" style="padding: 0.15rem;" title="Delete Category">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="14" height="14">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        </div>
+      `;
+    }
 
     return `
       <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; background-color: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
@@ -163,6 +171,30 @@ export async function populateCategoryDropdowns() {
   dropdown.innerHTML = categories.map(c => `
     <option value="${escapeHtml(c)}">${escapeHtml(c)}</option>
   `).join('');
+
+  updateProductModalCategoryFields();
+}
+
+// Dynamically hide material fields for Labor-only product category
+export function updateProductModalCategoryFields() {
+  const catSelect = document.getElementById('product-form-category');
+  const priceGroup = document.getElementById('product-form-price-group');
+  const priceInput = document.getElementById('product-form-price');
+  const nameLabel = document.getElementById('product-form-name-label');
+  
+  if (!catSelect || !priceGroup || !priceInput) return;
+  
+  const isLabor = (catSelect.value || '').toLowerCase() === 'labor';
+  if (isLabor) {
+    priceGroup.style.display = 'none';
+    priceInput.removeAttribute('required');
+    priceInput.value = '0.00';
+    if (nameLabel) nameLabel.innerHTML = 'Labor Task Name <span style="color: var(--danger);">*</span>';
+  } else {
+    priceGroup.style.display = 'block';
+    priceInput.setAttribute('required', 'required');
+    if (nameLabel) nameLabel.innerHTML = 'Product Name <span style="color: var(--danger);">*</span>';
+  }
 }
 
 let isCatalogListenersSetup = false;
@@ -219,8 +251,14 @@ function setupCatalogListeners() {
       document.getElementById('product-form-id').value = '';
       document.getElementById('product-modal-title').textContent = 'Add Catalog Product';
       await populateCategoryDropdowns();
+      updateProductModalCategoryFields();
       modal.classList.add('active');
     });
+  }
+
+  const catSelect = document.getElementById('product-form-category');
+  if (catSelect) {
+    catSelect.addEventListener('change', updateProductModalCategoryFields);
   }
 
   const closeModal = () => modal.classList.remove('active');
@@ -238,12 +276,15 @@ function setupCatalogListeners() {
         return;
       }
 
+      const selectedCategory = document.getElementById('product-form-category').value;
+      const isLaborCategory = (selectedCategory || '').toLowerCase() === 'labor';
+
       const product = {
         id: document.getElementById('product-form-id').value || null,
         name: document.getElementById('product-form-name').value,
-        category: document.getElementById('product-form-category').value,
+        category: selectedCategory,
         uom: document.getElementById('product-form-uom').value,
-        price: parseFloat(document.getElementById('product-form-price').value) || 0,
+        price: isLaborCategory ? 0 : (parseFloat(document.getElementById('product-form-price').value) || 0),
         laborRate: parseFloat(document.getElementById('product-form-labor').value) || 0,
         description: document.getElementById('product-form-desc').value
       };
@@ -296,6 +337,7 @@ function setupCatalogListeners() {
           document.getElementById('product-form-price').value = p.price;
           document.getElementById('product-form-labor').value = p.laborRate || 0;
           document.getElementById('product-form-desc').value = p.description || '';
+          updateProductModalCategoryFields();
 
           document.getElementById('product-modal-title').textContent = isViewer ? 'View Catalog Product' : 'Edit Catalog Product';
           modal.classList.add('active');
@@ -365,6 +407,10 @@ function setupCatalogListeners() {
 
       if (btn && !isViewer) {
         const cat = btn.getAttribute('data-category');
+        if ((cat || '').toLowerCase() === 'labor') {
+          showToast("System default category 'Labor' cannot be renamed.", 'warning');
+          return;
+        }
         const newName = prompt(`Enter new name for category "${cat}":`, cat);
         if (newName === null) return; // Cancelled
         
@@ -394,6 +440,10 @@ function setupCatalogListeners() {
       const btn = e.target.closest('.delete-category-btn');
       if (btn && !isViewer) {
         const cat = btn.getAttribute('data-category');
+        if ((cat || '').toLowerCase() === 'labor') {
+          showToast("System default category 'Labor' cannot be deleted.", 'warning');
+          return;
+        }
         if (confirm(`Are you sure you want to delete the category "${cat}"? Products under this category will remain, but the category selector option will be removed.`)) {
           const res = await deleteCategory(cat);
           if (res.success) {

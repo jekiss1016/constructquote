@@ -1027,6 +1027,41 @@ async function runTestSuite() {
     endActiveTest(true);
     log('Global Calculation Method tested successfully!', 'success');
 
+    // ----------------------------------------------------
+    // TEST 15: System Default Labor Category & Labor-Only Form Hiding
+    // ----------------------------------------------------
+    createTestCard('15. System Default Labor Category & Labor-Only Form Hiding');
+    const stepNavCatalog = addStep('Navigating to Product Catalog');
+    
+    doc.querySelector('.nav-item[data-target="catalog-view"]').click();
+    await wait(500);
+    updateStepStatus(stepNavCatalog, 'success');
+
+    const stepLaborCategoryCheck = addStep('Verifying Default "Labor" Category in Dropdown');
+    const catSelectEl = doc.getElementById('product-form-category');
+    const catalogModule = await win.eval(`import('/js/catalog.js?v=${version}')`);
+    await catalogModule.populateCategoryDropdowns();
+
+    const options = Array.from(doc.querySelectorAll('#product-form-category option')).map(o => o.value);
+    if (!options.some(opt => opt.toLowerCase() === 'labor')) {
+      throw new Error('Default "Labor" category missing from product form category select dropdown');
+    }
+    updateStepStatus(stepLaborCategoryCheck, 'success');
+
+    const stepLaborFieldHiding = addStep('Verifying Material Price Hiding when "Labor" Category is Selected');
+    catSelectEl.value = 'Labor';
+    catSelectEl.dispatchEvent(new win.Event('change', { bubbles: true }));
+    await wait(200);
+
+    const priceGroupEl = doc.getElementById('product-form-price-group');
+    if (priceGroupEl && priceGroupEl.style.display !== 'none') {
+      throw new Error('Material price group was not hidden when selecting Labor category');
+    }
+    updateStepStatus(stepLaborFieldHiding, 'success');
+
+    endActiveTest(true);
+    log('System Default Labor Category tested successfully!', 'success');
+
     log('==================================================');
     log(` TEST SUITE COMPLETE: ${passCount} PASSED, ${failCount} FAILED`, 'success');
     log('==================================================');
