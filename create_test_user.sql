@@ -1,7 +1,6 @@
 -- ============================================================
 -- FIX & PRE-VERIFY TEST USER IN SUPABASE GOTRUE
 -- Run this script in the Supabase SQL Editor for Production or Dev
--- to ensure instance_id, cost-10 bcrypt password, and confirmation timestamps are set.
 -- ============================================================
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
@@ -26,7 +25,6 @@ BEGIN
       email,
       encrypted_password,
       email_confirmed_at,
-      confirmed_at,
       raw_app_meta_data,
       raw_user_meta_data,
       created_at,
@@ -41,23 +39,21 @@ BEGIN
       v_email,
       crypt(v_password, gen_salt('bf', 10)),
       now(),
-      now(),
       '{"provider":"email","providers":["email"]}'::jsonb,
       '{}'::jsonb,
       now(),
       now(),
       FALSE
     );
-    RAISE NOTICE 'Inserted new user % with instance_id and confirmed_at', v_email;
+    RAISE NOTICE 'Inserted new user % with instance_id and email_confirmed_at', v_email;
   ELSE
-    -- Fix existing user record attributes required by GoTrue
+    -- Update existing user attributes required by GoTrue (confirmed_at is a generated column)
     UPDATE auth.users
     SET instance_id = '00000000-0000-0000-0000-000000000000'::uuid,
         aud = 'authenticated',
         role = 'authenticated',
         encrypted_password = crypt(v_password, gen_salt('bf', 10)),
         email_confirmed_at = COALESCE(email_confirmed_at, now()),
-        confirmed_at = COALESCE(confirmed_at, now()),
         raw_app_meta_data = '{"provider":"email","providers":["email"]}'::jsonb,
         updated_at = now(),
         is_sso_user = FALSE,
