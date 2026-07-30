@@ -1,7 +1,7 @@
 // Database management using Supabase Cloud & LocalStorage fallbacks
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { showToast } from './utils.js?v=3.0.62';
-import { isOffline, updateOfflineCache, getOfflineQuotes, getOfflineCustomers, syncOfflinePhotoQueue, enqueueOfflinePhoto } from './offline-cache.js?v=3.0.62';
+import { showToast } from './utils.js?v=3.0.63';
+import { isOffline, updateOfflineCache, getOfflineQuotes, getOfflineCustomers, syncOfflinePhotoQueue, enqueueOfflinePhoto } from './offline-cache.js?v=3.0.63';
 
 const KEYS = {
   SUPABASE_CONFIG: 'cq_supabase_config'
@@ -9,15 +9,18 @@ const KEYS = {
 
 
 const DEFAULT_SETTINGS = {
-  companyName: 'MyBidBook Pro Ltd.',
-  companyAddress: '100 Contractor Plaza, Suite A, Seattle, WA 98101',
-  companyPhone: '(206) 555-0199',
-  companyEmail: 'billing@mybidbook.com',
-  defaultTaxRate: 8.8,
-  defaultMarkupPercent: 15,
+  companyName: 'Enter Your Company Name Here',
+  companyAddress: '12345 My Business Address Here',
+  companyPhone: '206-555-5555',
+  companyEmail: 'contact@mycompany.com',
+  defaultTaxRate: 10.0,
+  defaultMarkupPercent: 20.0,
   calculationMethod: 'markup',
   companyLogo: '',
-  quoteEmailBodyDefault: '',
+  theme: 'light',
+  defaultTermsNotes: 'Default payment terms, validations, etc.',
+  defaultTaxPlusApplicable: false,
+  quoteEmailBodyDefault: 'Default email body text when sending quotes to customers.',
   schedulingConfig: { workdays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], weekend_days: [0, 6], holidays: [], custom_workdays: [] }
 };
 
