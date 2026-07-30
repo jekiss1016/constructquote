@@ -19,9 +19,9 @@ function walkDir(dir, callback) {
 
 walkDir('.', (filePath) => {
     let content = fs.readFileSync(filePath, 'utf8');
-    let newContent = content.replace(/\?v=[\d\.]+/g, '?v=3.0.57');
+    let newContent = content.replace(/\?v=[\d\.]+/g, '?v=3.0.58');
     if (filePath.endsWith('index.html')) {
-        newContent = newContent.replace(/v3\.0\.\d+/g, 'v3.0.57');
+        newContent = newContent.replace(/v3\.0\.\d+/g, 'v3.0.58');
     }
     if (content !== newContent) {
         fs.writeFileSync(filePath, newContent, 'utf8');
