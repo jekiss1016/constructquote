@@ -45,6 +45,19 @@ export function showToast(message, type = 'success') {
   const container = document.getElementById('toast-container');
   if (!container) return;
 
+  let textContent = '';
+  if (typeof message === 'string') {
+    textContent = message.trim();
+  } else if (message && typeof message === 'object') {
+    textContent = message.message || message.error_description || message.msg || message.error || '';
+  }
+
+  if (!textContent || textContent === 'undefined' || textContent === 'null') {
+    textContent = type === 'danger'
+      ? 'An unexpected error occurred. Please try again or contact support.'
+      : (type === 'warning' ? 'Notice' : 'Operation completed.');
+  }
+
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
   
@@ -60,7 +73,7 @@ export function showToast(message, type = 'success') {
 
   toast.innerHTML = `
     ${icon}
-    <div style="flex-grow: 1;">${message}</div>
+    <div style="flex-grow: 1;">${textContent}</div>
   `;
 
   container.appendChild(toast);

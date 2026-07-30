@@ -565,18 +565,28 @@ function showAuthModal() {
         }
         showToast('Provisioning tenant environment...');
         const redirectUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '') + '/verified.html';
-        const { data, error } = await sb.auth.signUp({ 
-          email, 
-          password,
-          options: {
-            emailRedirectTo: redirectUrl
+        try {
+          const { data, error } = await sb.auth.signUp({ 
+            email, 
+            password,
+            options: {
+              emailRedirectTo: redirectUrl
+            }
+          });
+          if (error) {
+            console.error('Registration error:', error);
+            let errMsg = error.message || error.error_description || error.msg;
+            if (error.status === 500 || !errMsg) {
+              errMsg = 'Registration server error (500). Please check if your account is already created, try logging in, or contact support.';
+            }
+            showToast(errMsg, 'danger');
+          } else {
+            showToast('Signup successful! Check your email to verify and activate your account.', 'success');
+            setTab('login');
           }
-        });
-        if (error) {
-          showToast(error.message, 'danger');
-        } else {
-          showToast('Signup successful! Check your email to verify and activate your account.', 'success');
-          setTab('login');
+        } catch (err) {
+          console.error('Registration exception:', err);
+          showToast(err.message || 'An error occurred during registration. Please try again.', 'danger');
         }
       }
     });
