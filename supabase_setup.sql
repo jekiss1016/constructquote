@@ -524,7 +524,92 @@ EXCEPTION WHEN OTHERS THEN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 2. Define dynamic RLS helper functions and secure RPC data fetchers (recursion-free)
+-- 2. Define server-side profile & company auto-provisioning RPC function
+CREATE OR REPLACE FUNCTION public.create_profile_if_missing()
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_user_id uuid := auth.uid();
+  v_email text;
+  v_company_id uuid;
+  v_role text;
+  v_profile jsonb;
+BEGIN
+  IF v_user_id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Not authenticated');
+  END IF;
+
+  SELECT email INTO v_email FROM auth.users WHERE id = v_user_id;
+
+  SELECT company_id, role INTO v_company_id, v_role
+  FROM public.profiles
+  WHERE id = v_user_id;
+
+  IF v_company_id IS NULL THEN
+    SELECT company_id, role INTO v_company_id, v_role
+    FROM public.company_invitations
+    WHERE LOWER(email) = LOWER(v_email)
+    LIMIT 1;
+
+    IF v_company_id IS NOT NULL THEN
+      INSERT INTO public.profiles (id, company_id, role, email)
+      VALUES (v_user_id, v_company_id, COALESCE(v_role, 'editor'), v_email)
+      ON CONFLICT (id) DO UPDATE SET
+        company_id = EXCLUDED.company_id,
+        role = EXCLUDED.role,
+        email = EXCLUDED.email;
+
+      DELETE FROM public.company_invitations WHERE LOWER(email) = LOWER(v_email);
+    ELSE
+      INSERT INTO public.companies (name)
+      VALUES ('New Contractor Co.')
+      RETURNING id INTO v_company_id;
+
+      v_role := 'owner';
+
+      INSERT INTO public.settings (company_id, company_name)
+      VALUES (v_company_id, 'New Contractor Co.')
+      ON CONFLICT (company_id) DO NOTHING;
+
+      INSERT INTO public.categories (company_id, name) VALUES
+        (v_company_id, 'Category 1'),
+        (v_company_id, 'Labor')
+      ON CONFLICT DO NOTHING;
+
+      INSERT INTO public.profiles (id, company_id, role, email)
+      VALUES (v_user_id, v_company_id, v_role, v_email)
+      ON CONFLICT (id) DO UPDATE SET
+        company_id = EXCLUDED.company_id,
+        role = EXCLUDED.role,
+        email = EXCLUDED.email;
+    END IF;
+  ELSE
+    INSERT INTO public.settings (company_id, company_name)
+    VALUES (v_company_id, 'New Contractor Co.')
+    ON CONFLICT (company_id) DO NOTHING;
+  END IF;
+
+  SELECT row_to_json(p)::jsonb INTO v_profile
+  FROM (
+    SELECT pr.*, json_build_object(
+      'subscription_level', COALESCE(c.subscription_level, 'trial'),
+      'subscription_status', COALESCE(c.subscription_status, 'active'),
+      'is_active', COALESCE(c.is_active, true)
+    ) as companies
+    FROM public.profiles pr
+    LEFT JOIN public.companies c ON c.id = pr.company_id
+    WHERE pr.id = v_user_id
+  ) p;
+
+  RETURN jsonb_build_object('success', true, 'profile', v_profile);
+EXCEPTION WHEN OTHERS THEN
+  RETURN jsonb_build_object('success', false, 'error', SQLERRM);
+END;
+$$;
+
+-- 3. Define dynamic RLS helper functions and secure RPC data fetchers (recursion-free)
 CREATE OR REPLACE FUNCTION public.is_sysadmin()
 RETURNS boolean AS $$
   SELECT EXISTS (

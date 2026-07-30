@@ -1,7 +1,7 @@
 // Database management using Supabase Cloud & LocalStorage fallbacks
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { showToast } from './utils.js?v=3.0.58';
-import { isOffline, updateOfflineCache, getOfflineQuotes, getOfflineCustomers, syncOfflinePhotoQueue, enqueueOfflinePhoto } from './offline-cache.js?v=3.0.58';
+import { showToast } from './utils.js?v=3.0.59';
+import { isOffline, updateOfflineCache, getOfflineQuotes, getOfflineCustomers, syncOfflinePhotoQueue, enqueueOfflinePhoto } from './offline-cache.js?v=3.0.59';
 
 const KEYS = {
   SUPABASE_CONFIG: 'cq_supabase_config'
@@ -1021,6 +1021,13 @@ export async function getSettings() {
 export async function saveSettings(settingsObj) {
   if (!currentUserProfile) return { success: false, error: 'Not authenticated' };
   
+  if (!currentUserProfile.company_id || (typeof currentUserProfile.company_id === 'string' && currentUserProfile.company_id.startsWith('temp-'))) {
+    const refreshed = await loadUserSession();
+    if (!refreshed || !refreshed.company_id || (typeof refreshed.company_id === 'string' && refreshed.company_id.startsWith('temp-'))) {
+      return { success: false, error: 'Your user company profile is not initialized in database. Please re-login or run the setup SQL script.' };
+    }
+  }
+
   const mapped = {};
   if (settingsObj.companyName !== undefined) mapped.company_name = settingsObj.companyName;
   if (settingsObj.companyAddress !== undefined) mapped.company_address = settingsObj.companyAddress;
