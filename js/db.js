@@ -1,7 +1,7 @@
 // Database management using Supabase Cloud & LocalStorage fallbacks
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { showToast } from './utils.js?v=3.0.59';
-import { isOffline, updateOfflineCache, getOfflineQuotes, getOfflineCustomers, syncOfflinePhotoQueue, enqueueOfflinePhoto } from './offline-cache.js?v=3.0.59';
+import { showToast } from './utils.js?v=3.0.60';
+import { isOffline, updateOfflineCache, getOfflineQuotes, getOfflineCustomers, syncOfflinePhotoQueue, enqueueOfflinePhoto } from './offline-cache.js?v=3.0.60';
 
 const KEYS = {
   SUPABASE_CONFIG: 'cq_supabase_config'
@@ -997,6 +997,20 @@ export async function getSettings() {
   const data = await rawDbQuery('settings', `company_id=eq.${currentUserProfile.company_id}`);
   console.log('getSettings -> Settings fetched. Data length:', data ? data.length : 0);
   if (!data || data.length === 0) {
+    if (currentUserProfile.role === 'owner' || currentUserProfile.role === 'sysadmin' || currentUserProfile.role === 'editor') {
+      try {
+        const seedPayload = {
+          company_id: currentUserProfile.company_id,
+          company_name: 'New Contractor Co.',
+          calculation_method: 'markup',
+          default_tax_rate: 8.25,
+          default_markup_percent: 15.00
+        };
+        await rawDbWrite('settings', 'POST', seedPayload);
+      } catch (e) {
+        console.warn('Auto-seeding initial settings row error:', e);
+      }
+    }
     return DEFAULT_SETTINGS;
   }
   const row = data[0];
@@ -1042,6 +1056,11 @@ export async function saveSettings(settingsObj) {
   if (settingsObj.defaultTaxPlusApplicable !== undefined) mapped.default_tax_plus_applicable = settingsObj.defaultTaxPlusApplicable;
   if (settingsObj.quoteEmailBodyDefault !== undefined) mapped.quote_email_body_default = settingsObj.quoteEmailBodyDefault;
   
+  if (!mapped.company_name) {
+    const currentSettings = await getSettings();
+    mapped.company_name = (currentSettings && currentSettings.companyName) ? currentSettings.companyName : 'New Contractor Co.';
+  }
+
   mapped.company_id = currentUserProfile.company_id;
   
   const config = await getSupabaseConfig();
