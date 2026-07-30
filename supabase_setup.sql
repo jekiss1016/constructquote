@@ -484,7 +484,11 @@ BEGIN
   IF invited_company_id IS NOT NULL THEN
     -- Join inviting company
     INSERT INTO public.profiles (id, company_id, role, email)
-    VALUES (NEW.id, invited_company_id, invited_role, NEW.email);
+    VALUES (NEW.id, invited_company_id, invited_role, NEW.email)
+    ON CONFLICT (id) DO UPDATE SET
+      company_id = EXCLUDED.company_id,
+      role = EXCLUDED.role,
+      email = EXCLUDED.email;
     
     -- Remove the invitation record
     DELETE FROM public.company_invitations WHERE LOWER(email) = LOWER(NEW.email);
@@ -496,7 +500,8 @@ BEGIN
 
     -- Add settings for company
     INSERT INTO public.settings (company_id, company_name)
-    VALUES (new_company_id, 'New Contractor Co.');
+    VALUES (new_company_id, 'New Contractor Co.')
+    ON CONFLICT (company_id) DO NOTHING;
 
     -- Seed default categories for this company
     INSERT INTO public.categories (company_id, name) VALUES
@@ -505,9 +510,16 @@ BEGIN
 
     -- Insert profile as owner
     INSERT INTO public.profiles (id, company_id, role, email)
-    VALUES (NEW.id, new_company_id, 'owner', NEW.email);
+    VALUES (NEW.id, new_company_id, 'owner', NEW.email)
+    ON CONFLICT (id) DO UPDATE SET
+      company_id = EXCLUDED.company_id,
+      role = EXCLUDED.role,
+      email = EXCLUDED.email;
   END IF;
 
+  RETURN NEW;
+EXCEPTION WHEN OTHERS THEN
+  RAISE LOG 'Error in handle_new_user for user % (email %): %', NEW.id, NEW.email, SQLERRM;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
