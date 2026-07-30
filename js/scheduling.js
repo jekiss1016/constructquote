@@ -1,7 +1,7 @@
-import * as db from './db.js?v=3.0.63';
-import * as utils from './utils.js?v=3.0.63';
-import { SchedulingEngine } from './scheduling-engine.js?v=3.0.63';
-import { isOffline, checkOfflineAction } from './offline-cache.js?v=3.0.63';
+import * as db from './db.js?v=3.0.64';
+import * as utils from './utils.js?v=3.0.64';
+import { SchedulingEngine } from './scheduling-engine.js?v=3.0.64';
+import { isOffline, checkOfflineAction } from './offline-cache.js?v=3.0.64';
 
 let schedules = [];
 let companySettings = null;

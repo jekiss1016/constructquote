@@ -1,8 +1,41 @@
 -- ============================================================
 -- FIX MISSING PROFILES AND SETTINGS RPC & COMPLETE BACKFILL SCRIPT
 -- Run this script in the Supabase SQL Editor for Production and Dev.
--- Seeds complete initial default settings for all new & existing companies.
 -- ============================================================
+
+-- 0. SCHEMA ALIGNMENT (Ensure Production table columns match Dev 100%)
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS company_address text;
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS company_phone text;
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS company_email text;
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS default_tax_rate numeric(5,2) DEFAULT 10.00;
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS default_markup_percent numeric(5,2) DEFAULT 20.00;
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS calculation_method text DEFAULT 'markup';
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS company_logo text;
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS theme text DEFAULT 'light';
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS default_terms_notes text;
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS default_tax_plus_applicable boolean DEFAULT false;
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS quote_email_body_default text;
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS scheduling_config jsonb DEFAULT '{"workdays": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], "weekend_days": [0, 6], "holidays": [], "custom_workdays": []}'::jsonb;
+
+ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true NOT NULL;
+ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS subscription_level text DEFAULT 'trial';
+ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS subscription_status text DEFAULT 'active';
+ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS stripe_customer_id text;
+ALTER TABLE public.companies ADD COLUMN IF NOT EXISTS stripe_subscription_id text;
+
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS default_terms_notes text;
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS default_markup_percent numeric(5,2) DEFAULT 0;
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS default_tax_rate numeric(5,2) DEFAULT 0.00;
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS default_tax_plus_applicable boolean DEFAULT false;
+ALTER TABLE public.customers ADD COLUMN IF NOT EXISTS quote_email_body_default text;
+
+ALTER TABLE public.quotes ADD COLUMN IF NOT EXISTS calculation_method varchar(10) DEFAULT 'markup';
+ALTER TABLE public.quotes ADD COLUMN IF NOT EXISTS tax_plus_applicable boolean DEFAULT false;
+ALTER TABLE public.quotes ADD COLUMN IF NOT EXISTS schedule_tasks jsonb DEFAULT '[]'::jsonb;
+ALTER TABLE public.quotes ADD COLUMN IF NOT EXISTS schedule_settings jsonb DEFAULT '{}'::jsonb;
+
+ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_role_check;
+ALTER TABLE public.profiles ADD CONSTRAINT profiles_role_check CHECK (role IN ('sysadmin', 'owner', 'editor', 'viewer'));
 
 -- 1. Create or replace save_company_settings RPC function
 CREATE OR REPLACE FUNCTION public.save_company_settings(p_settings jsonb)
