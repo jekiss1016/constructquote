@@ -1,8 +1,6 @@
 -- ============================================================
 -- FIX MISSING PROFILES AND SETTINGS RPC & BACKFILL SCRIPT
 -- Run this script in the Supabase SQL Editor for Production and Dev.
--- This seeds calculation_method='markup' and default company settings
--- for all existing and newly provisioned companies.
 -- ============================================================
 
 -- 1. Create or replace create_profile_if_missing RPC function
@@ -90,6 +88,10 @@ EXCEPTION WHEN OTHERS THEN
 END;
 $$;
 
+-- Grant execution permission to authenticated users
+GRANT EXECUTE ON FUNCTION public.create_profile_if_missing() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.create_profile_if_missing() TO anon;
+
 -- 2. Backfill profiles and settings for any existing users in auth.users missing a profile or company
 DO $$
 DECLARE
@@ -130,3 +132,35 @@ BEGIN
   WHERE id NOT IN (SELECT company_id FROM public.settings)
   ON CONFLICT (company_id) DO NOTHING;
 END $$;
+
+-- 4. Update settings RLS policies for maximum resilience
+ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Select settings based on company" ON public.settings;
+CREATE POLICY "Select settings based on company" ON public.settings
+  FOR SELECT USING (
+    company_id = public.get_user_company_id()
+    OR public.is_sysadmin()
+    OR company_id IN (SELECT company_id FROM public.profiles WHERE id = auth.uid())
+  );
+
+DROP POLICY IF EXISTS "Insert settings based on company write access" ON public.settings;
+CREATE POLICY "Insert settings based on company write access" ON public.settings
+  FOR INSERT WITH CHECK (
+    public.is_sysadmin()
+    OR (company_id = public.get_user_company_id() AND public.has_write_access())
+    OR company_id IN (SELECT company_id FROM public.profiles WHERE id = auth.uid() AND role IN ('sysadmin', 'owner', 'editor'))
+  );
+
+DROP POLICY IF EXISTS "Update settings based on company write access" ON public.settings;
+CREATE POLICY "Update settings based on company write access" ON public.settings
+  FOR UPDATE USING (
+    public.is_sysadmin()
+    OR (company_id = public.get_user_company_id() AND public.has_write_access())
+    OR company_id IN (SELECT company_id FROM public.profiles WHERE id = auth.uid() AND role IN ('sysadmin', 'owner', 'editor'))
+  )
+  WITH CHECK (
+    public.is_sysadmin()
+    OR (company_id = public.get_user_company_id() AND public.has_write_access())
+    OR company_id IN (SELECT company_id FROM public.profiles WHERE id = auth.uid() AND role IN ('sysadmin', 'owner', 'editor'))
+  );

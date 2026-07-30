@@ -1,7 +1,7 @@
 // Database management using Supabase Cloud & LocalStorage fallbacks
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { showToast } from './utils.js?v=3.0.60';
-import { isOffline, updateOfflineCache, getOfflineQuotes, getOfflineCustomers, syncOfflinePhotoQueue, enqueueOfflinePhoto } from './offline-cache.js?v=3.0.60';
+import { showToast } from './utils.js?v=3.0.61';
+import { isOffline, updateOfflineCache, getOfflineQuotes, getOfflineCustomers, syncOfflinePhotoQueue, enqueueOfflinePhoto } from './offline-cache.js?v=3.0.61';
 
 const KEYS = {
   SUPABASE_CONFIG: 'cq_supabase_config'
@@ -994,24 +994,21 @@ export async function getSettings() {
   if (!sb || !currentUserProfile || !currentUserProfile.company_id) return DEFAULT_SETTINGS;
   
   console.log('getSettings -> Querying settings table via rawDbQuery...');
-  const data = await rawDbQuery('settings', `company_id=eq.${currentUserProfile.company_id}`);
+  let data = await rawDbQuery('settings', `company_id=eq.${currentUserProfile.company_id}`);
   console.log('getSettings -> Settings fetched. Data length:', data ? data.length : 0);
   if (!data || data.length === 0) {
     if (currentUserProfile.role === 'owner' || currentUserProfile.role === 'sysadmin' || currentUserProfile.role === 'editor') {
       try {
-        const seedPayload = {
-          company_id: currentUserProfile.company_id,
-          company_name: 'New Contractor Co.',
-          calculation_method: 'markup',
-          default_tax_rate: 8.25,
-          default_markup_percent: 15.00
-        };
-        await rawDbWrite('settings', 'POST', seedPayload);
+        console.log('getSettings -> Settings missing, invoking create_profile_if_missing RPC server-side...');
+        const { data: rpcRes, error: rpcErr } = await sb.rpc('create_profile_if_missing');
+        if (!rpcErr && rpcRes && rpcRes.success) {
+          data = await rawDbQuery('settings', `company_id=eq.${currentUserProfile.company_id}`);
+        }
       } catch (e) {
         console.warn('Auto-seeding initial settings row error:', e);
       }
     }
-    return DEFAULT_SETTINGS;
+    if (!data || data.length === 0) return DEFAULT_SETTINGS;
   }
   const row = data[0];
   
