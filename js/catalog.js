@@ -1,7 +1,7 @@
 // Product Catalog management controller
-import { getProducts, getCategories, saveProduct, deleteProduct, getProductById, saveCategory, deleteCategory, renameCategory, getQuotes, getCurrentUserProfile } from './db.js?v=3.0.61';
-import { formatCurrency, showToast } from './utils.js?v=3.0.61';
-import { checkOfflineAction } from './offline-cache.js?v=3.0.61';
+import { getProducts, getCategories, saveProduct, deleteProduct, getProductById, saveCategory, deleteCategory, renameCategory, getQuotes, getCurrentUserProfile } from './db.js?v=3.0.62';
+import { formatCurrency, showToast } from './utils.js?v=3.0.62';
+import { checkOfflineAction } from './offline-cache.js?v=3.0.62';
 
 
 let activeSearchQuery = '';

@@ -1,7 +1,7 @@
 // Database management using Supabase Cloud & LocalStorage fallbacks
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { showToast } from './utils.js?v=3.0.61';
-import { isOffline, updateOfflineCache, getOfflineQuotes, getOfflineCustomers, syncOfflinePhotoQueue, enqueueOfflinePhoto } from './offline-cache.js?v=3.0.61';
+import { showToast } from './utils.js?v=3.0.62';
+import { isOffline, updateOfflineCache, getOfflineQuotes, getOfflineCustomers, syncOfflinePhotoQueue, enqueueOfflinePhoto } from './offline-cache.js?v=3.0.62';
 
 const KEYS = {
   SUPABASE_CONFIG: 'cq_supabase_config'
@@ -1032,12 +1032,7 @@ export async function getSettings() {
 export async function saveSettings(settingsObj) {
   if (!currentUserProfile) return { success: false, error: 'Not authenticated' };
   
-  if (!currentUserProfile.company_id || (typeof currentUserProfile.company_id === 'string' && currentUserProfile.company_id.startsWith('temp-'))) {
-    const refreshed = await loadUserSession();
-    if (!refreshed || !refreshed.company_id || (typeof refreshed.company_id === 'string' && refreshed.company_id.startsWith('temp-'))) {
-      return { success: false, error: 'Your user company profile is not initialized in database. Please re-login or run the setup SQL script.' };
-    }
-  }
+  const sb = getSupabase();
 
   const mapped = {};
   if (settingsObj.companyName !== undefined) mapped.company_name = settingsObj.companyName;
@@ -1052,7 +1047,28 @@ export async function saveSettings(settingsObj) {
   if (settingsObj.defaultTermsNotes !== undefined) mapped.default_terms_notes = settingsObj.defaultTermsNotes;
   if (settingsObj.defaultTaxPlusApplicable !== undefined) mapped.default_tax_plus_applicable = settingsObj.defaultTaxPlusApplicable;
   if (settingsObj.quoteEmailBodyDefault !== undefined) mapped.quote_email_body_default = settingsObj.quoteEmailBodyDefault;
-  
+  if (settingsObj.schedulingConfig !== undefined) mapped.scheduling_config = settingsObj.schedulingConfig;
+
+  // Primary path: Use SECURITY DEFINER RPC function to update settings safely
+  if (sb) {
+    try {
+      console.log('saveSettings -> Calling save_company_settings RPC...');
+      const { data: rpcData, error: rpcErr } = await sb.rpc('save_company_settings', { p_settings: mapped });
+      if (!rpcErr && rpcData) {
+        if (rpcData.success) {
+          console.log('saveSettings -> RPC succeeded');
+          return { success: true };
+        }
+        if (rpcData.error) {
+          console.warn('saveSettings -> RPC returned error:', rpcData.error);
+        }
+      }
+    } catch (e) {
+      console.warn('save_company_settings RPC exception, falling back to REST:', e);
+    }
+  }
+
+  // Fallback path: REST API fetch
   if (!mapped.company_name) {
     const currentSettings = await getSettings();
     mapped.company_name = (currentSettings && currentSettings.companyName) ? currentSettings.companyName : 'New Contractor Co.';
