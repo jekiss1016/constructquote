@@ -498,10 +498,38 @@ BEGIN
     VALUES ('New Contractor Co.')
     RETURNING id INTO new_company_id;
 
-    -- Add settings for company
-    INSERT INTO public.settings (company_id, company_name)
-    VALUES (new_company_id, 'New Contractor Co.')
-    ON CONFLICT (company_id) DO NOTHING;
+    -- Add settings for company with full defaults
+    INSERT INTO public.settings (
+      company_id,
+      company_name,
+      company_address,
+      company_phone,
+      company_email,
+      default_tax_rate,
+      default_markup_percent,
+      calculation_method,
+      company_logo,
+      theme,
+      default_terms_notes,
+      default_tax_plus_applicable,
+      quote_email_body_default,
+      scheduling_config
+    ) VALUES (
+      new_company_id,
+      'Enter Your Company Name Here',
+      '12345 My Business Address Here',
+      '206-555-5555',
+      COALESCE(NEW.email, 'contact@mycompany.com'),
+      10.00,
+      20.00,
+      'markup',
+      '',
+      'light',
+      'Default payment terms, validations, etc.',
+      false,
+      'Default email body text when sending quotes to customers.',
+      '{"workdays": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], "weekend_days": [0, 6], "holidays": [], "custom_workdays": []}'::jsonb
+    ) ON CONFLICT (company_id) DO NOTHING;
 
     -- Seed default categories for this company
     INSERT INTO public.categories (company_id, name) VALUES

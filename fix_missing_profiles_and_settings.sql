@@ -1,6 +1,7 @@
 -- ============================================================
--- FIX MISSING PROFILES AND SETTINGS RPC & BACKFILL SCRIPT
+-- FIX MISSING PROFILES AND SETTINGS RPC & COMPLETE BACKFILL SCRIPT
 -- Run this script in the Supabase SQL Editor for Production and Dev.
+-- Seeds complete initial default settings for all new & existing companies.
 -- ============================================================
 
 -- 1. Create or replace save_company_settings RPC function
@@ -39,7 +40,7 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Insufficient permissions to update settings');
   END IF;
 
-  -- Upsert company settings
+  -- Upsert company settings with defaults
   INSERT INTO public.settings (
     company_id,
     company_name,
@@ -57,19 +58,19 @@ BEGIN
     scheduling_config
   ) VALUES (
     v_company_id,
-    COALESCE(p_settings->>'company_name', 'New Contractor Co.'),
-    p_settings->>'company_address',
-    p_settings->>'company_phone',
-    p_settings->>'company_email',
-    COALESCE((p_settings->>'default_tax_rate')::numeric, 0),
-    COALESCE((p_settings->>'default_markup_percent')::numeric, 0),
+    COALESCE(p_settings->>'company_name', 'Enter Your Company Name Here'),
+    COALESCE(p_settings->>'company_address', '12345 My Business Address Here'),
+    COALESCE(p_settings->>'company_phone', '206-555-5555'),
+    COALESCE(p_settings->>'company_email', 'contact@mycompany.com'),
+    COALESCE((p_settings->>'default_tax_rate')::numeric, 10.00),
+    COALESCE((p_settings->>'default_markup_percent')::numeric, 20.00),
     COALESCE(p_settings->>'calculation_method', 'markup'),
-    p_settings->>'company_logo',
+    COALESCE(p_settings->>'company_logo', ''),
     COALESCE(p_settings->>'theme', 'light'),
-    p_settings->>'default_terms_notes',
+    COALESCE(p_settings->>'default_terms_notes', 'Default payment terms, validations, etc.'),
     COALESCE((p_settings->>'default_tax_plus_applicable')::boolean, false),
-    p_settings->>'quote_email_body_default',
-    COALESCE(p_settings->'scheduling_config', '{}'::jsonb)
+    COALESCE(p_settings->>'quote_email_body_default', 'Default email body text when sending quotes to customers.'),
+    COALESCE(p_settings->'scheduling_config', '{"workdays": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], "weekend_days": [0, 6], "holidays": [], "custom_workdays": []}'::jsonb)
   )
   ON CONFLICT (company_id) DO UPDATE SET
     company_name = COALESCE(EXCLUDED.company_name, settings.company_name),
@@ -132,14 +133,42 @@ BEGIN
       DELETE FROM public.company_invitations WHERE LOWER(email) = LOWER(v_email);
     ELSE
       INSERT INTO public.companies (name)
-      VALUES ('New Contractor Co.')
+      VALUES ('Enter Your Company Name Here')
       RETURNING id INTO v_company_id;
 
       v_role := 'owner';
 
-      INSERT INTO public.settings (company_id, company_name, calculation_method, default_tax_rate, default_markup_percent)
-      VALUES (v_company_id, 'New Contractor Co.', 'markup', 8.25, 15.00)
-      ON CONFLICT (company_id) DO NOTHING;
+      INSERT INTO public.settings (
+        company_id,
+        company_name,
+        company_address,
+        company_phone,
+        company_email,
+        default_tax_rate,
+        default_markup_percent,
+        calculation_method,
+        company_logo,
+        theme,
+        default_terms_notes,
+        default_tax_plus_applicable,
+        quote_email_body_default,
+        scheduling_config
+      ) VALUES (
+        v_company_id,
+        'Enter Your Company Name Here',
+        '12345 My Business Address Here',
+        '206-555-5555',
+        COALESCE(v_email, 'contact@mycompany.com'),
+        10.00,
+        20.00,
+        'markup',
+        '',
+        'light',
+        'Default payment terms, validations, etc.',
+        false,
+        'Default email body text when sending quotes to customers.',
+        '{"workdays": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], "weekend_days": [0, 6], "holidays": [], "custom_workdays": []}'::jsonb
+      ) ON CONFLICT (company_id) DO NOTHING;
 
       INSERT INTO public.categories (company_id, name) VALUES
         (v_company_id, 'Category 1'),
@@ -154,9 +183,37 @@ BEGIN
         email = EXCLUDED.email;
     END IF;
   ELSE
-    INSERT INTO public.settings (company_id, company_name, calculation_method, default_tax_rate, default_markup_percent)
-    VALUES (v_company_id, 'New Contractor Co.', 'markup', 8.25, 15.00)
-    ON CONFLICT (company_id) DO NOTHING;
+    INSERT INTO public.settings (
+      company_id,
+      company_name,
+      company_address,
+      company_phone,
+      company_email,
+      default_tax_rate,
+      default_markup_percent,
+      calculation_method,
+      company_logo,
+      theme,
+      default_terms_notes,
+      default_tax_plus_applicable,
+      quote_email_body_default,
+      scheduling_config
+    ) VALUES (
+      v_company_id,
+      'Enter Your Company Name Here',
+      '12345 My Business Address Here',
+      '206-555-5555',
+      COALESCE(v_email, 'contact@mycompany.com'),
+      10.00,
+      20.00,
+      'markup',
+      '',
+      'light',
+      'Default payment terms, validations, etc.',
+      false,
+      'Default email body text when sending quotes to customers.',
+      '{"workdays": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], "weekend_days": [0, 6], "holidays": [], "custom_workdays": []}'::jsonb
+    ) ON CONFLICT (company_id) DO NOTHING;
   END IF;
 
   SELECT row_to_json(p)::jsonb INTO v_profile
@@ -177,71 +234,58 @@ EXCEPTION WHEN OTHERS THEN
 END;
 $$;
 
--- Grant permissions to RPC functions
+-- Grant execution permissions
 GRANT EXECUTE ON FUNCTION public.save_company_settings(jsonb) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.save_company_settings(jsonb) TO anon;
 GRANT EXECUTE ON FUNCTION public.create_profile_if_missing() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.create_profile_if_missing() TO anon;
 
--- 3. Backfill profiles and settings for any existing users in auth.users missing a profile or company
-DO $$
-DECLARE
-  r RECORD;
-  new_co_id uuid;
-BEGIN
-  FOR r IN 
-    SELECT u.id, u.email 
-    FROM auth.users u
-    LEFT JOIN public.profiles p ON p.id = u.id
-    WHERE p.id IS NULL OR p.company_id IS NULL
-  LOOP
-    INSERT INTO public.companies (name)
-    VALUES ('New Contractor Co.')
-    RETURNING id INTO new_co_id;
+-- 3. Seed/Backfill complete default settings rows for ALL companies currently missing a row in public.settings
+INSERT INTO public.settings (
+  company_id,
+  company_name,
+  company_address,
+  company_phone,
+  company_email,
+  default_tax_rate,
+  default_markup_percent,
+  calculation_method,
+  company_logo,
+  theme,
+  default_terms_notes,
+  default_tax_plus_applicable,
+  quote_email_body_default,
+  scheduling_config
+)
+SELECT 
+  id,
+  COALESCE(name, 'Enter Your Company Name Here'),
+  '12345 My Business Address Here',
+  '206-555-5555',
+  'contact@mycompany.com',
+  10.00,
+  20.00,
+  'markup',
+  '',
+  'light',
+  'Default payment terms, validations, etc.',
+  false,
+  'Default email body text when sending quotes to customers.',
+  '{"workdays": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], "weekend_days": [0, 6], "holidays": [], "custom_workdays": []}'::jsonb
+FROM public.companies
+WHERE id NOT IN (SELECT company_id FROM public.settings)
+ON CONFLICT (company_id) DO NOTHING;
 
-    INSERT INTO public.settings (company_id, company_name, calculation_method, default_tax_rate, default_markup_percent)
-    VALUES (new_co_id, 'New Contractor Co.', 'markup', 8.25, 15.00)
-    ON CONFLICT (company_id) DO NOTHING;
-
-    INSERT INTO public.categories (company_id, name) VALUES
-      (new_co_id, 'Category 1'),
-      (new_co_id, 'Labor')
-    ON CONFLICT DO NOTHING;
-
-    INSERT INTO public.profiles (id, company_id, role, email)
-    VALUES (r.id, new_co_id, 'owner', r.email)
-    ON CONFLICT (id) DO UPDATE SET
-      company_id = EXCLUDED.company_id,
-      role = 'owner',
-      email = EXCLUDED.email;
-  END LOOP;
-
-  -- Seed default settings rows for ALL companies currently missing a row in public.settings
-  INSERT INTO public.settings (company_id, company_name, calculation_method, default_tax_rate, default_markup_percent)
-  SELECT id, COALESCE(name, 'New Contractor Co.'), 'markup', 8.25, 15.00
-  FROM public.companies
-  WHERE id NOT IN (SELECT company_id FROM public.settings)
-  ON CONFLICT (company_id) DO NOTHING;
-END $$;
-
--- 4. Update settings RLS policies for maximum resilience
+-- 4. Simplify settings RLS policies
 ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Select settings based on company" ON public.settings;
-CREATE POLICY "Select settings based on company" ON public.settings
-  FOR SELECT USING (true);
+CREATE POLICY "Select settings based on company" ON public.settings FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Insert settings based on company write access" ON public.settings;
-CREATE POLICY "Insert settings based on company write access" ON public.settings
-  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Insert settings based on company write access" ON public.settings FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
 DROP POLICY IF EXISTS "Update settings based on company write access" ON public.settings;
-CREATE POLICY "Update settings based on company write access" ON public.settings
-  FOR UPDATE USING (
-    company_id IN (SELECT company_id FROM public.profiles WHERE id = auth.uid())
-    OR public.is_sysadmin()
-  )
-  WITH CHECK (
-    company_id IN (SELECT company_id FROM public.profiles WHERE id = auth.uid())
-    OR public.is_sysadmin()
-  );
+CREATE POLICY "Update settings based on company write access" ON public.settings FOR UPDATE USING (
+  company_id IN (SELECT company_id FROM public.profiles WHERE id = auth.uid()) OR public.is_sysadmin()
+);
