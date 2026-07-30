@@ -1,10 +1,10 @@
 // Quote Builder view controller
-import { getProducts, getSettings, saveQuote, checkJobIdUnique, saveSettings, getCustomers, getSupabase, getCurrentUserProfile, uploadFileToStorage } from './db.js?v=3.0.57';
-import { formatCurrency, showToast, fileToBase64, generateJobIdSuggestion, compressImage, parseCombinedAddress, calculateItemTotals, calculateQuoteTotals } from './utils.js?v=3.0.57';
-import { navigateToView, viewQuoteDetails, getPreviousViewId, openLightbox } from './app.js?v=3.0.57';
-import { renderQuoteDetails } from './quotes-list.js?v=3.0.57';
-import { openCustomerModalInline } from './customers.js?v=3.0.57';
-import { isOffline, enqueueOfflinePhoto } from './offline-cache.js?v=3.0.57';
+import { getProducts, getSettings, saveQuote, checkJobIdUnique, saveSettings, getCustomers, getSupabase, getCurrentUserProfile, uploadFileToStorage } from './db.js?v=3.0.58';
+import { formatCurrency, showToast, fileToBase64, generateJobIdSuggestion, compressImage, parseCombinedAddress, calculateItemTotals, calculateQuoteTotals } from './utils.js?v=3.0.58';
+import { navigateToView, viewQuoteDetails, getPreviousViewId, openLightbox } from './app.js?v=3.0.58';
+import { renderQuoteDetails } from './quotes-list.js?v=3.0.58';
+import { openCustomerModalInline } from './customers.js?v=3.0.58';
+import { isOffline, enqueueOfflinePhoto } from './offline-cache.js?v=3.0.58';
 
 
 let currentQuote = {

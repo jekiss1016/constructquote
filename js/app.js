@@ -22,15 +22,15 @@ import {
   getSubscriptionStatus,
   getCheckoutUrl,
   getBillingPortalUrl
-} from './db.js?v=3.0.57';
-import { showToast, fileToBase64, formatPhoneNumber, parseCompanyAddress } from './utils.js?v=3.0.57';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=3.0.57';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=3.0.57';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=3.0.57';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=3.0.57';
-import { syncOfflinePhotoQueue, isOffline, checkOfflineAction } from './offline-cache.js?v=3.0.57';
-import { initSchedulingView } from './scheduling.js?v=3.0.57';
-import * as dbAPI from './db.js?v=3.0.57';
+} from './db.js?v=3.0.58';
+import { showToast, fileToBase64, formatPhoneNumber, parseCompanyAddress } from './utils.js?v=3.0.58';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=3.0.58';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=3.0.58';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=3.0.58';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=3.0.58';
+import { syncOfflinePhotoQueue, isOffline, checkOfflineAction } from './offline-cache.js?v=3.0.58';
+import { initSchedulingView } from './scheduling.js?v=3.0.58';
+import * as dbAPI from './db.js?v=3.0.58';
 
 window.db = dbAPI;
 let activeChallengeId = null;
@@ -550,12 +550,22 @@ function showAuthModal() {
       const sb = getSupabase();
       if (mode === 'login') {
         showToast('Authenticating...');
-        const { data, error } = await sb.auth.signInWithPassword({ email, password });
-        if (error) {
-          showToast(error.message, 'danger');
-        } else {
-          // Check if MFA challenge is required
-          await handleAuthSuccess(data);
+        try {
+          const { data, error } = await sb.auth.signInWithPassword({ email, password });
+          if (error) {
+            console.error('Login error:', error);
+            let errMsg = error.message || error.error_description || error.msg;
+            if (error.status === 500 || !errMsg) {
+              errMsg = 'Authentication server error (500). Supabase auth service may be temporarily unavailable. Please try again in a few moments.';
+            }
+            showToast(errMsg, 'danger');
+          } else {
+            // Check if MFA challenge is required
+            await handleAuthSuccess(data);
+          }
+        } catch (err) {
+          console.error('Login exception:', err);
+          showToast(err.message || 'An error occurred during authentication. Please try again.', 'danger');
         }
       } else {
         const confirmPassword = document.getElementById('auth-confirm-password').value;
