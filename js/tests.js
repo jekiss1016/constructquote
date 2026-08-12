@@ -843,9 +843,13 @@ async function runTestSuite() {
     updateStepStatus(stepCustContact, 'success');
 
     const stepCustSave = addStep('Saving customer profile');
-    const saveCustBtn = doc.querySelector('#customer-modal-submit-btn');
-    saveCustBtn.click();
-    await wait(2000); // Wait for database write
+    const custForm = doc.querySelector('#customer-form');
+    if (custForm) {
+      custForm.dispatchEvent(new win.Event('submit', { cancelable: true, bubbles: true }));
+    } else {
+      doc.querySelector('#customer-modal-submit-btn').click();
+    }
+    await wait(2500); // Wait for database write
 
     // Verify returning to table list and customer is present
     const custTableHtml = doc.querySelector('#customers-table-body').innerHTML;
