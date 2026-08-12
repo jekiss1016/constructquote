@@ -798,6 +798,13 @@ export function hideQuickstartModal() {
 export function checkAndShowQuickstartModal(session) {
   if (!session || !session.user) return;
 
+  // Only display onboarding quickstart modal for owners / sysadmins
+  const profile = getCurrentUserProfile();
+  const isOwner = profile && (profile.role === 'owner' || profile.role === 'sysadmin');
+  if (!isOwner) {
+    return;
+  }
+
   const userId = session.user.id;
   const userHideLocal = localStorage.getItem('hideQuickstartModal_' + userId) === 'true';
   const userHideMeta = session.user.user_metadata && session.user.user_metadata.hideQuickstartModal === true;
