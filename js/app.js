@@ -773,9 +773,17 @@ export function hideQuickstartModal() {
   const iframe = document.getElementById('quickstart-iframe');
 
   if (checkbox && checkbox.checked) {
-    localStorage.setItem('hideQuickstartModal', 'true');
     if (currentUserSession && currentUserSession.user) {
-      localStorage.setItem('hideQuickstartModal_' + currentUserSession.user.id, 'true');
+      const userId = currentUserSession.user.id;
+      localStorage.setItem('hideQuickstartModal_' + userId, 'true');
+      const sb = getSupabase();
+      if (sb && sb.auth) {
+        sb.auth.updateUser({
+          data: { hideQuickstartModal: true }
+        }).catch(err => console.error('Error saving user_metadata hideQuickstartModal:', err));
+      }
+    } else {
+      localStorage.setItem('hideQuickstartModal', 'true');
     }
   }
 
@@ -788,10 +796,14 @@ export function hideQuickstartModal() {
 }
 
 export function checkAndShowQuickstartModal(session) {
-  const globalHide = localStorage.getItem('hideQuickstartModal') === 'true';
-  const userHide = session && session.user && localStorage.getItem('hideQuickstartModal_' + session.user.id) === 'true';
-  
-  if (globalHide || userHide) {
+  if (!session || !session.user) return;
+
+  const userId = session.user.id;
+  const userHideLocal = localStorage.getItem('hideQuickstartModal_' + userId) === 'true';
+  const userHideMeta = session.user.user_metadata && session.user.user_metadata.hideQuickstartModal === true;
+  const legacyGlobalHide = localStorage.getItem('hideQuickstartModal') === 'true';
+
+  if (userHideLocal || userHideMeta || legacyGlobalHide) {
     return;
   }
   showQuickstartModal();

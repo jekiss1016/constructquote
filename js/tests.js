@@ -288,7 +288,8 @@ async function runTestSuite() {
       throw new Error('Quickstart modal did not close on dismiss button click.');
     }
 
-    if (win.localStorage.getItem('hideQuickstartModal') !== 'true') {
+    const hasSavedFlag = Object.keys(win.localStorage).some(k => k.includes('hideQuickstartModal'));
+    if (!hasSavedFlag) {
       throw new Error('hideQuickstartModal flag was not saved to localStorage on dismiss with checkbox checked.');
     }
     updateStepStatus(stepDismissCheck, 'success');
