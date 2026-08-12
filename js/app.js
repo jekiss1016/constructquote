@@ -625,6 +625,10 @@ function showAuthModal() {
 
 // Processes successful auth logic, checking for TOTP challenge overrides
 async function handleAuthSuccess(authData) {
+  if (authData && authData.session) {
+    currentUserSession = authData.session;
+    startSessionMonitoring(currentUserSession);
+  }
   const sb = getSupabase();
   
   // Fetch authentication assurance levels (AAL)
@@ -699,10 +703,17 @@ function setupMfaCodeListener() {
 }
 
 async function proceedToApp() {
-  const profile = await loadUserSession();
+  const profile = await loadUserSession(currentUserSession);
   if (profile) {
     hideAuthModal();
-    await initAppViews();
+    applyUserRoleRestrictions(profile);
+    if (!isAppInitialized) {
+      await initAppViews();
+    } else {
+      await loadDefaultSettingsToUI();
+      updateBrandHeader();
+    }
+    checkAndShowQuickstartModal(currentUserSession);
   } else {
     showToast('Failed to load user company profile.', 'danger');
     showAuthModal();

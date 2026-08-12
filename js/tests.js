@@ -253,6 +253,14 @@ async function runTestSuite() {
     // -------------------------------------------------------------
     createTestCard('1B. Sign-In Onboarding Modal Verification');
     const stepModalCheck = addStep('Verifying onboarding modal elements and YouTube video player');
+    doc = getDoc();
+    win = getWin();
+
+    // Wait for the modal overlay to become active
+    await waitForSelector('#quickstart-modal.active', 5000);
+
+    doc = getDoc();
+    win = getWin();
     const quickstartModal = doc.querySelector('#quickstart-modal');
     const quickstartIframe = doc.querySelector('#quickstart-iframe');
     const quickstartCheckbox = doc.querySelector('#quickstart-dont-show-checkbox');
