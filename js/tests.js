@@ -293,8 +293,42 @@ async function runTestSuite() {
       throw new Error('hideQuickstartModal flag was not saved to localStorage on dismiss with checkbox checked.');
     }
     updateStepStatus(stepDismissCheck, 'success');
+
+    const stepRoleGuardCheck = addStep('Verifying non-owner roles (editor/viewer) are blocked from onboarding modal');
+    const appScript = doc.querySelector('script[src*="js/app.js"]');
+    const versionMatch = appScript ? appScript.src.match(/\?v=(\d+)/) : null;
+    const version = versionMatch ? versionMatch[1] : '65';
+    const appModule = await win.eval(`import('/js/app.js?v=${version}')`);
+    const dbModule = await win.eval(`import('/js/db.js?v=${version}')`);
+
+    // Temporarily clear local flags to test role guard logic
+    for (let i = win.localStorage.length - 1; i >= 0; i--) {
+      const key = win.localStorage.key(i);
+      if (key && key.includes('hideQuickstartModal')) {
+        win.localStorage.removeItem(key);
+      }
+    }
+
+    // Mock profile role as non-owner (editor)
+    const origProf = dbModule.getCurrentUserProfile();
+    dbModule.setCurrentUserProfile({ ...origProf, role: 'editor' });
+
+    appModule.checkAndShowQuickstartModal(win.currentUserSession);
+    await wait(200);
+
+    if (quickstartModal.classList.contains('active')) {
+      throw new Error('Quickstart modal triggered for non-owner role (editor).');
+    }
+
+    // Restore original owner profile & dismissed flag
+    dbModule.setCurrentUserProfile(origProf);
+    if (win.currentUserSession && win.currentUserSession.user) {
+      win.localStorage.setItem('hideQuickstartModal_' + win.currentUserSession.user.id, 'true');
+    }
+    updateStepStatus(stepRoleGuardCheck, 'success');
+
     endActiveTest(true);
-    log('Sign-In Onboarding Modal verified successfully.', 'success');
+    log('Sign-In Onboarding Modal verified successfully (Owner-only & Dismissal).', 'success');
 
     await wait(500);
 
