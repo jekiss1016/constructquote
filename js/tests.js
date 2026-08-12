@@ -249,6 +249,47 @@ async function runTestSuite() {
     await wait(1000);
 
     // -------------------------------------------------------------
+    // TEST 1B: Sign-In Onboarding Modal Verification
+    // -------------------------------------------------------------
+    createTestCard('1B. Sign-In Onboarding Modal Verification');
+    const stepModalCheck = addStep('Verifying onboarding modal elements and YouTube video player');
+    const quickstartModal = doc.querySelector('#quickstart-modal');
+    const quickstartIframe = doc.querySelector('#quickstart-iframe');
+    const quickstartCheckbox = doc.querySelector('#quickstart-dont-show-checkbox');
+    const quickstartDismissBtn = doc.querySelector('#quickstart-dismiss-btn');
+
+    if (!quickstartModal || !quickstartIframe || !quickstartCheckbox || !quickstartDismissBtn) {
+      throw new Error('Quickstart onboarding modal components missing from DOM.');
+    }
+
+    if (!quickstartModal.classList.contains('active')) {
+      throw new Error('Quickstart onboarding modal did not trigger active on sign-in.');
+    }
+
+    if (!quickstartIframe.src.includes('2OL4edb1xlw')) {
+      throw new Error('Quickstart iframe video src is missing or incorrect YouTube embed URL.');
+    }
+    updateStepStatus(stepModalCheck, 'success');
+
+    const stepDismissCheck = addStep('Checking "Do not show this again" and dismissing modal');
+    quickstartCheckbox.checked = true;
+    quickstartDismissBtn.click();
+    await wait(300);
+
+    if (quickstartModal.classList.contains('active')) {
+      throw new Error('Quickstart modal did not close on dismiss button click.');
+    }
+
+    if (win.localStorage.getItem('hideQuickstartModal') !== 'true') {
+      throw new Error('hideQuickstartModal flag was not saved to localStorage on dismiss with checkbox checked.');
+    }
+    updateStepStatus(stepDismissCheck, 'success');
+    endActiveTest(true);
+    log('Sign-In Onboarding Modal verified successfully.', 'success');
+
+    await wait(500);
+
+    // -------------------------------------------------------------
     // TEST 2: PWA Install UI Verification
     // -------------------------------------------------------------
     createTestCard('2. PWA Installation UI Check');
@@ -1088,6 +1129,35 @@ async function runTestSuite() {
 
     endActiveTest(true);
     log('Category Badges, Renaming Rules & Labor Form Hiding tested successfully!', 'success');
+
+    // -------------------------------------------------------------
+    // TEST 12: Help Guide & Training Resources Verification
+    // -------------------------------------------------------------
+    createTestCard('12. Help Guide & Training Resources Check');
+    const stepHelpFetch = addStep('Fetching help.html documentation page');
+    const helpResp = await fetch('help.html');
+    if (!helpResp.ok) {
+      throw new Error(`Failed to load help.html (HTTP ${helpResp.status})`);
+    }
+    const helpHtml = await helpResp.text();
+    updateStepStatus(stepHelpFetch, 'success');
+
+    const stepHelpTrainingCheck = addStep('Verifying Training section and YouTube CTA link attributes');
+    if (!helpHtml.includes('id="training"')) {
+      throw new Error('Help documentation is missing section id="training"');
+    }
+    if (!helpHtml.includes('https://www.youtube.com/@MyBidBook')) {
+      throw new Error('Help documentation is missing official YouTube channel link https://www.youtube.com/@MyBidBook');
+    }
+    if (!helpHtml.includes('Visit the Official MyBidBook YouTube Channel for more tutorials')) {
+      throw new Error('Help documentation is missing required YouTube link text');
+    }
+    if (!helpHtml.includes('target="_blank"') || !helpHtml.includes('rel="noopener noreferrer"')) {
+      throw new Error('Help documentation YouTube link is missing target="_blank" or rel="noopener noreferrer"');
+    }
+    updateStepStatus(stepHelpTrainingCheck, 'success');
+    endActiveTest(true);
+    log('Help Guide Training Resources verified successfully.', 'success');
 
     log('==================================================');
     log(` TEST SUITE COMPLETE: ${passCount} PASSED, ${failCount} FAILED`, 'success');

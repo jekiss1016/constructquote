@@ -46,15 +46,15 @@
   <title>MyBidBook | Smart Construction Estimation</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#4f46e5">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3.0.64">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png?v=3.0.65">
 
   <!-- iOS PWA capability meta tags -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="MyBidBook">
 
-  <link rel="stylesheet" href="css/styles.css?v=3.0.64">
-  <link rel="stylesheet" href="css/print.css?v=3.0.64">
+  <link rel="stylesheet" href="css/styles.css?v=3.0.65">
+  <link rel="stylesheet" href="css/print.css?v=3.0.65">
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
@@ -1966,7 +1966,7 @@
       <!-- Global Footer -->
       <footer class="hide-in-print" style="margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); text-align: center; font-size: 0.8rem; color: var(--text-muted); padding-bottom: 1.5rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; width: 100%; box-sizing: border-box; align-self: center;">
         <img src="banner.png" style="max-height: 50px; max-width: 320px; object-fit: contain; width: auto; opacity: 0.85;" alt="MyBidBook Banner">
-        <span>© 2026 MyBidBook | v3.0.64</span>
+        <span>© 2026 MyBidBook | v3.0.65</span>
       </footer>
     </main>
   </div>
@@ -2283,6 +2283,37 @@
             <button type="button" id="auth-forgot-back-btn" class="btn btn-secondary" style="width: 100%; margin-top: 0.5rem; justify-content: center; font-size: 0.95rem; padding: 0.65rem;">Back to Login</button>
           </form>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SIGN-IN ONBOARDING QUICKSTART MODAL ==================== -->
+  <div class="modal-overlay" id="quickstart-modal" style="z-index: 250;">
+    <div class="modal-container" style="max-width: 640px; background: var(--bg-secondary); border: 1px solid var(--border-color);">
+      <div class="modal-header" style="align-items: center; justify-content: space-between;">
+        <h3 class="modal-title" id="quickstart-modal-title" style="display: flex; align-items: center; gap: 0.5rem; color: var(--primary);">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 24px; height: 24px;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.91 11.672a.375.375 0 010 .656l-5.603 3.113a.375.375 0 01-.557-.328V8.887c0-.286.307-.466.557-.327l5.603 3.112z" />
+          </svg>
+          Welcome to MyBidBook!
+        </h3>
+        <button type="button" class="modal-close" id="quickstart-modal-close-btn">&times;</button>
+      </div>
+      <div class="modal-body" style="padding-top: 1rem;">
+        <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.95rem; line-height: 1.5;">
+          Watch this quickstart tutorial to learn how to generate accurate quotes, manage catalog items, and schedule projects.
+        </p>
+        <div class="video-container-16-9">
+          <iframe id="quickstart-iframe" src="" title="MyBidBook Quickstart Tutorial" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+        <label style="display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.85rem; color: var(--text-secondary); user-select: none;">
+          <input type="checkbox" id="quickstart-dont-show-checkbox">
+          <span>Do not show this again</span>
+        </label>
+        <button type="button" class="btn btn-primary" id="quickstart-dismiss-btn">Got It!</button>
       </div>
     </div>
   </div>
@@ -2605,8 +2636,8 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Javascript Modules -->
-  <script type="module" src="js/scheduling.js?v=3.0.64"></script>
-  <script type="module" src="js/app.js?v=3.0.64"></script>
+  <script type="module" src="js/scheduling.js?v=3.0.65"></script>
+  <script type="module" src="js/app.js?v=3.0.65"></script>
 
 </body>
 </html>

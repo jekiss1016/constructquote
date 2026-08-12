@@ -87,6 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupSessionWarningListeners();
   setupForgotPasswordListeners();
   setupRecoveryFormListener();
+  setupQuickstartModalListeners();
   await setupAuthListener();
 });
 
@@ -154,6 +155,9 @@ async function setupAuthListener() {
             await loadDefaultSettingsToUI();
             updateBrandHeader();
           }
+
+          // Check onboarding quickstart modal trigger
+          checkAndShowQuickstartModal(session);
 
           // Check if returning from a successful Stripe checkout
           const checkoutParam = new URLSearchParams(window.location.search).get('checkout');
@@ -712,6 +716,74 @@ function hideAuthModal() {
   if (setupModal) setupModal.classList.remove('active');
   const logoutBtn = document.getElementById('auth-logout-btn');
   if (logoutBtn) logoutBtn.style.display = 'inline-flex';
+}
+
+// Quickstart Onboarding Modal Handlers
+let isQuickstartListenersSetup = false;
+
+function setupQuickstartModalListeners() {
+  if (isQuickstartListenersSetup) return;
+  isQuickstartListenersSetup = true;
+
+  const closeBtn = document.getElementById('quickstart-modal-close-btn');
+  const dismissBtn = document.getElementById('quickstart-dismiss-btn');
+  const modal = document.getElementById('quickstart-modal');
+
+  if (closeBtn) {
+    closeBtn.addEventListener('click', hideQuickstartModal);
+  }
+  if (dismissBtn) {
+    dismissBtn.addEventListener('click', hideQuickstartModal);
+  }
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        hideQuickstartModal();
+      }
+    });
+  }
+}
+
+export function showQuickstartModal() {
+  setupQuickstartModalListeners();
+  const modal = document.getElementById('quickstart-modal');
+  const iframe = document.getElementById('quickstart-iframe');
+  if (iframe) {
+    iframe.src = 'https://www.youtube.com/embed/2OL4edb1xlw?autoplay=1';
+  }
+  if (modal) {
+    modal.classList.add('active');
+  }
+}
+
+export function hideQuickstartModal() {
+  const modal = document.getElementById('quickstart-modal');
+  const checkbox = document.getElementById('quickstart-dont-show-checkbox');
+  const iframe = document.getElementById('quickstart-iframe');
+
+  if (checkbox && checkbox.checked) {
+    localStorage.setItem('hideQuickstartModal', 'true');
+    if (currentUserSession && currentUserSession.user) {
+      localStorage.setItem('hideQuickstartModal_' + currentUserSession.user.id, 'true');
+    }
+  }
+
+  if (iframe) {
+    iframe.src = '';
+  }
+  if (modal) {
+    modal.classList.remove('active');
+  }
+}
+
+export function checkAndShowQuickstartModal(session) {
+  const globalHide = localStorage.getItem('hideQuickstartModal') === 'true';
+  const userHide = session && session.user && localStorage.getItem('hideQuickstartModal_' + session.user.id) === 'true';
+  
+  if (globalHide || userHide) {
+    return;
+  }
+  showQuickstartModal();
 }
 
 // Boots application views and listeners
