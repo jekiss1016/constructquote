@@ -298,8 +298,8 @@ async function runTestSuite() {
     const appScript = doc.querySelector('script[src*="js/app.js"]');
     const versionMatch = appScript ? appScript.src.match(/\?v=(\d+)/) : null;
     const version = versionMatch ? versionMatch[1] : '65';
-    const appModule = await win.eval(`import('/js/app.js?v=${version}')`);
-    const dbModule = await win.eval(`import('/js/db.js?v=${version}')`);
+    const appModule = await win.eval(`import('./js/app.js?v=${version}')`);
+    const dbModule = await win.eval(`import('./js/db.js?v=${version}')`);
 
     // Temporarily clear local flags to test role guard logic
     for (let i = win.localStorage.length - 1; i >= 0; i--) {
@@ -907,8 +907,8 @@ async function runTestSuite() {
     const appScript = doc.querySelector('script[src*="js/app.js"]');
     const versionMatch = appScript ? appScript.src.match(/\?v=(\d+)/) : null;
     const version = versionMatch ? versionMatch[1] : '95';
-    const db = await win.eval(`import('/js/db.js?v=${version}')`);
-    const quotesList = await win.eval(`import('/js/quotes-list.js?v=${version}')`);
+    const db = await win.eval(`import('./js/db.js?v=${version}')`);
+    const quotesList = await win.eval(`import('./js/quotes-list.js?v=${version}')`);
 
     // Get current profile
     const originalProfile = db.getCurrentUserProfile();
