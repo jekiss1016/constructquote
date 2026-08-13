@@ -1548,12 +1548,14 @@ body {
     padding: 0.5rem;
     margin-left: -0.5rem;
     border-radius: var(--radius-md);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
   }
 
   .mobile-toggle-btn * {
     pointer-events: none;
   }
-
 
   .mobile-toggle-btn:hover {
     background-color: var(--bg-tertiary);
@@ -1585,7 +1587,8 @@ body {
     z-index: 1000;
     opacity: 0;
     pointer-events: none;
-    transition: opacity var(--transition-normal);
+    will-change: opacity;
+    transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .sidebar-overlay.active {
@@ -1605,6 +1608,8 @@ body {
     transform: translateX(-100%);
     box-shadow: var(--shadow-xl);
     border-right: 1px solid var(--border-color);
+    will-change: transform;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .sidebar.active {

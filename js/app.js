@@ -1128,19 +1128,38 @@ function setupAppNavigation() {
   };
 
   if (toggleBtn) {
-    toggleBtn.addEventListener('click', (e) => {
+    let lastToggleTs = 0;
+    const handleToggle = (e) => {
       e.stopPropagation();
       e.preventDefault();
+      const now = Date.now();
+      if (now - lastToggleTs < 250) return;
+      lastToggleTs = now;
+
       if (sidebar && sidebar.classList.contains('active')) {
         closeMobileSidebar();
       } else {
         openMobileSidebar();
       }
-    });
+    };
+
+    toggleBtn.addEventListener('pointerdown', handleToggle);
+    toggleBtn.addEventListener('click', handleToggle);
   }
 
   if (overlay) {
-    overlay.addEventListener('click', closeMobileSidebar);
+    let lastOverlayTs = 0;
+    const handleOverlayClose = (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const now = Date.now();
+      if (now - lastOverlayTs < 250) return;
+      lastOverlayTs = now;
+      closeMobileSidebar();
+    };
+
+    overlay.addEventListener('pointerdown', handleOverlayClose);
+    overlay.addEventListener('click', handleOverlayClose);
   }
 
   // Auto-close sidebar on navigating or opening support modal
