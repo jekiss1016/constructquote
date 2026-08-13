@@ -168,6 +168,33 @@ function getAppScriptVersion(doc) {
   return match ? match[1] : '3.0.65';
 }
 
+// Helper to clear onboarding modal flags from localStorage and Supabase user_metadata
+async function resetQuickstartFlagForUser(winContext) {
+  try {
+    if (winContext && winContext.localStorage) {
+      for (let i = winContext.localStorage.length - 1; i >= 0; i--) {
+        const key = winContext.localStorage.key(i);
+        if (key && key.includes('hideQuickstartModal')) {
+          winContext.localStorage.removeItem(key);
+        }
+      }
+    }
+    if (winContext && winContext.currentUserSession && winContext.currentUserSession.user) {
+      if (winContext.currentUserSession.user.user_metadata) {
+        delete winContext.currentUserSession.user.user_metadata.hideQuickstartModal;
+      }
+    }
+    if (winContext && winContext.db) {
+      const sb = winContext.db.getSupabase();
+      if (sb && sb.auth) {
+        await sb.auth.updateUser({ data: { hideQuickstartModal: false } });
+      }
+    }
+  } catch (e) {
+    console.warn('resetQuickstartFlagForUser error:', e);
+  }
+}
+
 // Main Automation Runner
 async function runTestSuite() {
   // Guard button
@@ -185,6 +212,8 @@ async function runTestSuite() {
   statFailed.textContent = 0;
 
   try {
+    await resetQuickstartFlagForUser(getWin());
+
     // -------------------------------------------------------------
     // TEST 1: User Login
     // -------------------------------------------------------------
@@ -945,7 +974,7 @@ async function runTestSuite() {
     // -------------------------------------------------------------
     createTestCard('11. Scheduling Engine Core Math');
     const stepEngineLoad = addStep('Loading SchedulingEngine script');
-    const se = await win.eval(`import('/js/scheduling-engine.js?v=${version}')`).then(m => m.SchedulingEngine);
+    const se = win.SchedulingEngine;
     if (!se) throw new Error('Failed to load SchedulingEngine module');
     updateStepStatus(stepEngineLoad, 'success');
 
@@ -1222,6 +1251,7 @@ async function runTestSuite() {
     log(` TEST SUITE FAILED: ${passCount} PASSED, ${failCount + 1} FAILED`, 'error');
     log('==================================================');
   } finally {
+    await resetQuickstartFlagForUser(getWin());
     runBtn.disabled = false;
     blocker.classList.remove('active');
   }
