@@ -29,6 +29,7 @@ import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, r
 import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=3.0.64';
 import { initCustomersView, renderCustomersTable } from './customers.js?v=3.0.64';
 import { syncOfflinePhotoQueue, isOffline, checkOfflineAction } from './offline-cache.js?v=3.0.64';
+import { initSchedulingView } from './scheduling.js?v=3.0.64';
 import * as dbAPI from './db.js?v=3.0.64';
 import * as quotesListAPI from './quotes-list.js?v=3.0.64';
 import * as catalogAPI from './catalog.js?v=3.0.64';
