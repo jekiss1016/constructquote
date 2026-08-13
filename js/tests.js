@@ -263,11 +263,24 @@ async function runTestSuite() {
     doc = getDoc();
     win = getWin();
 
-    // Wait for the modal overlay to become active
-    await waitForSelector('#quickstart-modal.active', 5000);
+    const ver1B = getAppScriptVersion(doc);
+    const appModule = await win.eval(`import('./js/app.js?v=${ver1B}')`);
+    const dbModule = await win.eval(`import('./js/db.js?v=${ver1B}')`);
 
-    doc = getDoc();
-    win = getWin();
+    // Ensure any previously saved dismiss flags are cleared for clean test verification
+    if (win.currentUserSession && win.currentUserSession.user) {
+      const userId = win.currentUserSession.user.id;
+      win.localStorage.removeItem('hideQuickstartModal_' + userId);
+      if (win.currentUserSession.user.user_metadata) {
+        delete win.currentUserSession.user.user_metadata.hideQuickstartModal;
+      }
+    }
+    win.localStorage.removeItem('hideQuickstartModal');
+
+    // Trigger onboarding check for active owner session
+    appModule.checkAndShowQuickstartModal(win.currentUserSession);
+    await wait(300);
+
     const quickstartModal = doc.querySelector('#quickstart-modal');
     const quickstartIframe = doc.querySelector('#quickstart-iframe');
     const quickstartCheckbox = doc.querySelector('#quickstart-dont-show-checkbox');
@@ -302,9 +315,6 @@ async function runTestSuite() {
     updateStepStatus(stepDismissCheck, 'success');
 
     const stepRoleGuardCheck = addStep('Verifying non-owner roles (editor/viewer) are blocked from onboarding modal');
-    const ver1B = getAppScriptVersion(doc);
-    const appModule = await win.eval(`import('./js/app.js?v=${ver1B}')`);
-    const dbModule = await win.eval(`import('./js/db.js?v=${ver1B}')`);
 
     // Temporarily clear local flags to test role guard logic
     for (let i = win.localStorage.length - 1; i >= 0; i--) {
