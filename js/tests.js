@@ -161,6 +161,13 @@ function triggerInput(el, value) {
   el.dispatchEvent(new win.Event('change', { bubbles: true }));
 }
 
+// Helper to extract script version
+function getAppScriptVersion(doc) {
+  const el = doc ? doc.querySelector('script[src*="js/app.js"]') : null;
+  const match = el ? el.src.match(/\?v=([^\&]+)/) : null;
+  return match ? match[1] : '3.0.65';
+}
+
 // Main Automation Runner
 async function runTestSuite() {
   // Guard button
@@ -295,11 +302,9 @@ async function runTestSuite() {
     updateStepStatus(stepDismissCheck, 'success');
 
     const stepRoleGuardCheck = addStep('Verifying non-owner roles (editor/viewer) are blocked from onboarding modal');
-    const appScript = doc.querySelector('script[src*="js/app.js"]');
-    const versionMatch = appScript ? appScript.src.match(/\?v=(\d+)/) : null;
-    const version = versionMatch ? versionMatch[1] : '65';
-    const appModule = await win.eval(`import('./js/app.js?v=${version}')`);
-    const dbModule = await win.eval(`import('./js/db.js?v=${version}')`);
+    const ver1B = getAppScriptVersion(doc);
+    const appModule = await win.eval(`import('./js/app.js?v=${ver1B}')`);
+    const dbModule = await win.eval(`import('./js/db.js?v=${ver1B}')`);
 
     // Temporarily clear local flags to test role guard logic
     for (let i = win.localStorage.length - 1; i >= 0; i--) {
@@ -903,12 +908,9 @@ async function runTestSuite() {
     createTestCard('10. Viewer Role UI Restriction');
     const stepViewCheck = addStep('Simulating viewer role and checking warning visibility');
 
-    // Get active app script to dynamically extract cache-busting version query parameter
-    const appScript = doc.querySelector('script[src*="js/app.js"]');
-    const versionMatch = appScript ? appScript.src.match(/\?v=(\d+)/) : null;
-    const version = versionMatch ? versionMatch[1] : '95';
-    const db = await win.eval(`import('./js/db.js?v=${version}')`);
-    const quotesList = await win.eval(`import('./js/quotes-list.js?v=${version}')`);
+    const ver10 = getAppScriptVersion(doc);
+    const db = await win.eval(`import('./js/db.js?v=${ver10}')`);
+    const quotesList = await win.eval(`import('./js/quotes-list.js?v=${ver10}')`);
 
     // Get current profile
     const originalProfile = db.getCurrentUserProfile();
