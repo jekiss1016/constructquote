@@ -798,6 +798,11 @@ export function hideQuickstartModal() {
 export function checkAndShowQuickstartModal(session) {
   if (!session || !session.user) return;
 
+  // Clear stale legacy un-scoped key if present
+  if (localStorage.getItem('hideQuickstartModal')) {
+    localStorage.removeItem('hideQuickstartModal');
+  }
+
   // Only display onboarding quickstart modal for owners / sysadmins
   const profile = getCurrentUserProfile();
   const isOwner = profile && (profile.role === 'owner' || profile.role === 'sysadmin');
@@ -808,9 +813,8 @@ export function checkAndShowQuickstartModal(session) {
   const userId = session.user.id;
   const userHideLocal = localStorage.getItem('hideQuickstartModal_' + userId) === 'true';
   const userHideMeta = session.user.user_metadata && session.user.user_metadata.hideQuickstartModal === true;
-  const legacyGlobalHide = localStorage.getItem('hideQuickstartModal') === 'true';
 
-  if (userHideLocal || userHideMeta || legacyGlobalHide) {
+  if (userHideLocal || userHideMeta) {
     return;
   }
   showQuickstartModal();

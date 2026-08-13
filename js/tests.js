@@ -1134,9 +1134,10 @@ async function runTestSuite() {
     
     doc.querySelector('.nav-item[data-target="catalog-view"]').click();
     await wait(500);
-    const catalogModule = await win.eval(`import('/js/catalog.js?v=${version}')`);
-    const dbModule = await win.eval(`import('/js/db.js?v=${version}')`);
-    await catalogModule.renderCategoryList();
+    const ver15 = getAppScriptVersion(doc);
+    const catalogMod15 = await win.eval(`import('./js/catalog.js?v=${ver15}')`);
+    const dbMod15 = await win.eval(`import('./js/db.js?v=${ver15}')`);
+    await catalogMod15.renderCategoryList();
     updateStepStatus(stepNavCatalog, 'success');
 
     const stepBadgesCheck = addStep('Verifying System Default Badges for "Category 1" and "Labor"');
@@ -1150,14 +1151,14 @@ async function runTestSuite() {
     updateStepStatus(stepBadgesCheck, 'success');
 
     const stepRenamingRulesCheck = addStep('Verifying Category 1 is Editable and Labor is Protected');
-    const dbCategories = await dbModule.getCategories();
+    const dbCategories = await dbMod15.getCategories();
     if (dbCategories.some(c => c.toLowerCase() === 'category 1')) {
-      const renameRes = await dbModule.renameCategory('Category 1', 'Category 1');
+      const renameRes = await dbMod15.renameCategory('Category 1', 'Category 1');
       if (renameRes.error && renameRes.error.includes('cannot be renamed')) {
         throw new Error('Category 1 should be editable but was blocked by renameCategory');
       }
     }
-    const laborRenameRes = await dbModule.renameCategory('Labor', 'New Labor Name');
+    const laborRenameRes = await dbMod15.renameCategory('Labor', 'New Labor Name');
     if (laborRenameRes.success) {
       throw new Error('System category Labor was renamed, but it must be protected');
     }
@@ -1165,7 +1166,7 @@ async function runTestSuite() {
 
     const stepLaborFieldHiding = addStep('Verifying Material Price Hiding when "Labor" Category is Selected');
     const catSelectEl = doc.getElementById('product-form-category');
-    await catalogModule.populateCategoryDropdowns();
+    await catalogMod15.populateCategoryDropdowns();
     catSelectEl.value = 'Labor';
     catSelectEl.dispatchEvent(new win.Event('change', { bubbles: true }));
     await wait(200);
