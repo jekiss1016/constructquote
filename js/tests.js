@@ -260,8 +260,13 @@ async function runTestSuite() {
     // -------------------------------------------------------------
     createTestCard('1B. Sign-In Onboarding Modal Verification');
     const stepModalCheck = addStep('Verifying onboarding modal elements and YouTube video player');
-    doc = getDoc();
-    win = getWin();
+    // Ensure any previously saved dismiss flags in localStorage are cleared for clean test verification
+    for (let i = win.localStorage.length - 1; i >= 0; i--) {
+      const key = win.localStorage.key(i);
+      if (key && key.includes('hideQuickstartModal')) {
+        win.localStorage.removeItem(key);
+      }
+    }
 
     // Trigger onboarding check for active owner session
     win.checkAndShowQuickstartModal(win.currentUserSession);

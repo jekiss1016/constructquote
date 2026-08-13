@@ -782,14 +782,6 @@ export function hideQuickstartModal() {
     if (currentUserSession && currentUserSession.user) {
       const userId = currentUserSession.user.id;
       localStorage.setItem('hideQuickstartModal_' + userId, 'true');
-      const sb = getSupabase();
-      if (sb && sb.auth) {
-        sb.auth.updateUser({
-          data: { hideQuickstartModal: true }
-        }).catch(err => console.error('Error saving user_metadata hideQuickstartModal:', err));
-      }
-    } else {
-      localStorage.setItem('hideQuickstartModal', 'true');
     }
   }
 
@@ -818,9 +810,8 @@ export function checkAndShowQuickstartModal(session) {
 
   const userId = session.user.id;
   const userHideLocal = localStorage.getItem('hideQuickstartModal_' + userId) === 'true';
-  const userHideMeta = session.user.user_metadata && session.user.user_metadata.hideQuickstartModal === true;
 
-  if (userHideLocal || userHideMeta) {
+  if (userHideLocal) {
     return;
   }
   showQuickstartModal();
