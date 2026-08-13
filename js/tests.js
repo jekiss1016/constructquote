@@ -263,22 +263,8 @@ async function runTestSuite() {
     doc = getDoc();
     win = getWin();
 
-    const ver1B = getAppScriptVersion(doc);
-    const appModule = await win.eval(`import('./js/app.js?v=${ver1B}')`);
-    const dbModule = await win.eval(`import('./js/db.js?v=${ver1B}')`);
-
-    // Ensure any previously saved dismiss flags are cleared for clean test verification
-    if (win.currentUserSession && win.currentUserSession.user) {
-      const userId = win.currentUserSession.user.id;
-      win.localStorage.removeItem('hideQuickstartModal_' + userId);
-      if (win.currentUserSession.user.user_metadata) {
-        delete win.currentUserSession.user.user_metadata.hideQuickstartModal;
-      }
-    }
-    win.localStorage.removeItem('hideQuickstartModal');
-
     // Trigger onboarding check for active owner session
-    appModule.checkAndShowQuickstartModal(win.currentUserSession);
+    win.checkAndShowQuickstartModal(win.currentUserSession);
     await wait(300);
 
     const quickstartModal = doc.querySelector('#quickstart-modal');
@@ -325,10 +311,10 @@ async function runTestSuite() {
     }
 
     // Mock profile role as non-owner (editor)
-    const origProf = dbModule.getCurrentUserProfile();
-    dbModule.setCurrentUserProfile({ ...origProf, role: 'editor' });
+    const origProf = win.db.getCurrentUserProfile();
+    win.db.setCurrentUserProfile({ ...origProf, role: 'editor' });
 
-    appModule.checkAndShowQuickstartModal(win.currentUserSession);
+    win.checkAndShowQuickstartModal(win.currentUserSession);
     await wait(200);
 
     if (quickstartModal.classList.contains('active')) {
@@ -336,7 +322,7 @@ async function runTestSuite() {
     }
 
     // Restore original owner profile & dismissed flag
-    dbModule.setCurrentUserProfile(origProf);
+    win.db.setCurrentUserProfile(origProf);
     if (win.currentUserSession && win.currentUserSession.user) {
       win.localStorage.setItem('hideQuickstartModal_' + win.currentUserSession.user.id, 'true');
     }
@@ -918,9 +904,8 @@ async function runTestSuite() {
     createTestCard('10. Viewer Role UI Restriction');
     const stepViewCheck = addStep('Simulating viewer role and checking warning visibility');
 
-    const ver10 = getAppScriptVersion(doc);
-    const db = await win.eval(`import('./js/db.js?v=${ver10}')`);
-    const quotesList = await win.eval(`import('./js/quotes-list.js?v=${ver10}')`);
+    const db = win.db;
+    const quotesList = win.quotesList;
 
     // Get current profile
     const originalProfile = db.getCurrentUserProfile();
@@ -1144,9 +1129,8 @@ async function runTestSuite() {
     
     doc.querySelector('.nav-item[data-target="catalog-view"]').click();
     await wait(500);
-    const ver15 = getAppScriptVersion(doc);
-    const catalogMod15 = await win.eval(`import('./js/catalog.js?v=${ver15}')`);
-    const dbMod15 = await win.eval(`import('./js/db.js?v=${ver15}')`);
+    const catalogMod15 = win.catalog;
+    const dbMod15 = win.db;
     await catalogMod15.renderCategoryList();
     updateStepStatus(stepNavCatalog, 'success');
 
