@@ -97,6 +97,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupForgotPasswordListeners();
   setupRecoveryFormListener();
   setupQuickstartModalListeners();
+  setupAppNavigation();
   await setupAuthListener();
 });
 
@@ -1092,7 +1093,12 @@ export async function updateBrandHeader() {
 }
 
 /* ==================== CORE EVENT BINDERS ==================== */
+let isAppNavigationSetup = false;
+
 function setupAppNavigation() {
+  if (isAppNavigationSetup) return;
+  isAppNavigationSetup = true;
+
   const navItems = document.querySelectorAll('.nav-item');
   
   navItems.forEach(item => {
@@ -1124,6 +1130,7 @@ function setupAppNavigation() {
   if (toggleBtn) {
     toggleBtn.addEventListener('click', (e) => {
       e.stopPropagation();
+      e.preventDefault();
       if (sidebar && sidebar.classList.contains('active')) {
         closeMobileSidebar();
       } else {
