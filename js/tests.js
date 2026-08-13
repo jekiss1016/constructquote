@@ -161,6 +161,40 @@ function triggerInput(el, value) {
   el.dispatchEvent(new win.Event('change', { bubbles: true }));
 }
 
+// Helper to extract script version
+function getAppScriptVersion(doc) {
+  const el = doc ? doc.querySelector('script[src*="js/app.js"]') : null;
+  const match = el ? el.src.match(/\?v=([^\&]+)/) : null;
+  return match ? match[1] : '3.0.65';
+}
+
+// Helper to clear onboarding modal flags from localStorage and Supabase user_metadata
+async function resetQuickstartFlagForUser(winContext) {
+  try {
+    if (winContext && winContext.localStorage) {
+      for (let i = winContext.localStorage.length - 1; i >= 0; i--) {
+        const key = winContext.localStorage.key(i);
+        if (key && key.includes('hideQuickstartModal')) {
+          winContext.localStorage.removeItem(key);
+        }
+      }
+    }
+    if (winContext && winContext.currentUserSession && winContext.currentUserSession.user) {
+      if (winContext.currentUserSession.user.user_metadata) {
+        delete winContext.currentUserSession.user.user_metadata.hideQuickstartModal;
+      }
+    }
+    if (winContext && winContext.db) {
+      const sb = winContext.db.getSupabase();
+      if (sb && sb.auth) {
+        await sb.auth.updateUser({ data: { hideQuickstartModal: false } });
+      }
+    }
+  } catch (e) {
+    console.warn('resetQuickstartFlagForUser error:', e);
+  }
+}
+
 // Main Automation Runner
 async function runTestSuite() {
   // Guard button
@@ -178,6 +212,8 @@ async function runTestSuite() {
   statFailed.textContent = 0;
 
   try {
+    await resetQuickstartFlagForUser(getWin());
+
     // -------------------------------------------------------------
     // TEST 1: User Login
     // -------------------------------------------------------------
@@ -247,6 +283,89 @@ async function runTestSuite() {
     log('Authentication successful.', 'success');
     
     await wait(1000);
+
+    // -------------------------------------------------------------
+    // TEST 1B: Sign-In Onboarding Modal Verification
+    // -------------------------------------------------------------
+    createTestCard('1B. Sign-In Onboarding Modal Verification');
+    const stepModalCheck = addStep('Verifying onboarding modal elements and YouTube video player');
+    // Ensure any previously saved dismiss flags in localStorage are cleared for clean test verification
+    for (let i = win.localStorage.length - 1; i >= 0; i--) {
+      const key = win.localStorage.key(i);
+      if (key && key.includes('hideQuickstartModal')) {
+        win.localStorage.removeItem(key);
+      }
+    }
+
+    // Trigger onboarding check for active owner session
+    win.checkAndShowQuickstartModal(win.currentUserSession);
+    await wait(300);
+
+    const quickstartModal = doc.querySelector('#quickstart-modal');
+    const quickstartIframe = doc.querySelector('#quickstart-iframe');
+    const quickstartCheckbox = doc.querySelector('#quickstart-dont-show-checkbox');
+    const quickstartDismissBtn = doc.querySelector('#quickstart-dismiss-btn');
+
+    if (!quickstartModal || !quickstartIframe || !quickstartCheckbox || !quickstartDismissBtn) {
+      throw new Error('Quickstart onboarding modal components missing from DOM.');
+    }
+
+    if (!quickstartModal.classList.contains('active')) {
+      throw new Error('Quickstart onboarding modal did not trigger active on sign-in.');
+    }
+
+    if (!quickstartIframe.src.includes('2OL4edb1xlw')) {
+      throw new Error('Quickstart iframe video src is missing or incorrect YouTube embed URL.');
+    }
+    updateStepStatus(stepModalCheck, 'success');
+
+    const stepDismissCheck = addStep('Checking "Do not show this again" and dismissing modal');
+    quickstartCheckbox.checked = true;
+    quickstartDismissBtn.click();
+    await wait(300);
+
+    if (quickstartModal.classList.contains('active')) {
+      throw new Error('Quickstart modal did not close on dismiss button click.');
+    }
+
+    const hasSavedFlag = Object.keys(win.localStorage).some(k => k.includes('hideQuickstartModal'));
+    if (!hasSavedFlag) {
+      throw new Error('hideQuickstartModal flag was not saved to localStorage on dismiss with checkbox checked.');
+    }
+    updateStepStatus(stepDismissCheck, 'success');
+
+    const stepRoleGuardCheck = addStep('Verifying non-owner roles (editor/viewer) are blocked from onboarding modal');
+
+    // Temporarily clear local flags to test role guard logic
+    for (let i = win.localStorage.length - 1; i >= 0; i--) {
+      const key = win.localStorage.key(i);
+      if (key && key.includes('hideQuickstartModal')) {
+        win.localStorage.removeItem(key);
+      }
+    }
+
+    // Mock profile role as non-owner (editor)
+    const origProf = win.db.getCurrentUserProfile();
+    win.db.setCurrentUserProfile({ ...origProf, role: 'editor' });
+
+    win.checkAndShowQuickstartModal(win.currentUserSession);
+    await wait(200);
+
+    if (quickstartModal.classList.contains('active')) {
+      throw new Error('Quickstart modal triggered for non-owner role (editor).');
+    }
+
+    // Restore original owner profile & dismissed flag
+    win.db.setCurrentUserProfile(origProf);
+    if (win.currentUserSession && win.currentUserSession.user) {
+      win.localStorage.setItem('hideQuickstartModal_' + win.currentUserSession.user.id, 'true');
+    }
+    updateStepStatus(stepRoleGuardCheck, 'success');
+
+    endActiveTest(true);
+    log('Sign-In Onboarding Modal verified successfully (Owner-only & Dismissal).', 'success');
+
+    await wait(500);
 
     // -------------------------------------------------------------
     // TEST 2: PWA Install UI Verification
@@ -794,9 +913,13 @@ async function runTestSuite() {
     updateStepStatus(stepCustContact, 'success');
 
     const stepCustSave = addStep('Saving customer profile');
-    const saveCustBtn = doc.querySelector('#customer-modal-submit-btn');
-    saveCustBtn.click();
-    await wait(2000); // Wait for database write
+    const custForm = doc.querySelector('#customer-form');
+    if (custForm) {
+      custForm.dispatchEvent(new win.Event('submit', { cancelable: true, bubbles: true }));
+    } else {
+      doc.querySelector('#customer-modal-submit-btn').click();
+    }
+    await wait(2500); // Wait for database write
 
     // Verify returning to table list and customer is present
     const custTableHtml = doc.querySelector('#customers-table-body').innerHTML;
@@ -815,12 +938,8 @@ async function runTestSuite() {
     createTestCard('10. Viewer Role UI Restriction');
     const stepViewCheck = addStep('Simulating viewer role and checking warning visibility');
 
-    // Get active app script to dynamically extract cache-busting version query parameter
-    const appScript = doc.querySelector('script[src*="js/app.js"]');
-    const versionMatch = appScript ? appScript.src.match(/\?v=(\d+)/) : null;
-    const version = versionMatch ? versionMatch[1] : '95';
-    const db = await win.eval(`import('/js/db.js?v=${version}')`);
-    const quotesList = await win.eval(`import('/js/quotes-list.js?v=${version}')`);
+    const db = win.db;
+    const quotesList = win.quotesList;
 
     // Get current profile
     const originalProfile = db.getCurrentUserProfile();
@@ -855,7 +974,7 @@ async function runTestSuite() {
     // -------------------------------------------------------------
     createTestCard('11. Scheduling Engine Core Math');
     const stepEngineLoad = addStep('Loading SchedulingEngine script');
-    const se = await win.eval(`import('/js/scheduling-engine.js?v=${version}')`).then(m => m.SchedulingEngine);
+    const se = win.SchedulingEngine;
     if (!se) throw new Error('Failed to load SchedulingEngine module');
     updateStepStatus(stepEngineLoad, 'success');
 
@@ -1044,9 +1163,9 @@ async function runTestSuite() {
     
     doc.querySelector('.nav-item[data-target="catalog-view"]').click();
     await wait(500);
-    const catalogModule = await win.eval(`import('/js/catalog.js?v=${version}')`);
-    const dbModule = await win.eval(`import('/js/db.js?v=${version}')`);
-    await catalogModule.renderCategoryList();
+    const catalogMod15 = win.catalog;
+    const dbMod15 = win.db;
+    await catalogMod15.renderCategoryList();
     updateStepStatus(stepNavCatalog, 'success');
 
     const stepBadgesCheck = addStep('Verifying System Default Badges for "Category 1" and "Labor"');
@@ -1060,14 +1179,14 @@ async function runTestSuite() {
     updateStepStatus(stepBadgesCheck, 'success');
 
     const stepRenamingRulesCheck = addStep('Verifying Category 1 is Editable and Labor is Protected');
-    const dbCategories = await dbModule.getCategories();
+    const dbCategories = await dbMod15.getCategories();
     if (dbCategories.some(c => c.toLowerCase() === 'category 1')) {
-      const renameRes = await dbModule.renameCategory('Category 1', 'Category 1');
+      const renameRes = await dbMod15.renameCategory('Category 1', 'Category 1');
       if (renameRes.error && renameRes.error.includes('cannot be renamed')) {
         throw new Error('Category 1 should be editable but was blocked by renameCategory');
       }
     }
-    const laborRenameRes = await dbModule.renameCategory('Labor', 'New Labor Name');
+    const laborRenameRes = await dbMod15.renameCategory('Labor', 'New Labor Name');
     if (laborRenameRes.success) {
       throw new Error('System category Labor was renamed, but it must be protected');
     }
@@ -1075,7 +1194,7 @@ async function runTestSuite() {
 
     const stepLaborFieldHiding = addStep('Verifying Material Price Hiding when "Labor" Category is Selected');
     const catSelectEl = doc.getElementById('product-form-category');
-    await catalogModule.populateCategoryDropdowns();
+    await catalogMod15.populateCategoryDropdowns();
     catSelectEl.value = 'Labor';
     catSelectEl.dispatchEvent(new win.Event('change', { bubbles: true }));
     await wait(200);
@@ -1088,6 +1207,35 @@ async function runTestSuite() {
 
     endActiveTest(true);
     log('Category Badges, Renaming Rules & Labor Form Hiding tested successfully!', 'success');
+
+    // -------------------------------------------------------------
+    // TEST 12: Help Guide & Training Resources Verification
+    // -------------------------------------------------------------
+    createTestCard('12. Help Guide & Training Resources Check');
+    const stepHelpFetch = addStep('Fetching help.html documentation page');
+    const helpResp = await fetch('help.html');
+    if (!helpResp.ok) {
+      throw new Error(`Failed to load help.html (HTTP ${helpResp.status})`);
+    }
+    const helpHtml = await helpResp.text();
+    updateStepStatus(stepHelpFetch, 'success');
+
+    const stepHelpTrainingCheck = addStep('Verifying Training section and YouTube CTA link attributes');
+    if (!helpHtml.includes('id="training"')) {
+      throw new Error('Help documentation is missing section id="training"');
+    }
+    if (!helpHtml.includes('https://www.youtube.com/@MyBidBook')) {
+      throw new Error('Help documentation is missing official YouTube channel link https://www.youtube.com/@MyBidBook');
+    }
+    if (!helpHtml.includes('Visit the Official MyBidBook YouTube Channel for more tutorials')) {
+      throw new Error('Help documentation is missing required YouTube link text');
+    }
+    if (!helpHtml.includes('target="_blank"') || !helpHtml.includes('rel="noopener noreferrer"')) {
+      throw new Error('Help documentation YouTube link is missing target="_blank" or rel="noopener noreferrer"');
+    }
+    updateStepStatus(stepHelpTrainingCheck, 'success');
+    endActiveTest(true);
+    log('Help Guide Training Resources verified successfully.', 'success');
 
     log('==================================================');
     log(` TEST SUITE COMPLETE: ${passCount} PASSED, ${failCount} FAILED`, 'success');
@@ -1103,6 +1251,7 @@ async function runTestSuite() {
     log(` TEST SUITE FAILED: ${passCount} PASSED, ${failCount + 1} FAILED`, 'error');
     log('==================================================');
   } finally {
+    await resetQuickstartFlagForUser(getWin());
     runBtn.disabled = false;
     blocker.classList.remove('active');
   }

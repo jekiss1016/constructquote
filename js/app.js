@@ -31,8 +31,17 @@ import { initCustomersView, renderCustomersTable } from './customers.js?v=3.0.64
 import { syncOfflinePhotoQueue, isOffline, checkOfflineAction } from './offline-cache.js?v=3.0.64';
 import { initSchedulingView } from './scheduling.js?v=3.0.64';
 import * as dbAPI from './db.js?v=3.0.64';
+import * as quotesListAPI from './quotes-list.js?v=3.0.64';
+import * as catalogAPI from './catalog.js?v=3.0.64';
+import { SchedulingEngine } from './scheduling-engine.js?v=3.0.64';
 
 window.db = dbAPI;
+window.quotesList = quotesListAPI;
+window.catalog = catalogAPI;
+window.SchedulingEngine = SchedulingEngine;
+window.checkAndShowQuickstartModal = checkAndShowQuickstartModal;
+window.showQuickstartModal = showQuickstartModal;
+window.hideQuickstartModal = hideQuickstartModal;
 let activeChallengeId = null;
 let activeFactorId = null;
 
@@ -87,6 +96,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupSessionWarningListeners();
   setupForgotPasswordListeners();
   setupRecoveryFormListener();
+  setupQuickstartModalListeners();
   await setupAuthListener();
 });
 
@@ -154,6 +164,9 @@ async function setupAuthListener() {
             await loadDefaultSettingsToUI();
             updateBrandHeader();
           }
+
+          // Check onboarding quickstart modal trigger
+          checkAndShowQuickstartModal(session);
 
           // Check if returning from a successful Stripe checkout
           const checkoutParam = new URLSearchParams(window.location.search).get('checkout');
@@ -621,6 +634,10 @@ function showAuthModal() {
 
 // Processes successful auth logic, checking for TOTP challenge overrides
 async function handleAuthSuccess(authData) {
+  if (authData && authData.session) {
+    currentUserSession = authData.session;
+    startSessionMonitoring(currentUserSession);
+  }
   const sb = getSupabase();
   
   // Fetch authentication assurance levels (AAL)
@@ -695,10 +712,17 @@ function setupMfaCodeListener() {
 }
 
 async function proceedToApp() {
-  const profile = await loadUserSession();
+  const profile = await loadUserSession(currentUserSession);
   if (profile) {
     hideAuthModal();
-    await initAppViews();
+    applyUserRoleRestrictions(profile);
+    if (!isAppInitialized) {
+      await initAppViews();
+    } else {
+      await loadDefaultSettingsToUI();
+      updateBrandHeader();
+    }
+    checkAndShowQuickstartModal(currentUserSession);
   } else {
     showToast('Failed to load user company profile.', 'danger');
     showAuthModal();
@@ -712,6 +736,97 @@ function hideAuthModal() {
   if (setupModal) setupModal.classList.remove('active');
   const logoutBtn = document.getElementById('auth-logout-btn');
   if (logoutBtn) logoutBtn.style.display = 'inline-flex';
+}
+
+// Quickstart Onboarding Modal Handlers
+let isQuickstartListenersSetup = false;
+
+function setupQuickstartModalListeners() {
+  if (isQuickstartListenersSetup) return;
+  isQuickstartListenersSetup = true;
+
+  const closeBtn = document.getElementById('quickstart-modal-close-btn');
+  const dismissBtn = document.getElementById('quickstart-dismiss-btn');
+  const modal = document.getElementById('quickstart-modal');
+
+  if (closeBtn) {
+    closeBtn.addEventListener('click', hideQuickstartModal);
+  }
+  if (dismissBtn) {
+    dismissBtn.addEventListener('click', hideQuickstartModal);
+  }
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        hideQuickstartModal();
+      }
+    });
+  }
+}
+
+export function showQuickstartModal() {
+  setupQuickstartModalListeners();
+  const modal = document.getElementById('quickstart-modal');
+  const iframe = document.getElementById('quickstart-iframe');
+  if (iframe) {
+    iframe.src = 'https://www.youtube.com/embed/2OL4edb1xlw?autoplay=1';
+  }
+  if (modal) {
+    modal.classList.add('active');
+  }
+}
+
+export function hideQuickstartModal() {
+  const modal = document.getElementById('quickstart-modal');
+  const checkbox = document.getElementById('quickstart-dont-show-checkbox');
+  const iframe = document.getElementById('quickstart-iframe');
+
+  if (checkbox && checkbox.checked) {
+    if (currentUserSession && currentUserSession.user) {
+      const userId = currentUserSession.user.id;
+      localStorage.setItem('hideQuickstartModal_' + userId, 'true');
+      const sb = getSupabase();
+      if (sb && sb.auth) {
+        sb.auth.updateUser({
+          data: { hideQuickstartModal: true }
+        }).catch(err => console.error('Error saving user_metadata hideQuickstartModal:', err));
+      }
+    } else {
+      localStorage.setItem('hideQuickstartModal', 'true');
+    }
+  }
+
+  if (iframe) {
+    iframe.src = '';
+  }
+  if (modal) {
+    modal.classList.remove('active');
+  }
+}
+
+export function checkAndShowQuickstartModal(session) {
+  if (!session || !session.user) return;
+
+  // Clear stale legacy un-scoped key if present
+  if (localStorage.getItem('hideQuickstartModal')) {
+    localStorage.removeItem('hideQuickstartModal');
+  }
+
+  // Only display onboarding quickstart modal for owners / sysadmins
+  const profile = getCurrentUserProfile();
+  const isOwner = profile && (profile.role === 'owner' || profile.role === 'sysadmin');
+  if (!isOwner) {
+    return;
+  }
+
+  const userId = session.user.id;
+  const userHideLocal = localStorage.getItem('hideQuickstartModal_' + userId) === 'true';
+  const userHideMeta = session.user.user_metadata && session.user.user_metadata.hideQuickstartModal === true;
+
+  if (userHideLocal || userHideMeta) {
+    return;
+  }
+  showQuickstartModal();
 }
 
 // Boots application views and listeners

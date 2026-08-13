@@ -1,9 +1,21 @@
 export const SchedulingEngine = {
+    getDefaultSettings() {
+        return {
+            workdays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+            holidays: [],
+            custom_workdays: []
+        };
+    },
+
     formatDate(date) {
         return date.toISOString().split('T')[0];
     },
     
     isWorkingDay(dateStrOrObj, projectSettings) {
+        const settings = (projectSettings && typeof projectSettings === 'object')
+            ? projectSettings
+            : this.getDefaultSettings();
+
         // Handle timezone issues by using local time construction if it's a string
         let date;
         if (typeof dateStrOrObj === 'string') {
@@ -16,12 +28,12 @@ export const SchedulingEngine = {
         const dateStr = this.formatDate(new Date(date.getTime() - (date.getTimezoneOffset() * 60000)));
         
         // 1. Check custom workdays (Catch-up days)
-        if (projectSettings.custom_workdays && projectSettings.custom_workdays.includes(dateStr)) {
+        if (settings.custom_workdays && settings.custom_workdays.includes(dateStr)) {
             return true;
         }
         
         // 2. Check holidays
-        if (projectSettings.holidays && projectSettings.holidays.includes(dateStr)) {
+        if (settings.holidays && settings.holidays.includes(dateStr)) {
             return false;
         }
         
@@ -29,12 +41,12 @@ export const SchedulingEngine = {
         const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         const dayName = days[date.getDay()];
         
-        if (projectSettings.workdays && projectSettings.workdays.length > 0) {
-            return projectSettings.workdays.includes(dayName);
+        if (settings.workdays && settings.workdays.length > 0) {
+            return settings.workdays.includes(dayName);
         }
         
         // Fallback: If no explicit workdays array, check weekend_days (0=Sun, 6=Sat)
-        if (projectSettings.weekend_days && projectSettings.weekend_days.includes(date.getDay())) {
+        if (settings.weekend_days && settings.weekend_days.includes(date.getDay())) {
             return false;
         }
         
@@ -43,6 +55,10 @@ export const SchedulingEngine = {
     },
     
     addWorkingDays(startDateStrOrObj, daysToAdd, projectSettings) {
+        const settings = (projectSettings && typeof projectSettings === 'object')
+            ? projectSettings
+            : this.getDefaultSettings();
+
         let date;
         if (typeof startDateStrOrObj === 'string') {
             const parts = startDateStrOrObj.split('-');
@@ -52,14 +68,14 @@ export const SchedulingEngine = {
         }
         
         // If the start date itself is not a working day, advance it to the next working day first
-        while (!this.isWorkingDay(date, projectSettings)) {
+        while (!this.isWorkingDay(date, settings)) {
             date.setDate(date.getDate() + 1);
         }
         
         let added = 0;
         while (added < daysToAdd) {
             date.setDate(date.getDate() + 1);
-            if (this.isWorkingDay(date, projectSettings)) {
+            if (this.isWorkingDay(date, settings)) {
                 added++;
             }
         }
@@ -68,6 +84,12 @@ export const SchedulingEngine = {
     },
     
     cascadeSchedule(tasks, projectSettings, projectStartDate) {
+        const settings = (projectSettings && typeof projectSettings === 'object')
+            ? projectSettings
+            : this.getDefaultSettings();
+
+        if (!Array.isArray(tasks)) return [];
+
         const taskMap = {};
         tasks.forEach(t => taskMap[t.id] = t);
         
@@ -84,8 +106,10 @@ export const SchedulingEngine = {
                 if (typeof projectStartDate === 'string') {
                     const parts = projectStartDate.split('-');
                     targetStartDate = new Date(parts[0], parts[1] - 1, parts[2]);
-                } else {
+                } else if (projectStartDate) {
                     targetStartDate = new Date(projectStartDate);
+                } else {
+                    targetStartDate = new Date();
                 }
                 
                 // 1. Resolve Target Date based on Predecessors
@@ -106,7 +130,7 @@ export const SchedulingEngine = {
                     });
                     
                     if (maxPredEndDate) {
-                        targetStartDate = this.addWorkingDays(maxPredEndDate, 1, projectSettings);
+                        targetStartDate = this.addWorkingDays(maxPredEndDate, 1, settings);
                     }
                 }
                 
@@ -118,7 +142,7 @@ export const SchedulingEngine = {
                 }
                 
                 // 3. Ensure start date is a working day
-                while (!this.isWorkingDay(targetStartDate, projectSettings)) {
+                while (!this.isWorkingDay(targetStartDate, settings)) {
                     targetStartDate.setDate(targetStartDate.getDate() + 1);
                 }
                 
@@ -127,7 +151,7 @@ export const SchedulingEngine = {
                 
                 // 4. Calculate End Date
                 const durationDays = task.duration > 0 ? task.duration : 1;
-                const targetEndDate = this.addWorkingDays(targetStartDate, durationDays - 1, projectSettings);
+                const targetEndDate = this.addWorkingDays(targetStartDate, durationDays - 1, settings);
                 
                 const endLocalOffset = targetEndDate.getTimezoneOffset() * 60000;
                 const formattedEnd = this.formatDate(new Date(targetEndDate.getTime() - endLocalOffset));
