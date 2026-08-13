@@ -1,9 +1,9 @@
 -- ============================================================
--- FIX UNPROVISIONED USERS & BACKFILL MISSING PROFILES / COMPANIES (v2)
+-- FIX UNPROVISIONED USERS & BACKFILL MISSING PROFILES / COMPANIES (v3)
 -- Run this script in your Supabase Production SQL Editor to:
 -- 1. Immediately backfill companies, settings, categories, and profiles
 --    for any users in auth.users currently missing a profile (including jekiss1016@outlook.com).
--- 2. Update handle_new_user() trigger with unique company name generation to prevent duplicate key errors.
+-- 2. Update handle_new_user() trigger with numeric company sequence naming (e.g. 'New Contractor Co. 13').
 -- 3. Update create_profile_if_missing() RPC function for client-side auto-provisioning.
 -- ============================================================
 
@@ -15,6 +15,7 @@ DECLARE
   v_invited_company_id uuid;
   v_invited_role text;
   v_company_name text;
+  v_next_num integer;
 BEGIN
   FOR r IN 
     SELECT u.id, u.email 
@@ -40,11 +41,13 @@ BEGIN
 
       DELETE FROM public.company_invitations WHERE LOWER(email) = LOWER(r.email);
     ELSE
-      -- Generate unique company name for user
-      v_company_name := COALESCE(SPLIT_PART(r.email, '@', 1) || ' Co.', 'Contractor Co. ' || SUBSTRING(r.id::text FROM 1 FOR 8));
-      IF EXISTS (SELECT 1 FROM public.companies WHERE name = v_company_name) THEN
-        v_company_name := v_company_name || ' (' || SUBSTRING(r.id::text FROM 1 FOR 4) || ')';
-      END IF;
+      -- Generate unique company name with sequence number (e.g., 'New Contractor Co. 6')
+      SELECT COUNT(*) + 1 INTO v_next_num FROM public.companies;
+      v_company_name := 'New Contractor Co. ' || v_next_num;
+      WHILE EXISTS (SELECT 1 FROM public.companies WHERE name = v_company_name) LOOP
+        v_next_num := v_next_num + 1;
+        v_company_name := 'New Contractor Co. ' || v_next_num;
+      END LOOP;
 
       -- Create new company
       INSERT INTO public.companies (name, is_active, subscription_level, subscription_status)
@@ -110,6 +113,7 @@ DECLARE
   invited_role text;
   new_company_id uuid;
   v_company_name text;
+  v_next_num integer;
 BEGIN
   -- Check if the signing up user's email has a pending company invitation (case-insensitive)
   SELECT company_id, role INTO invited_company_id, invited_role
@@ -129,11 +133,13 @@ BEGIN
     -- Remove the invitation record
     DELETE FROM public.company_invitations WHERE LOWER(email) = LOWER(NEW.email);
   ELSE
-    -- Generate unique company name
-    v_company_name := COALESCE(SPLIT_PART(NEW.email, '@', 1) || ' Co.', 'Contractor Co. ' || SUBSTRING(NEW.id::text FROM 1 FOR 8));
-    IF EXISTS (SELECT 1 FROM public.companies WHERE name = v_company_name) THEN
-      v_company_name := v_company_name || ' (' || SUBSTRING(NEW.id::text FROM 1 FOR 4) || ')';
-    END IF;
+    -- Generate unique numeric company name (e.g., 'New Contractor Co. 6')
+    SELECT COUNT(*) + 1 INTO v_next_num FROM public.companies;
+    v_company_name := 'New Contractor Co. ' || v_next_num;
+    WHILE EXISTS (SELECT 1 FROM public.companies WHERE name = v_company_name) LOOP
+      v_next_num := v_next_num + 1;
+      v_company_name := 'New Contractor Co. ' || v_next_num;
+    END LOOP;
 
     -- Create new company tenant for signup
     INSERT INTO public.companies (name, is_active, subscription_level, subscription_status)
@@ -214,6 +220,7 @@ DECLARE
   v_role text;
   v_profile jsonb;
   v_company_name text;
+  v_next_num integer;
 BEGIN
   IF v_user_id IS NULL THEN
     RETURN jsonb_build_object('success', false, 'error', 'Not authenticated');
@@ -241,10 +248,12 @@ BEGIN
 
       DELETE FROM public.company_invitations WHERE LOWER(email) = LOWER(v_email);
     ELSE
-      v_company_name := COALESCE(SPLIT_PART(v_email, '@', 1) || ' Co.', 'Contractor Co. ' || SUBSTRING(v_user_id::text FROM 1 FOR 8));
-      IF EXISTS (SELECT 1 FROM public.companies WHERE name = v_company_name) THEN
-        v_company_name := v_company_name || ' (' || SUBSTRING(v_user_id::text FROM 1 FOR 4) || ')';
-      END IF;
+      SELECT COUNT(*) + 1 INTO v_next_num FROM public.companies;
+      v_company_name := 'New Contractor Co. ' || v_next_num;
+      WHILE EXISTS (SELECT 1 FROM public.companies WHERE name = v_company_name) LOOP
+        v_next_num := v_next_num + 1;
+        v_company_name := 'New Contractor Co. ' || v_next_num;
+      END LOOP;
 
       INSERT INTO public.companies (name, is_active, subscription_level, subscription_status)
       VALUES (v_company_name, true, 'trial', 'active')
