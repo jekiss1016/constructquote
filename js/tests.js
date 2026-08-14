@@ -1237,6 +1237,34 @@ async function runTestSuite() {
     endActiveTest(true);
     log('Help Guide Training Resources verified successfully.', 'success');
 
+    // -------------------------------------------------------------
+    // TEST 13: Mobile Hamburger Drawer Navigation Check
+    // -------------------------------------------------------------
+    createTestCard('13. Mobile Hamburger Drawer Navigation Check');
+    const stepOpenDrawer = addStep('Clicking hamburger button (#mobile-sidebar-toggle)');
+    const toggleBtn = doc.getElementById('mobile-sidebar-toggle');
+    const sidebar = doc.querySelector('.sidebar');
+    const overlay = doc.getElementById('sidebar-overlay');
+    if (!toggleBtn || !sidebar || !overlay) {
+      throw new Error('Mobile drawer elements missing in DOM');
+    }
+    toggleBtn.click();
+    await wait(300);
+    if (!sidebar.classList.contains('active') || !overlay.classList.contains('active')) {
+      throw new Error('Sidebar drawer did not open when clicking hamburger button');
+    }
+    updateStepStatus(stepOpenDrawer, 'success');
+
+    const stepCloseDrawer = addStep('Clicking backdrop overlay (#sidebar-overlay) to close drawer');
+    overlay.click();
+    await wait(300);
+    if (sidebar.classList.contains('active') || overlay.classList.contains('active')) {
+      throw new Error('Sidebar drawer did not close when clicking backdrop overlay');
+    }
+    updateStepStatus(stepCloseDrawer, 'success');
+    endActiveTest(true);
+    log('Mobile Hamburger Drawer Navigation verified successfully.', 'success');
+
     log('==================================================');
     log(` TEST SUITE COMPLETE: ${passCount} PASSED, ${failCount} FAILED`, 'success');
     log('==================================================');

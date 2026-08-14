@@ -22,18 +22,18 @@ import {
   getSubscriptionStatus,
   getCheckoutUrl,
   getBillingPortalUrl
-} from './db.js?v=3.0.64';
-import { showToast, fileToBase64, formatPhoneNumber, parseCompanyAddress } from './utils.js?v=3.0.64';
-import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=3.0.64';
-import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=3.0.64';
-import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=3.0.64';
-import { initCustomersView, renderCustomersTable } from './customers.js?v=3.0.64';
-import { syncOfflinePhotoQueue, isOffline, checkOfflineAction } from './offline-cache.js?v=3.0.64';
-import { initSchedulingView } from './scheduling.js?v=3.0.64';
-import * as dbAPI from './db.js?v=3.0.64';
-import * as quotesListAPI from './quotes-list.js?v=3.0.64';
-import * as catalogAPI from './catalog.js?v=3.0.64';
-import { SchedulingEngine } from './scheduling-engine.js?v=3.0.64';
+} from './db.js?v=3.0.68';
+import { showToast, fileToBase64, formatPhoneNumber, parseCompanyAddress } from './utils.js?v=3.0.68';
+import { initCatalogView, renderCatalogTable, populateCategoryDropdowns } from './catalog.js?v=3.0.68';
+import { initQuotesListView, renderDashboardStats, renderDashboardExpirations, renderQuotesTable, renderQuoteDetails } from './quotes-list.js?v=3.0.68';
+import { initQuoteBuilderView, startNewQuote, loadQuoteForEditing, loadQuoteAsTemplate } from './quote-builder.js?v=3.0.68';
+import { initCustomersView, renderCustomersTable } from './customers.js?v=3.0.68';
+import { syncOfflinePhotoQueue, isOffline, checkOfflineAction } from './offline-cache.js?v=3.0.68';
+import { initSchedulingView } from './scheduling.js?v=3.0.68';
+import * as dbAPI from './db.js?v=3.0.68';
+import * as quotesListAPI from './quotes-list.js?v=3.0.68';
+import * as catalogAPI from './catalog.js?v=3.0.68';
+import { SchedulingEngine } from './scheduling-engine.js?v=3.0.68';
 
 window.db = dbAPI;
 window.quotesList = quotesListAPI;
@@ -1113,6 +1113,8 @@ function setupAppNavigation() {
   const overlay = document.getElementById('sidebar-overlay');
   const toggleBtn = document.getElementById('mobile-sidebar-toggle');
 
+  let lastNavActionTs = 0;
+
   const closeMobileSidebar = () => {
     if (sidebar && sidebar.classList.contains('active')) {
       sidebar.classList.remove('active');
@@ -1128,13 +1130,12 @@ function setupAppNavigation() {
   };
 
   if (toggleBtn) {
-    let lastToggleTs = 0;
     const handleToggle = (e) => {
       e.stopPropagation();
       e.preventDefault();
       const now = Date.now();
-      if (now - lastToggleTs < 250) return;
-      lastToggleTs = now;
+      if (now - lastNavActionTs < 250) return;
+      lastNavActionTs = now;
 
       if (sidebar && sidebar.classList.contains('active')) {
         closeMobileSidebar();
@@ -1143,22 +1144,19 @@ function setupAppNavigation() {
       }
     };
 
-    toggleBtn.addEventListener('pointerdown', handleToggle);
     toggleBtn.addEventListener('click', handleToggle);
   }
 
   if (overlay) {
-    let lastOverlayTs = 0;
     const handleOverlayClose = (e) => {
       e.stopPropagation();
       e.preventDefault();
       const now = Date.now();
-      if (now - lastOverlayTs < 250) return;
-      lastOverlayTs = now;
+      if (now - lastNavActionTs < 250) return;
+      lastNavActionTs = now;
       closeMobileSidebar();
     };
 
-    overlay.addEventListener('pointerdown', handleOverlayClose);
     overlay.addEventListener('click', handleOverlayClose);
   }
 

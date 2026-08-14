@@ -17,14 +17,16 @@ function walkDir(dir, callback) {
     });
 }
 
+const targetVer = process.argv[2] || '3.0.68';
+
 walkDir('.', (filePath) => {
     let content = fs.readFileSync(filePath, 'utf8');
-    let newContent = content.replace(/\?v=[\d\.]+/g, '?v=3.0.64');
+    let newContent = content.replace(/\?v=[\d\.]+/g, `?v=${targetVer}`);
     if (filePath.endsWith('index.html')) {
-        newContent = newContent.replace(/v3\.0\.\d+/g, 'v3.0.64');
+        newContent = newContent.replace(/© 2026 MyBidBook \| v[\d\.]+/g, `© 2026 MyBidBook | v${targetVer}`);
     }
     if (content !== newContent) {
         fs.writeFileSync(filePath, newContent, 'utf8');
-        console.log(`Updated ${filePath}`);
+        console.log(`Updated ${filePath} to v${targetVer}`);
     }
 });
