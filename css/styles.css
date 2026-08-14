@@ -1533,7 +1533,7 @@ body {
     top: 0;
     left: 0;
     right: 0;
-    z-index: 999;
+    z-index: 1001;
     box-shadow: var(--shadow-sm);
   }
 
@@ -1604,7 +1604,7 @@ body {
     bottom: 0;
     width: 250px;
     height: 100vh;
-    z-index: 1001;
+    z-index: 1002;
     transform: translateX(-100%);
     box-shadow: var(--shadow-xl);
     border-right: 1px solid var(--border-color);
